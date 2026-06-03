@@ -21,7 +21,7 @@ class handler(BaseHTTPRequestHandler):
 Hent ut strukturert oppskrift fra rotete Instagram/TikTok-caption, nettsidetekst eller OCR-tekst.
 Ikke gjett ingredienser som ikke står i teksten.
 Omgjør trygt til norske/metric mål: cups≈dl, tbsp=ss, tsp=ts, oz=g, lb=g/kg.
-Hver ingrediens skal få handlelistekategori fra:
+Hver ingrediens skal få handlelistekategori fra nøyaktig denne listen. Krydder, salt, pepper, oljer, eddik, soyasaus og sauser skal ikke havne under Frukt og grønt:
 Frukt og grønt, Kjøtt, Kjølevarer, Meieri, Frys, Hermetikk/halvfabrikat, Tørrvarer, Krydder, Glutenfritt, Bakevarer, Annet.
 Returner KUN gyldig JSON."""
 

@@ -729,3 +729,14 @@ dialog {
 .empty-state { color: var(--muted); background: rgba(255,255,255,.58); border-radius: 12px; padding: .7rem; }
 .recipe-emoji { font-size: 1.2rem; }
 @media (max-width: 820px) { .recipe-toolbar { grid-template-columns: 1fr; } .day-actions-row { grid-template-columns: 1fr; } }
+
+/* ===== v18 smart sync / favorites / cleanup ===== */
+.header-actions { display:flex; align-items:center; gap:.5rem; }
+.live-status { font-size:.78rem; font-weight:850; color:var(--accent-2); background:#eef6ee; border:1px solid #d3e6d2; border-radius:999px; padding:.32rem .62rem; white-space:nowrap; }
+.live-status.syncing { color:#8a5a00; background:#fff7e6; border-color:#ffe1a3; }
+.live-status.error { color:#b42318; background:#fff1f0; border-color:#ffd1cc; }
+.favorite-btn { border:0!important; min-height:30px!important; padding:.15rem .4rem!important; background:transparent!important; font-size:1.12rem!important; line-height:1!important; }
+.recipe-topline { display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
+.usage-pill { font-size:.72rem; color:var(--muted); }
+.clean-note { font-size:.78rem; color:var(--muted); margin-top:.35rem; }
+@media (max-width: 820px) { .header-actions { width:100%; justify-content:space-between; } }

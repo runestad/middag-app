@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="apple-touch-icon" href="icons/icon-180.png" />
   <meta name="theme-color" content="#4f7f5f" />
-  <link rel="stylesheet" href="styles.css?v=16" />
+  <link rel="stylesheet" href="styles.css?v=18" />
 </head>
 <body>
   <header>
@@ -16,7 +16,7 @@
       <h1>🍝 Middag</h1>
       <p>Ukehandel, oppskrifter og handleliste for Øyvind & Melanie</p>
     </div>
-    <button id="resetPlanBtn" class="ghost">Nullstill ukeplan</button>
+    <div class="header-actions"><span id="liveStatus" class="live-status">● Live</span><button id="resetPlanBtn" class="ghost">Nullstill ukeplan</button></div>
   </header>
 
   <main>
@@ -65,7 +65,7 @@
       <section class="card">
         <div class="section-title">
           <h2>Handleliste</h2>
-          <button id="generateListBtn">Generer fra ukesmeny</button><button id="resetShoppingBtn" class="ghost">Nullstill handleliste</button>
+          <button id="generateListBtn">Generer fra ukesmeny</button><button id="resetShoppingBtn" class="ghost">Nullstill handleliste</button><button id="resetShoppingBtn" class="ghost">Nullstill handleliste</button>
         </div>
         <p class="hint">Endre tekst direkte, kryss av det dere har, eller legg til egne varer under riktig kategori.</p>
         <div id="shoppingList" class="shopping-list"></div>
@@ -76,7 +76,7 @@
       <section class="card">
         <div class="section-title">
           <h2>Oppskrifter</h2>
-          <button id="addRecipeBtn" class="primary">+ Legg til oppskrift</button>
+          <button id="cleanupRecipesBtn" class="ghost">Rydd tags/mål</button><button id="addRecipeBtn" class="primary">+ Legg til oppskrift</button>
         </div>
         <div class="recipe-toolbar">
           <input id="recipeSearch" placeholder="Søk etter rett, kategori, tag eller kilde …" />
@@ -87,6 +87,8 @@
             <option value="used">Mest brukt</option>
             <option value="recent">Nylig lagt til</option>
             <option value="missing">Mangler oppskrift</option>
+            <option value="favorites">Favoritter</option>
+            <option value="tags">Tags</option>
           </select>
         </div>
         <div id="recipeResults" class="recipe-results"></div>
@@ -208,6 +210,6 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script src="app.js?v=16"></script>
+  <script src="app.js?v=18"></script>
 </body>
 </html>
