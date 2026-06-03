@@ -776,3 +776,34 @@ dialog {
 .freezer-suggestion{border:1px solid #ffe1a3;background:#fff7e6;border-radius:18px;padding:.9rem;font-weight:750;line-height:1.4}
 .day-row.day-card-v16{background:linear-gradient(135deg,rgba(255,255,255,.88),rgba(243,249,241,.82))!important}
 @media(max-width:820px){.week-overview-row{grid-template-columns:1fr}}
+
+
+/* ===== v20.1 mobile hotfix ===== */
+.period-grid {
+  grid-template-columns: 1fr !important;
+}
+.period-grid input[type="date"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+.bottom-nav {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: .25rem !important;
+}
+.bottom-nav .nav-btn {
+  min-width: 0 !important;
+  padding-left: .15rem !important;
+  padding-right: .15rem !important;
+  font-size: .92rem !important;
+}
+.bottom-nav .nav-btn span {
+  font-size: .66rem !important;
+  white-space: nowrap !important;
+}
+@media (min-width: 760px) {
+  .period-grid {
+    grid-template-columns: 1fr 1fr auto !important;
+  }
+}
