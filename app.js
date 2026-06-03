@@ -738,4 +738,135 @@ document.addEventListener("input", (e) => {
   }
 }, true);
 
+
+/* ===== v20.9 critical fix: preserve date-keyed plans ===== */
+migratePlan = function(raw){
+  const out = {};
+  if (!raw || typeof raw !== "object") return out;
+
+  // Preserve all ISO-date keys, e.g. 2026-06-11.
+  for (const [key, val] of Object.entries(raw)) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(key)) {
+      if (Array.isArray(val)) out[key] = val;
+      else if (val) out[key] = [{type: "recipe", recipeId: val}];
+      else out[key] = [];
+    }
+  }
+
+  // Backwards compatibility: migrate old weekday keys into the currently selected date range.
+  const selected = typeof selectedDays === "function" ? selectedDays() : [];
+  for (const d of selected) {
+    if (!Array.isArray(out[d.key])) {
+      const oldVal = raw[d.weekday];
+      if (Array.isArray(oldVal)) out[d.key] = oldVal;
+      else if (oldVal) out[d.key] = [{type: "recipe", recipeId: oldVal}];
+      else out[d.key] = [];
+    }
+  }
+
+  // Also preserve any non-date custom keys that are arrays, instead of silently dropping them.
+  for (const [key, val] of Object.entries(raw)) {
+    if (!out[key] && Array.isArray(val) && !DAYS.includes(key)) {
+      out[key] = val;
+    }
+  }
+
+  return out;
+};
+
+function clonePlanSafe(p){
+  try { return JSON.parse(JSON.stringify(p || {})); }
+  catch(e) { return p || {}; }
+}
+
+savePlan = function(){
+  appMeta.updatedAt = new Date().toISOString();
+  lastRemoteUpdatedAt = appMeta.updatedAt;
+  lastLocalSaveAt = Date.now();
+  isSavingPlan = true;
+
+  const safePlan = clonePlanSafe(plan);
+
+  try {
+    localStorage.setItem("middag_plan", JSON.stringify(safePlan));
+  } catch(e) {
+    console.warn("Kunne ikke lagre lokalt", e);
+  }
+
+  setLiveStatus("Lagrer", "syncing");
+
+  fetch("/api/plan", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      plan: {
+        items: safePlan,
+        shoppingItems: shoppingItems || [],
+        freezerItems: freezerItems || [],
+        meta: appMeta || {},
+        updatedAt: appMeta.updatedAt
+      }
+    })
+  })
+  .then(r => r.json().catch(() => ({})))
+  .then(data => {
+    if (data && data.ok === false) throw new Error(data.error || "Plan-lagring feilet");
+    isSavingPlan = false;
+    setLiveStatus("Live");
+  })
+  .catch(e => {
+    isSavingPlan = false;
+    console.warn("savePlan-feil", e);
+    setLiveStatus("Sync-feil", "error");
+  });
+};
+
+syncFromServer = async function(){
+  try {
+    if (isSavingPlan || Date.now() - lastLocalSaveAt < 3500) return;
+
+    setLiveStatus("Syncer", "syncing");
+    const pr = await fetch("/api/plan?ts=" + Date.now(), {cache: "no-store"}).then(r => r.json());
+    const remote = pr.plan?.updatedAt || "";
+
+    if (remote && remote !== lastRemoteUpdatedAt && remote !== appMeta.updatedAt) {
+      const remoteItems = pr.plan?.items || {};
+      const migrated = migratePlan(remoteItems);
+
+      // Safety: never replace a non-empty visible date range with a totally empty one.
+      const visibleKeys = selectedDays().map(d => d.key);
+      const currentVisibleCount = visibleKeys.reduce((sum,k) => sum + ((plan[k] || []).length), 0);
+      const remoteVisibleCount = visibleKeys.reduce((sum,k) => sum + ((migrated[k] || []).length), 0);
+      if (currentVisibleCount > 0 && remoteVisibleCount === 0) {
+        console.warn("Hoppet over tom remote-plan for å unngå overskriving av lokal ukeplan");
+      } else {
+        plan = migrated;
+      }
+
+      shoppingItems = pr.plan?.shoppingItems || shoppingItems || [];
+      freezerItems = pr.plan?.freezerItems || freezerItems || [];
+      appMeta = pr.plan?.meta || appMeta;
+      lastRemoteUpdatedAt = remote;
+
+      createDayRows();
+      renderShoppingList(shoppingItems);
+      renderRecipeResults();
+      renderFreezer();
+    }
+
+    const rr = await fetch("/api/recipes?ts=" + Date.now(), {cache: "no-store"}).then(r => r.json());
+    if (rr.recipes && rr.recipes.length !== recipes.length) {
+      recipes = rr.recipes;
+      mergeCustomData();
+      renderRecipeResults();
+      createDayRows();
+    }
+
+    setLiveStatus("Live");
+  } catch(e) {
+    console.warn("sync-feil", e);
+    setLiveStatus("Offline?", "error");
+  }
+};
+
 init();

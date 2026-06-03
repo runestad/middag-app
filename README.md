@@ -1,6 +1,6 @@
-Middag-app v20.7.
-- Stabiliserer ukeplan-lagring så tekstretter/oppskrifter ikke forsvinner
-- Hindrer live-sync i å overskrive egne nylige endringer
-- Oppskriftsvelger i ukeplan viser preview før legg til
-- Søkefelt låses til normal høyde
-- Polling hyppigere og med no-store cache
+Middag-app v20.9.
+Kritisk stabilitetsfix:
+- migratePlan bevarer datonøkler som 2026-06-11
+- sync kan ikke lenger tolke datobasert ukeplan som tom
+- sikkerhet mot at tom remote-plan overskriver synlig lokal ukeplan
+- beholder nye ikoner fra v20.8

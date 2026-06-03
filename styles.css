@@ -1217,3 +1217,9 @@ html body #appBottomNav.app-bottom-nav .nav-btn.active {
   padding: .7rem;
   background: rgba(255,255,255,.66);
 }
+
+
+/* ===== v20.9 plan stability indicator ===== */
+.live-status.error {
+  font-weight: 900 !important;
+}
