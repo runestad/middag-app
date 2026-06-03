@@ -1,7 +1,7 @@
-Middag-app v20.5.
-Kun bunnmeny-fix:
-- Lavere meny
-- Full bredde riktig på iPhone
-- 4 knapper på én linje
-- Emoji + tekst på samme linje
-- Ingen endringer i oppskriftslogikk
+Middag-app v20.6.
+Kun reell bunnmeny-fix:
+- Nav får id appBottomNav
+- CSS treffer #appBottomNav direkte
+- Fast lav høyde
+- Full bredde på iPhone
+- Ingen endringer i app-logikk
