@@ -994,3 +994,91 @@ body {
     bottom: 6px !important;
   }
 }
+
+
+/* ===== v20.5 bottom nav final fix ===== */
+body {
+  padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
+}
+
+.bottom-nav {
+  position: fixed !important;
+  left: 12px !important;
+  right: 12px !important;
+  bottom: 10px !important;
+
+  width: auto !important;
+  height: calc(54px + env(safe-area-inset-bottom)) !important;
+  min-height: 0 !important;
+  max-height: calc(54px + env(safe-area-inset-bottom)) !important;
+
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  align-items: center !important;
+  justify-items: stretch !important;
+  gap: 4px !important;
+
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom)) 8px !important;
+  margin: 0 !important;
+
+  border-radius: 24px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+.bottom-nav .nav-btn {
+  width: 100% !important;
+  height: 42px !important;
+  min-height: 0 !important;
+  max-height: 42px !important;
+
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+
+  padding: 0 4px !important;
+  margin: 0 !important;
+  border-radius: 18px !important;
+
+  font-size: .78rem !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+
+.bottom-nav .nav-btn span {
+  display: inline !important;
+  font-size: .72rem !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  margin: 0 !important;
+}
+
+.bottom-nav .nav-btn {
+  font-weight: 850 !important;
+}
+
+/* Emoji/text itself */
+.bottom-nav .nav-btn::first-letter {
+  font-size: .9rem !important;
+}
+
+@media (max-width: 390px) {
+  .bottom-nav {
+    left: 6px !important;
+    right: 6px !important;
+    gap: 2px !important;
+    padding-left: 5px !important;
+    padding-right: 5px !important;
+  }
+
+  .bottom-nav .nav-btn {
+    gap: 2px !important;
+    padding: 0 2px !important;
+  }
+
+  .bottom-nav .nav-btn span {
+    font-size: .64rem !important;
+  }
+}
