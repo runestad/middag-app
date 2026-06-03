@@ -1,6 +1,5 @@
-Middag-app v20.2 hotfix.
-- Fikser dato én dag feil på iPhone/Safari
-- Fikser Tilfeldig uke og Lag smart ukesmeny
-- Hindrer at manuelle retter forsvinner ved sync
-- Robust datobasert ukeplan
-- Mobilfikset datovelger og bunnmeny
+Middag-app v20.3.
+- Lavere bunnmeny
+- Dato-overskrift i planlagt meny
+- AI/smart meny prioriterer fryser og kun oppskrifter med innhold
+- Bedre ingredienskategorisering: flankestek, halloumi, maizena m.m.

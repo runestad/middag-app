@@ -301,4 +301,138 @@ renderWeekOverview=function(){
   }).join("");
 }
 
+
+/* ===== v20.3 smarter freezer AI + week title + better categorization ===== */
+function formatShortDate(iso){
+  const d=parseLocalDate(iso);
+  const months=["jan","feb","mars","apr","mai","juni","juli","aug","sep","okt","nov","des"];
+  return `${d.getDate()}. ${months[d.getMonth()]}`;
+}
+function updateWeekOverviewRange(){
+  const el=$("weekOverviewRange"); if(!el)return;
+  const days=selectedDays();
+  if(!days.length){el.textContent="Oversikt";return;}
+  const first=days[0].key, last=days[days.length-1].key;
+  el.textContent = first===last ? formatShortDate(first) : `${formatShortDate(first)} – ${formatShortDate(last)}`;
+}
+const oldRenderWeekOverviewV203 = renderWeekOverview;
+renderWeekOverview=function(){
+  updateWeekOverviewRange();
+  const box=$("weekOverview");if(!box)return;
+  box.innerHTML=selectedDays().map(d=>{
+    const items=plan[d.key]||[];
+    const chips=items.length?items.map(item=>{
+      if(item.type==="text")return`<span class="week-chip manual">✍️ ${escapeHtml(item.text)}</span>`;
+      const r=recipeById(item.recipeId);
+      if(!r)return`<span class="week-chip missing">Mangler</span>`;
+      return`<button type="button" class="week-chip${hasRecipe(r)?"":" missing"}" onclick="${hasRecipe(r)?`openRecipeDetails('${escapeAttr(r.id)}')`:`openImport('${escapeAttr(r.id)}')`}">${emojiForRecipe(r)} ${escapeHtml(r.name)}</button>`;
+    }).join(""):`<span class="hint">Ingen retter</span>`;
+    return`<div class="week-overview-row"><div class="week-overview-day">${d.label}</div><div class="week-overview-items">${chips}</div></div>`;
+  }).join("");
+}
+function freezerKeywordText(){
+  return freezerItems.filter(x=>Number(x.qty)>0).map(x=>normalize(x.name)).join(" ");
+}
+function freezerScoreRecipe(r){
+  const f=freezerKeywordText();
+  const t=normalize(`${r.name} ${r.category} ${enrichTags(r).join(" ")} ${r.ingredientsText||""}`);
+  let score=0;
+  const pairs=[
+    ["kylling",["kylling","chicken","dumpling","gyoza","kyllingfilet","kyllinglårfilet","kyllingboller"]],
+    ["karbonade",["karbonadedeig","bolognese","taco","burger","kjøttboller","lasagne"]],
+    ["ørret",["ørret","fisk","salmon","laks"]],
+    ["scampi",["scampi","shrimp","reker"]],
+    ["edamame",["edamame","asiatisk","bowl","nudler","ramen"]],
+    ["svin",["svin","pork","kotelett","ytrefilet"]],
+    ["bacon",["bacon"]],
+    ["veggisfarse",["veggis","vegetar","taco","bolognese"]],
+    ["erter",["erter","pea"]],
+    ["halloumi",["halloumi"]]
+  ];
+  for(const [freezerNeedle, recipeWords] of pairs){
+    if(f.includes(freezerNeedle) && recipeWords.some(w=>t.includes(normalize(w)))) score+=3;
+  }
+  if(isFavorite(r.id))score+=2;
+  score+=Math.min(usageCount(r.id),4)*0.25;
+  return score;
+}
+randomWeek=function(){
+  const days=selectedDays();
+  const usable=recipes.filter(hasRecipe).sort((a,b)=>freezerScoreRecipe(b)-freezerScoreRecipe(a)||a.name.localeCompare(b.name,"no"));
+  if(!usable.length){alert("Ingen oppskrifter med innhold funnet.");return}
+  for(const d of days){
+    const weighted=usable.slice(0, Math.max(8, Math.min(usable.length, 25)));
+    const r=weighted[Math.floor(Math.random()*weighted.length)];
+    plan[d.key]=[{type:"recipe",recipeId:r.id}];
+    bumpUsage(r.id);
+  }
+  savePlan();createDayRows();renderRecipeResults();
+}
+smartWeek=async function(){
+  const prompt=$("smartPrompt")?.value?.trim()||"",days=selectedDays();
+  if($("smartStatus"))$("smartStatus").textContent="Lager AI-forslag med fryseren i bakhodet …";
+  try{
+    const freezer=freezerItems.filter(x=>Number(x.qty)>0).map(x=>({name:x.name,qty:x.qty,unit:x.unit,category:x.category}));
+    const payloadRecipes=recipes.filter(hasRecipe).map(r=>({id:r.id,name:r.name,category:r.category,tags:enrichTags(r),favorite:isFavorite(r.id),usage:usageCount(r.id),freezerScore:freezerScoreRecipe(r)}))
+      .sort((a,b)=>b.freezerScore-a.freezerScore||b.usage-a.usage)
+      .slice(0,180);
+    const res=await fetch("/api/smart-week",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:`${prompt}\nPrioriter gjerne ting vi har i fryseren: ${freezer.map(x=>`${x.qty} ${x.unit} ${x.name}`).join(", ")}. Velg kun retter som har oppskrift.`,days:days.map(d=>({key:d.key,label:d.label,weekday:d.weekday})),recipes:payloadRecipes,freezer})});
+    const data=await res.json();
+    if(!data.ok)throw new Error(data.error||"AI-ukemeny feilet");
+    for(const d of days)plan[d.key]=[];
+    const items=data.plan?.items||[];
+    for(const row of items){
+      let day=String(row.day||"").toLowerCase();
+      const match=days.find(d=>d.key===day||d.weekday===day||normalize(d.label).includes(normalize(day)));
+      if(!match)continue;
+      const ids=(row.recipeIds||row.recipe_ids||[]).filter(id=>hasRecipe(recipeById(id)));
+      plan[match.key]=ids.map(id=>{bumpUsage(id);return{type:"recipe",recipeId:id}});
+      if(row.note&&!plan[match.key].length)plan[match.key]=[{type:"text",text:row.note}];
+    }
+    if($("smartStatus"))$("smartStatus").textContent="AI-forslag laget. Den prioriterte oppskrifter og fryserinnhold.";
+    savePlan();createDayRows();renderRecipeResults();
+  }catch(e){
+    console.warn(e);
+    if($("smartStatus"))$("smartStatus").textContent="AI feilet, bruker lokal fryser-smart velger.";
+    localSmartWeek();
+  }
+}
+localSmartWeek=function(){
+  const p=normalize($("smartPrompt")?.value||""),days=selectedDays();
+  let pool=recipes.filter(hasRecipe);
+  if(p.includes("vegetar"))pool=pool.filter(r=>enrichTags(r).includes("vegetar")||normalize(r.category).includes("vegetar"));
+  if(p.includes("suppe"))pool=pool.filter(r=>enrichTags(r).includes("suppe"));
+  if(p.includes("kylling"))pool=pool.filter(r=>enrichTags(r).includes("kylling"));
+  if(p.includes("rask"))pool=pool.filter(r=>enrichTags(r).includes("rask"));
+  if(!pool.length)pool=recipes.filter(hasRecipe);
+  pool=pool.sort((a,b)=>freezerScoreRecipe(b)-freezerScoreRecipe(a)||a.name.localeCompare(b.name,"no"));
+  for(const d of days){
+    const top=pool.slice(0, Math.max(8, Math.min(pool.length, 25)));
+    const r=top[Math.floor(Math.random()*top.length)];
+    plan[d.key]=r?[{type:"recipe",recipeId:r.id}]:[];
+    if(r)bumpUsage(r.id);
+  }
+  savePlan();createDayRows();renderRecipeResults();
+}
+function categorize(line){
+  const s=normalize(line);
+  const spice=["salt","pepper","oregano","basilikum","basil","gochugaru","paprika","spisskummen","cumin","kanel","cinnamon","chili flakes","chiliflak","curry powder","karri","garam masala","laurbær","sesamfrø","sesame seeds","sukker","sugar","honning","honey","timian","thyme","rosmarin","rosemary","kajenne","cayenne"];
+  if(spice.some(w=>s.includes(normalize(w))))return"Krydder";
+  const dry=["maizena","cornstarch","maisstivelse","soy sauce","soyasaus","soya","tamari","sesamolje","sesame oil","olivenolje","olive oil","olje","oil","riseddik","rice vinegar","vinegar","eddik","sriracha","hot sauce","fish sauce","fiskesaus","stock","kraft","broth","buljong","peanøttsmør","peanut butter","tomatpure","tomato paste","panko","brødsmuler","breadcrumbs","mel","flour","sriracha","hoisin","worcestershire"];
+  if(dry.some(w=>s.includes(normalize(w))))return"Tørrvarer";
+  const map=[
+    ["Kjøtt",["flankestek","flank steak","steak","biff","beef","kylling","chicken","okse","kjøttdeig","karbonadedeig","svin","pork","kotelett","pølse","sausage","kalkun","bacon","lamm","lamb","skinke","ham"]],
+    ["Meieri",["halloumi","melk","milk","fløte","cream","rømme","ost","cheese","parmesan","feta","cottage cheese","yoghurt","yogurt","smør","butter","mozzarella","cheddar"]],
+    ["Frys",["frossen","frosne","frozen","edamame"]],
+    ["Hermetikk/halvfabrikat",["boks","can ","canned","kokosmelk","coconut milk","kidney","kikerter","chickpeas","diced tomatoes","hakkede tomater","bønner","beans","mais","corn"]],
+    ["Tørrvarer",["pasta","nudler","noodles","ris","rice","orzo","bulgur","quinoa","couscous","linser","lentils"]],
+    ["Glutenfritt",["glutenfri","gluten free"]],
+    ["Bakevarer",["brød","bread","pita","tortilla","burgerbrød","wrap","naan"]],
+    ["Frukt og grønt",["agurk","cucumber","gulrot","carrot","løk","onion","hvitløk","garlic","ingefær","ginger","potet","potato","søtpotet","sweet potato","squash","zucchini","tomat","tomato","paprika","bell pepper","sopp","mushroom","brokkoli","broccoli","blomkål","cauliflower","kål","cabbage","spinat","spinach","salat","lettuce","lime","sitron","lemon","koriander","cilantro","persille","parsley","selleri","celery","avokado","avocado","aubergine","eggplant","chili","vårløk","spring onion","ruccola","asparges"]]
+  ];
+  for(const[cat,words]of map)if(words.some(w=>s.includes(normalize(w))))return cat;
+  if(s.includes("tofu"))return"Kjølevarer";
+  return"Annet";
+}
+
 init();

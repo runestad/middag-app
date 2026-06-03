@@ -848,3 +848,24 @@ dialog {
     grid-template-columns: 1fr 1fr auto !important;
   }
 }
+
+
+/* ===== v20.3 compact nav + shopping categorization polish ===== */
+.bottom-nav {
+  min-height: 48px !important;
+  padding-top: .22rem !important;
+  padding-bottom: calc(.22rem + env(safe-area-inset-bottom)) !important;
+}
+.bottom-nav .nav-btn {
+  min-height: 40px !important;
+  padding: .18rem .04rem calc(.18rem + env(safe-area-inset-bottom)) !important;
+  gap: .02rem !important;
+  line-height: 1.05 !important;
+}
+.bottom-nav .nav-btn span {
+  font-size: .58rem !important;
+  line-height: 1 !important;
+}
+.week-overview-card .section-title {
+  align-items: flex-start;
+}
