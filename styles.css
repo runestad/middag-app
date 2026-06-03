@@ -753,3 +753,26 @@ dialog {
 .merged-badge{font-size:.72rem;color:var(--accent-2);background:#eef6ee;border-radius:999px;padding:.08rem .38rem;margin-left:.25rem}
 .day-actions-row button[data-addtext]{background:#fff7e6!important;border-color:#ffe1a3!important;color:#8a5a00!important}
 .day-head-v16 button{background:#eef6ee!important;border-color:#cfe4ce!important;color:var(--accent-2)!important}
+
+/* ===== v20 freezer + date planner ===== */
+.date-weekday{display:block;color:var(--muted);font-size:.78rem;margin-top:.25rem;font-weight:750}
+.smart-card .primary,#aiWeekBtn{margin-top:.75rem}
+.week-overview{display:grid;gap:.6rem}
+.week-overview-row{display:grid;grid-template-columns:92px 1fr;gap:.7rem;align-items:start;padding:.7rem;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.72)}
+.week-overview-day{font-weight:900;color:var(--accent-2)}
+.week-overview-items{display:flex;flex-wrap:wrap;gap:.38rem}
+.week-chip{display:inline-flex;align-items:center;gap:.25rem;border:1px solid #cfe4ce;background:#eef6ee;border-radius:999px;padding:.32rem .6rem;font-size:.82rem;font-weight:800;color:var(--text);text-decoration:none}
+.week-chip.manual{background:#fff7e6;border-color:#ffe1a3}
+.week-chip.missing{background:#fff1f0;border-color:#ffd1cc}
+.freezer-list{display:grid;gap:.55rem}
+.freezer-category{margin-top:.8rem}
+.freezer-category h3{margin:.6rem 0 .35rem;color:var(--accent-2)}
+.freezer-item{display:grid;grid-template-columns:1fr auto;align-items:center;gap:.55rem;padding:.65rem .7rem;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.74)}
+.freezer-name{font-weight:850}
+.freezer-meta{color:var(--muted);font-size:.78rem}
+.freezer-controls{display:flex;align-items:center;gap:.35rem}
+.freezer-controls button{min-height:30px!important;padding:.1rem .5rem!important}
+.freezer-qty{min-width:2.2rem;text-align:center;font-weight:900}
+.freezer-suggestion{border:1px solid #ffe1a3;background:#fff7e6;border-radius:18px;padding:.9rem;font-weight:750;line-height:1.4}
+.day-row.day-card-v16{background:linear-gradient(135deg,rgba(255,255,255,.88),rgba(243,249,241,.82))!important}
+@media(max-width:820px){.week-overview-row{grid-template-columns:1fr}}

@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="apple-touch-icon" href="icons/icon-180.png" />
   <meta name="theme-color" content="#4f7f5f" />
-  <link rel="stylesheet" href="styles.css?v=19" />
+  <link rel="stylesheet" href="styles.css?v=20" />
 </head>
 <body>
   <header>
@@ -30,11 +30,13 @@
           <button id="resetPlanInlineBtn" class="ghost">Nullstill ukeplan</button>
         </div>
         <div class="period-grid">
-          <label>Fra dag
-            <select id="startDay"></select>
+          <label>Fra dato
+            <input type="date" id="startDate">
+            <span id="startDateLabel" class="date-weekday"></span>
           </label>
-          <label>Til dag
-            <select id="endDay"></select>
+          <label>Til dato
+            <input type="date" id="endDate">
+            <span id="endDateLabel" class="date-weekday"></span>
           </label>
           <button id="createDaysBtn">Lag dager</button>
         </div>
@@ -58,6 +60,14 @@
           <span id="recipeCount" class="pill"></span>
         </div>
         <div id="dayRows" class="day-rows"></div>
+      </section>
+
+      <section class="card week-overview-card">
+        <div class="section-title">
+          <h2>📅 Planlagt meny</h2>
+          <span class="pill">Oversikt</span>
+        </div>
+        <div id="weekOverview" class="week-overview"></div>
       </section>
     </section>
 
@@ -94,12 +104,34 @@
         <div id="recipeResults" class="recipe-results"></div>
       </section>
     </section>
+
+    <section id="viewFreezer" class="view">
+      <section class="card hero-card">
+        <div class="section-title">
+          <div>
+            <h2>❄️ Fryser</h2>
+            <p class="hint">Hold oversikt over det dere har, og få middagsforslag basert på fryseren.</p>
+          </div>
+          <button id="freezerSuggestBtn" class="primary">💡 Forslag</button>
+        </div>
+        <div id="freezerSuggestion" class="freezer-suggestion">Trykk “Forslag” for å få en idé.</div>
+      </section>
+      <section class="card">
+        <div class="section-title">
+          <h2>Ting i fryseren</h2>
+          <button id="addFreezerItemBtn" class="ghost">+ Legg til</button>
+        </div>
+        <div id="freezerList" class="freezer-list"></div>
+      </section>
+    </section>
+
   </main>
 
   <nav class="bottom-nav" aria-label="Hovedmeny">
     <button type="button" class="nav-btn active" data-view="viewPlan">🍽️<span>Ukesmeny</span></button>
     <button type="button" class="nav-btn" data-view="viewShopping">🛒<span>Handleliste</span></button>
     <button type="button" class="nav-btn" data-view="viewRecipes">📚<span>Oppskrifter</span></button>
+      <button type="button" class="nav-btn" data-view="viewFreezer">❄️<span>Fryser</span></button>
   </nav>
 
   <dialog id="importDialog">
@@ -210,6 +242,6 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script src="app.js?v=19"></script>
+  <script src="app.js?v=20"></script>
 </body>
 </html>
