@@ -105,4 +105,200 @@ function addFreezerItem(){const name=prompt("Hva vil du legge til i fryseren?");
 function guessFreezerCategory(name){const s=normalize(name);if(/kylling|chicken/.test(s))return"Kylling";if(/ørret|fisk|scampi|reker/.test(s))return"Fisk";if(/karbonade|svin|bacon|kotelett|steak|brisket|skinke|kalkun/.test(s))return"Kjøtt";if(/erte|edamame|rødkål|søtpotet|broccoli/.test(s))return"Grønnsaker";if(/bringebær|smoothie|acai|granateple/.test(s))return"Frukt/smoothie";if(/brød|pai/.test(s))return"Bakst";if(/veggis|vegetar/.test(s))return"Vegetar";return"Annet"}
 function freezerSuggest(){const a=freezerItems.filter(x=>Number(x.qty)>0);if(!a.length){$("freezerSuggestion").textContent="Fryseren er tom.";return}const pick=a[Math.floor(Math.random()*a.length)],s=normalize(pick.name);let txt=`Du har ${pick.qty} ${pick.unit||"stk"} ${pick.name} i fryseren. `;if(/ørret|fisk/.test(s))txt+="Hvorfor ikke lage ørret med søtpotetfries, erter eller en frisk salat?";else if(/edamame|gyoza|dumpling|scampi/.test(s))txt+="Dette passer perfekt til asiatisk bowl, ramen eller nudler.";else if(/karbonade/.test(s))txt+="Det er kanskje på tide med taco, bolognese, kjøttboller eller burger?";else if(/kylling/.test(s))txt+="Hva med kyllingcurry, fajitas, pasta eller en rask bowl?";else if(/paibunn/.test(s))txt+="Hva med pai med skinke, bacon, kylling eller grønnsaker?";else if(/veggis/.test(s))txt+="Hva med vegetar-taco, vegetar-bolognese eller kjøttfrie kjøttboller?";else txt+="Kanskje du kan bruke dette i ukesmenyen denne uka?";$("freezerSuggestion").textContent=txt}
 
+
+/* ===== v20.2 robust date-plan overrides ===== */
+function toISODateLocal(d){
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,"0");
+  const day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+toISODate=function(d){return toISODateLocal(d)}
+parseLocalDate=function(iso){const [y,m,d]=String(iso).split("-").map(Number);return new Date(y,m-1,d,12,0,0)}
+weekdayName=function(d){return ["søndag","mandag","tirsdag","onsdag","torsdag","fredag","lørdag"][d.getDay()]}
+formatDateLabel=function(iso){if(!iso)return"";const d=parseLocalDate(iso);return `${capitalize(weekdayName(d))} ${String(d.getDate()).padStart(2,"0")}.${String(d.getMonth()+1).padStart(2,"0")}.${d.getFullYear()}`}
+fillDaySelectorsV20=function(){
+  const today=new Date();
+  const start=new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12);
+  const end=new Date(start); end.setDate(start.getDate()+4);
+  if($("startDate")&&!$("startDate").value)$("startDate").value=toISODateLocal(start);
+  if($("endDate")&&!$("endDate").value)$("endDate").value=toISODateLocal(end);
+  updateDateLabels();
+}
+updateDateLabels=function(){
+  if($("startDateLabel"))$("startDateLabel").textContent=formatDateLabel($("startDate")?.value);
+  if($("endDateLabel"))$("endDateLabel").textContent=formatDateLabel($("endDate")?.value);
+}
+selectedDays=function(){
+  const a=$("startDate")?.value,b=$("endDate")?.value;
+  if(!a||!b)return[];
+  let s=parseLocalDate(a),e=parseLocalDate(b);
+  if(e<s){const t=s;s=e;e=t}
+  const out=[];
+  const d=new Date(s);
+  let guard=0;
+  while(d<=e&&guard<45){
+    const iso=toISODateLocal(d);
+    out.push({key:iso,label:formatDateLabel(iso),weekday:weekdayName(d)});
+    d.setDate(d.getDate()+1); guard++;
+  }
+  return out;
+}
+fillAddToDaySelect=function(){
+  const el=$("addToDaySelect"); if(!el)return;
+  el.innerHTML=selectedDays().map(d=>`<option value="${d.key}">${d.label}</option>`).join("");
+}
+savePlan=function(){
+  appMeta.updatedAt=new Date().toISOString();
+  lastRemoteUpdatedAt=appMeta.updatedAt;
+  localStorage.setItem("middag_plan",JSON.stringify(plan));
+  fetch("/api/plan",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({plan:{items:plan,shoppingItems,freezerItems,meta:appMeta,updatedAt:appMeta.updatedAt}})
+  }).then(()=>setLiveStatus("Live")).catch(e=>{console.warn(e);setLiveStatus("Sync-feil","error")})
+}
+syncFromServer=async function(){
+  try{
+    setLiveStatus("Syncer","syncing");
+    const pr=await fetch("/api/plan").then(r=>r.json());
+    const remote=pr.plan?.updatedAt||"";
+    if(remote&&remote!==lastRemoteUpdatedAt&&remote!==appMeta.updatedAt){
+      plan=migratePlan(pr.plan?.items||{});
+      shoppingItems=pr.plan?.shoppingItems||shoppingItems;
+      freezerItems=pr.plan?.freezerItems||freezerItems;
+      appMeta=pr.plan?.meta||appMeta;
+      lastRemoteUpdatedAt=remote;
+      createDayRows();renderShoppingList(shoppingItems);renderRecipeResults();renderFreezer();
+    }
+    const rr=await fetch("/api/recipes").then(r=>r.json());
+    if(rr.recipes&&rr.recipes.length!==recipes.length){recipes=rr.recipes;mergeCustomData();renderRecipeResults();createDayRows()}
+    setLiveStatus("Live");
+  }catch(e){setLiveStatus("Offline?","error")}
+}
+createDayRows=function(){
+  const c=$("dayRows"),days=selectedDays();
+  fillAddToDaySelect();
+  if(!c)return;
+  for(const d of days)if(!Array.isArray(plan[d.key]))plan[d.key]=[];
+  c.innerHTML="";
+  for(const d of days){
+    const day=d.key;
+    const card=document.createElement("div");card.className="day-row day-card-v16";
+    card.innerHTML=`<div class="day-head-v16"><h3>${d.label}</h3><button type="button" class="ghost" data-picker="${day}">+ Oppskrift</button></div><input class="day-text-input" data-free="${day}" placeholder="Skriv rett manuelt, f.eks. Grillmat"><div class="day-actions-row"><button type="button" class="ghost" data-addtext="${day}">+ Legg til tekstrett</button><button type="button" class="ghost" data-clear="${day}">Tøm dag</button></div><div class="day-items"></div>`;
+    c.appendChild(card);
+    card.querySelector("[data-picker]").addEventListener("click",()=>openRecipePicker(day));
+    card.querySelector("[data-addtext]").addEventListener("click",()=>addFreeTextToDay(day,card.querySelector("[data-free]").value));
+    card.querySelector("[data-clear]").addEventListener("click",()=>{plan[day]=[];savePlan();createDayRows()});
+    renderDayItems(card,day);
+  }
+  renderWeekOverview();
+}
+renderDayItems=function(card,day){
+  const box=card.querySelector(".day-items"),items=plan[day]||[];
+  if(!items.length){box.innerHTML=`<div class="empty-state">Ingen retter lagt til.</div>`;return}
+  box.innerHTML=items.map((item,idx)=>{
+    if(item.type==="text")return`<div class="plan-item text-plan-item"><div><div class="plan-item-title">✍️ ${escapeHtml(item.text)}</div><div class="plan-item-meta">Manuell rett – legg varer manuelt i handlelisten</div></div><div class="plan-actions"><button type="button" class="mini-action" onclick="addManualDishToShopping('${escapeAttr(item.text)}')">+ varer</button><button type="button" class="remove-btn" onclick="removePlanItem('${day}',${idx})">×</button></div></div>`;
+    const r=recipeById(item.recipeId);
+    if(!r)return`<div class="plan-item missing-plan-item"><div><div class="plan-item-title">Oppskrift ikke funnet</div></div><button type="button" class="remove-btn" onclick="removePlanItem('${day}',${idx})">×</button></div>`;
+    const found=hasRecipe(r),cls=found?"recipe-plan-item":"missing-plan-item";
+    return`<div class="plan-item ${cls}"><div><div class="plan-item-title">${escapeHtml(emojiForRecipe(r)+" "+r.name)}</div><div class="plan-item-meta">${escapeHtml((r.category||"Ukjent")+" · brukt "+usageCount(r.id)+"× · "+(found?"oppskrift funnet":"oppskrift mangler"))}</div></div><div class="plan-actions">${found?`<button type="button" class="mini-action" onclick="openRecipeDetails('${escapeAttr(r.id)}')">Se</button>`:`<button type="button" class="mini-action" onclick="openImport('${escapeAttr(r.id)}')">Legg inn</button>`}<button type="button" class="remove-btn" onclick="removePlanItem('${day}',${idx})">×</button></div></div>`;
+  }).join("");
+}
+addFreeTextToDay=function(day,text){
+  const t=String(text||"").trim(); if(!t)return;
+  if(!Array.isArray(plan[day]))plan[day]=[];
+  plan[day].push({type:"text",text:t});
+  savePlan();createDayRows();
+}
+window.addRecipeToDay=function(day,id){
+  if(!Array.isArray(plan[day]))plan[day]=[];
+  plan[day].push({type:"recipe",recipeId:id});
+  bumpUsage(id);savePlan();createDayRows();renderRecipeResults();
+  if($("recipePickerDialog"))$("recipePickerDialog").close();
+}
+resetPlan=function(){
+  if(!confirm("Nullstille ukeplanen?"))return;
+  for(const d of selectedDays())plan[d.key]=[];
+  savePlan();createDayRows();
+}
+generateShoppingList=function(){
+  const raw=[];
+  for(const d of selectedDays()){
+    const day=d.key;
+    for(const item of(plan[day]||[])){
+      if(item.type==="text")continue;
+      const r=recipeById(item.recipeId);
+      if(!r||!hasRecipe(r))continue;
+      for(const line of extractIngredientLines(r))raw.push({text:line,category:categorize(line),recipe:r.name,done:false});
+    }
+  }
+  shoppingItems=typeof mergeShoppingItems==="function"?mergeShoppingItems(raw):raw;
+  renderShoppingList(shoppingItems);savePlan();showView("viewShopping");
+}
+randomWeek=function(){
+  const days=selectedDays(), usable=recipes.slice().sort((a,b)=>Number(hasRecipe(b))-Number(hasRecipe(a)));
+  if(!usable.length){alert("Ingen oppskrifter funnet.");return}
+  for(const d of days){
+    const r=usable[Math.floor(Math.random()*usable.length)];
+    plan[d.key]=r?[{type:"recipe",recipeId:r.id}]:[];
+    if(r)bumpUsage(r.id);
+  }
+  savePlan();createDayRows();renderRecipeResults();
+}
+smartWeek=async function(){
+  const prompt=$("smartPrompt")?.value?.trim()||"",days=selectedDays();
+  if($("smartStatus"))$("smartStatus").textContent="Lager AI-forslag …";
+  try{
+    const payloadRecipes=recipes.map(r=>({id:r.id,name:r.name,category:r.category,tags:enrichTags(r),favorite:isFavorite(r.id),usage:usageCount(r.id),hasRecipe:hasRecipe(r)}));
+    const res=await fetch("/api/smart-week",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt,days:days.map(d=>({key:d.key,label:d.label,weekday:d.weekday})),recipes:payloadRecipes})});
+    const data=await res.json();
+    if(!data.ok)throw new Error(data.error||"AI-ukemeny feilet");
+    for(const d of days)plan[d.key]=[];
+    const items=data.plan?.items||[];
+    for(const row of items){
+      let day=String(row.day||"").toLowerCase();
+      const match=days.find(d=>d.key===day||d.weekday===day||normalize(d.label).includes(normalize(day)));
+      if(!match)continue;
+      const ids=row.recipeIds||row.recipe_ids||[];
+      plan[match.key]=ids.filter(id=>recipeById(id)).map(id=>{bumpUsage(id);return{type:"recipe",recipeId:id}});
+      if(row.note&&!plan[match.key].length)plan[match.key]=[{type:"text",text:row.note}];
+    }
+    if($("smartStatus"))$("smartStatus").textContent="AI-forslag laget. Du kan justere manuelt.";
+    savePlan();createDayRows();renderRecipeResults();
+  }catch(e){
+    console.warn(e);
+    if($("smartStatus"))$("smartStatus").textContent="AI feilet, bruker lokal smart velger.";
+    localSmartWeek();
+  }
+}
+localSmartWeek=function(){
+  const p=normalize($("smartPrompt")?.value||""),days=selectedDays();
+  let pool=recipes.slice();
+  if(p.includes("vegetar"))pool=pool.filter(r=>enrichTags(r).includes("vegetar")||normalize(r.category).includes("vegetar"));
+  if(p.includes("suppe"))pool=pool.filter(r=>enrichTags(r).includes("suppe"));
+  if(p.includes("kylling"))pool=pool.filter(r=>enrichTags(r).includes("kylling"));
+  if(p.includes("rask"))pool=pool.filter(r=>enrichTags(r).includes("rask"));
+  if(!pool.length)pool=recipes.slice();
+  for(const d of days){
+    const r=pool[Math.floor(Math.random()*pool.length)];
+    plan[d.key]=r?[{type:"recipe",recipeId:r.id}]:[];
+    if(r)bumpUsage(r.id);
+  }
+  savePlan();createDayRows();renderRecipeResults();
+}
+renderWeekOverview=function(){
+  const box=$("weekOverview");if(!box)return;
+  box.innerHTML=selectedDays().map(d=>{
+    const items=plan[d.key]||[];
+    const chips=items.length?items.map(item=>{
+      if(item.type==="text")return`<span class="week-chip manual">✍️ ${escapeHtml(item.text)}</span>`;
+      const r=recipeById(item.recipeId);
+      if(!r)return`<span class="week-chip missing">Mangler</span>`;
+      return`<button type="button" class="week-chip${hasRecipe(r)?"":" missing"}" onclick="${hasRecipe(r)?`openRecipeDetails('${escapeAttr(r.id)}')`:`openImport('${escapeAttr(r.id)}')`}">${emojiForRecipe(r)} ${escapeHtml(r.name)}</button>`;
+    }).join(""):`<span class="hint">Ingen retter</span>`;
+    return`<div class="week-overview-row"><div class="week-overview-day">${d.label}</div><div class="week-overview-items">${chips}</div></div>`;
+  }).join("");
+}
+
 init();

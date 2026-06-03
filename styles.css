@@ -807,3 +807,44 @@ dialog {
     grid-template-columns: 1fr 1fr auto !important;
   }
 }
+
+
+/* ===== v20.2 hotfix: robust iPhone dates + single-line nav ===== */
+.period-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: .75rem !important;
+  width: 100% !important;
+  overflow: hidden !important;
+}
+.period-grid label {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+.period-grid input[type="date"] {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.bottom-nav {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: .18rem !important;
+}
+.bottom-nav .nav-btn {
+  min-width: 0 !important;
+  padding: .36rem .08rem calc(.36rem + env(safe-area-inset-bottom)) !important;
+}
+.bottom-nav .nav-btn span {
+  font-size: .62rem !important;
+  white-space: nowrap !important;
+}
+@media (min-width: 760px) {
+  .period-grid {
+    grid-template-columns: 1fr 1fr auto !important;
+  }
+}
