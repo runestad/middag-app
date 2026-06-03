@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Middag</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png" />
+  <meta name="theme-color" content="#4f7f5f" />
+  <link rel="stylesheet" href="styles.css?v=16" />
+</head>
+<body>
+  <header>
+    <div>
+      <h1>🍝 Middag</h1>
+      <p>Ukehandel, oppskrifter og handleliste for Øyvind & Melanie</p>
+    </div>
+    <button id="resetPlanBtn" class="ghost">Nullstill ukeplan</button>
+  </header>
+
+  <main>
+    <section id="viewPlan" class="view active">
+      <section class="card hero-card">
+        <div class="section-title">
+          <div>
+            <h2>Ukesmeny</h2>
+            <p class="hint">Skriv inn retter fritt, eller legg til én/flere oppskrifter per dag.</p>
+          </div>
+          <button id="resetPlanInlineBtn" class="ghost">Nullstill ukeplan</button>
+        </div>
+        <div class="period-grid">
+          <label>Fra dag
+            <select id="startDay"></select>
+          </label>
+          <label>Til dag
+            <select id="endDay"></select>
+          </label>
+          <button id="createDaysBtn">Lag dager</button>
+        </div>
+      </section>
+
+      <section class="card smart-card">
+        <div class="section-title">
+          <h2>Smart velger</h2>
+          <button id="randomWeekBtn" class="ghost">🎲 Tilfeldig uke</button>
+        </div>
+        <label>Spør appen
+          <textarea id="smartPrompt" rows="2" placeholder="F.eks. Lag en uke med mye vegetar og én kjøttrett."></textarea>
+        </label>
+        <button id="aiWeekBtn" class="primary">Lag smart ukesmeny</button>
+        <p id="smartStatus" class="hint"></p>
+      </section>
+
+      <section class="card">
+        <div class="section-title">
+          <h2>Dager</h2>
+          <span id="recipeCount" class="pill"></span>
+        </div>
+        <div id="dayRows" class="day-rows"></div>
+      </section>
+    </section>
+
+    <section id="viewShopping" class="view">
+      <section class="card">
+        <div class="section-title">
+          <h2>Handleliste</h2>
+          <button id="generateListBtn">Generer fra ukesmeny</button><button id="resetShoppingBtn" class="ghost">Nullstill handleliste</button>
+        </div>
+        <p class="hint">Endre tekst direkte, kryss av det dere har, eller legg til egne varer under riktig kategori.</p>
+        <div id="shoppingList" class="shopping-list"></div>
+      </section>
+    </section>
+
+    <section id="viewRecipes" class="view">
+      <section class="card">
+        <div class="section-title">
+          <h2>Oppskrifter</h2>
+          <button id="addRecipeBtn" class="primary">+ Legg til oppskrift</button>
+        </div>
+        <div class="recipe-toolbar">
+          <input id="recipeSearch" placeholder="Søk etter rett, kategori, tag eller kilde …" />
+          <select id="recipeSort">
+            <option value="az">Alfabetisk A–Å</option>
+            <option value="za">Alfabetisk Å–A</option>
+            <option value="category">Kategori</option>
+            <option value="used">Mest brukt</option>
+            <option value="recent">Nylig lagt til</option>
+            <option value="missing">Mangler oppskrift</option>
+          </select>
+        </div>
+        <div id="recipeResults" class="recipe-results"></div>
+      </section>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="Hovedmeny">
+    <button type="button" class="nav-btn active" data-view="viewPlan">🍽️<span>Ukesmeny</span></button>
+    <button type="button" class="nav-btn" data-view="viewShopping">🛒<span>Handleliste</span></button>
+    <button type="button" class="nav-btn" data-view="viewRecipes">📚<span>Oppskrifter</span></button>
+  </nav>
+
+  <dialog id="importDialog">
+    <form method="dialog" class="dialog-form">
+      <div class="section-title">
+        <h2>Importer / legg til oppskrift</h2>
+        <button value="cancel" class="ghost">Lukk</button>
+      </div>
+
+      <p id="importTarget" class="hint"></p>
+      <p id="importLinkWrap" class="hint"></p>
+
+      <label>Tittel / navn
+        <input id="importName" />
+      </label>
+
+      <label>Kildelenke
+        <input id="importLink" placeholder="Instagram/TikTok/nettside …" />
+      </label>
+
+      <label>Kategori
+        <select id="importCategory">
+          <option>Vegetar</option>
+          <option>Salat</option>
+          <option>Pasta</option>
+          <option>Kjøtt</option>
+          <option>Kylling</option>
+          <option>Fisk</option>
+          <option>Airfryer</option>
+          <option>Snacks</option>
+          <option>Annet</option>
+        </select>
+      </label>
+
+      <label>Porsjoner
+        <input id="importServings" placeholder="f.eks. 2 eller 4" />
+      </label>
+
+      <label>Lim inn Instagram/TikTok-caption
+        <textarea id="captionInput" rows="12" placeholder="Ingredients:\n- ...\nInstructions:\n1. ..."></textarea>
+      </label>
+
+      <label>Skjermbilder av caption / oppskrift
+        <input id="screenshotInput" type="file" accept="image/*" multiple />
+      </label>
+
+      <div class="ocr-actions">
+        <button type="button" id="readScreenshotsBtn" class="ghost">Les tekst fra skjermbilder</button>
+        <button type="button" id="clearCaptionBtn" class="ghost">Tøm caption-felt</button>
+      </div>
+
+      <p id="ocrStatus" class="hint ocr-status-box">Du kan velge flere screenshots samtidig. Trykk “Les tekst fra skjermbilder”. Hvis ingenting skjer, sjekk status her.</p>
+      <div id="ocrPreview" class="ocr-preview"></div>
+
+      <div class="dialog-actions">
+        <button type="button" id="aiParseCaptionBtn" class="primary">AI-parse caption</button>
+        <button type="button" id="parseCaptionBtn">Lokal parse caption</button>
+        <button type="button" id="saveParsedBtn" class="primary">Lagre i oppskrift</button>
+      </div>
+
+      <p id="aiStatus" class="hint ai-status-box">AI-parser bruker OpenAI API hvis .env er satt opp. Lokal parser kan brukes som fallback.</p>
+
+      <div class="parsed-grid">
+        <label>Ingredienser
+          <textarea id="parsedIngredients" rows="8"></textarea>
+        </label>
+        <label>Fremgangsmåte
+          <textarea id="parsedInstructions" rows="8"></textarea>
+        </label>
+      </div>
+    </form>
+  </dialog>
+
+
+  <dialog id="recipeDialog">
+    <form method="dialog" class="dialog-form">
+      <div class="section-title">
+        <h2 id="recipeDialogTitle">Oppskrift</h2>
+        <button value="cancel" class="ghost">Lukk</button>
+      </div>
+      <div id="recipeDialogBody"></div>
+    </form>
+  </dialog>
+
+  <dialog id="addToDayDialog">
+    <form method="dialog" class="dialog-form small-dialog">
+      <div class="section-title">
+        <h2>Legg til i ukesmeny</h2>
+        <button value="cancel" class="ghost">Lukk</button>
+      </div>
+      <p id="addToDayRecipeName" class="hint"></p>
+      <label>Velg dag
+        <select id="addToDaySelect"></select>
+      </label>
+      <button type="button" id="confirmAddToDayBtn" class="primary">Legg til</button>
+    </form>
+  </dialog>
+
+  <dialog id="recipePickerDialog">
+    <form method="dialog" class="dialog-form">
+      <div class="section-title">
+        <h2>Velg oppskrift</h2>
+        <button value="cancel" class="ghost">Lukk</button>
+      </div>
+      <input id="pickerSearch" placeholder="Søk etter oppskrift …" />
+      <div id="pickerResults" class="recipe-results picker-results"></div>
+    </form>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="app.js?v=16"></script>
+</body>
+</html>
