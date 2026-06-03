@@ -1,5 +1,5 @@
-Middag-app v20.3.
-- Lavere bunnmeny
-- Dato-overskrift i planlagt meny
-- AI/smart meny prioriterer fryser og kun oppskrifter med innhold
-- Bedre ingredienskategorisering: flankestek, halloumi, maizena m.m.
+Middag-app v20.4.
+- Skikkelig kompakt bunnmeny
+- Fryserforslag basert på faktiske oppskrifter
+- Bruk opp dette først-kort
+- Legg fryserforslag direkte inn på valgt dag

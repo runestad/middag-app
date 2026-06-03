@@ -435,4 +435,104 @@ function categorize(line){
   return"Annet";
 }
 
+
+/* ===== v20.4 freezer recipe suggestions ===== */
+function freezerCanonicalItems(){
+  return freezerItems.filter(x=>Number(x.qty)>0).map(x=>({
+    ...x,
+    key: normalize(x.name),
+    words: normalize(x.name).split(/\s+/).filter(Boolean)
+  }));
+}
+function freezerRecipeMatches(r){
+  if(!hasRecipe(r)) return [];
+  const recipeText=normalize(`${r.name} ${r.category} ${enrichTags(r).join(" ")} ${r.ingredientsText||""}`);
+  const matches=[];
+  const freezer=freezerCanonicalItems();
+  const rules=[
+    {freezer:["edamame"], recipe:["edamame","bowl","asiatisk","nudler","ramen","salat"]},
+    {freezer:["rødkål","rodkal"], recipe:["rødkål","rodkal","kål","salat","taco","asiatisk"]},
+    {freezer:["ørret","orret"], recipe:["ørret","orret","fisk","salmon","laks"]},
+    {freezer:["scampi"], recipe:["scampi","shrimp","reker","asiatisk","pasta","bowl"]},
+    {freezer:["karbonadedeig"], recipe:["karbonadedeig","kjøttdeig","taco","burger","bolognese","lasagne","kjøttboller"]},
+    {freezer:["kyllingfilet","kylling"], recipe:["kylling","chicken","curry","fajitas","pasta","bowl","taco"]},
+    {freezer:["kyllinglårfilet"], recipe:["kylling","chicken","lår","thigh","curry","gryte"]},
+    {freezer:["gyoza","dumplings"], recipe:["gyoza","dumpling","asiatisk","bowl","nudler","ramen"]},
+    {freezer:["svin","ytrefilet","kotelett"], recipe:["svin","pork","kotelett","ytrefilet","wok","gryte"]},
+    {freezer:["bacon"], recipe:["bacon","pasta","pai","carbonara"]},
+    {freezer:["veggisfarse"], recipe:["veggis","vegetar","taco","bolognese","lasagne"]},
+    {freezer:["erter"], recipe:["erter","pea","fisk","pai","pasta"]},
+    {freezer:["paibunner","paibunn"], recipe:["pai","quiche"]},
+    {freezer:["søtpotetfries","sotpotetfries"], recipe:["søtpotet","burger","fisk","kylling"]},
+    {freezer:["broccoli"], recipe:["brokkoli","broccoli","vegetar","airfryer"]},
+    {freezer:["bringebær","smoothie","acai","granateple"], recipe:["smoothie","dessert","frokost","bowl"]}
+  ];
+  for(const item of freezer){
+    let matched=false;
+    for(const rule of rules){
+      if(rule.freezer.some(f=>item.key.includes(f))){
+        if(rule.recipe.some(w=>recipeText.includes(normalize(w)))){
+          matches.push(item);
+          matched=true;
+          break;
+        }
+      }
+    }
+    if(!matched){
+      const simple=item.words.filter(w=>w.length>3);
+      if(simple.some(w=>recipeText.includes(w))) matches.push(item);
+    }
+  }
+  return matches;
+}
+function freezerSuggestionCandidates(){
+  return recipes
+    .filter(hasRecipe)
+    .map(r=>({recipe:r,matches:freezerRecipeMatches(r)}))
+    .filter(x=>x.matches.length)
+    .sort((a,b)=>b.matches.length-a.matches.length || freezerScoreRecipe(b.recipe)-freezerScoreRecipe(a.recipe) || usageCount(b.recipe.id)-usageCount(a.recipe.id))
+    .slice(0,8);
+}
+function renderUseFirstCard(){
+  const box=$("freezerUseFirst"); if(!box)return;
+  const priority=freezerItems.filter(x=>Number(x.qty)>0).sort((a,b)=>{
+    const order=["Fisk","Kylling","Kjøtt","Vegetar","Grønnsaker","Bakst","Frukt/smoothie","Annet"];
+    return order.indexOf(a.category||"Annet")-order.indexOf(b.category||"Annet") || Number(b.qty)-Number(a.qty);
+  }).slice(0,6);
+  box.innerHTML=`<div class="use-first-card"><h3>⚠️ Bruk opp dette først</h3><div class="use-first-list">${priority.map(x=>`<span class="use-first-chip">${escapeHtml(x.qty+" "+(x.unit||"stk")+" "+x.name)}</span>`).join("")}</div></div>`;
+}
+function renderFreezerRecipeSuggestions(){
+  const box=$("freezerRecipeSuggestions"); if(!box)return;
+  const candidates=freezerSuggestionCandidates();
+  if(!candidates.length){
+    box.innerHTML=`<div class="freezer-suggestion-card"><strong>Ingen tydelige treff</strong><div class="freezer-match-reason">Jeg fant ingen oppskrifter som matcher fryseren direkte. Prøv å legge til flere tags/oppskrifter.</div></div>`;
+    return;
+  }
+  const days=selectedDays();
+  box.innerHTML=candidates.map(({recipe,matches})=>{
+    const reason=`Matcher: ${matches.slice(0,3).map(x=>`${x.qty} ${x.unit||"stk"} ${x.name}`).join(", ")}`;
+    const dayButtons=days.slice(0,7).map(d=>`<button type="button" onclick="addFreezerSuggestionToDay('${escapeAttr(recipe.id)}','${escapeAttr(d.key)}')">${d.weekday.slice(0,3)} ${formatShortDate(d.key)}</button>`).join("");
+    return`<div class="freezer-suggestion-card"><strong>${emojiForRecipe(recipe)} ${escapeHtml(recipe.name)}</strong><div class="freezer-match-reason">${escapeHtml(reason)}</div><div class="freezer-suggestion-actions"><button type="button" onclick="openRecipeDetails('${escapeAttr(recipe.id)}')">Se oppskrift</button>${dayButtons}</div></div>`;
+  }).join("");
+}
+window.addFreezerSuggestionToDay=function(recipeId,day){
+  if(!Array.isArray(plan[day])) plan[day]=[];
+  plan[day].push({type:"recipe",recipeId});
+  bumpUsage(recipeId);
+  savePlan();
+  createDayRows();
+  showView("viewPlan");
+}
+freezerSuggest=function(){
+  renderUseFirstCard();
+  renderFreezerRecipeSuggestions();
+  const count=freezerSuggestionCandidates().length;
+  $("freezerSuggestion").textContent=count?`Jeg fant ${count} konkrete oppskriftsforslag basert på fryseren.`:"Jeg fant ingen konkrete treff i oppskriftsboken akkurat nå.";
+}
+const oldRenderFreezerV204=renderFreezer;
+renderFreezer=function(){
+  oldRenderFreezerV204();
+  renderUseFirstCard();
+}
+
 init();
