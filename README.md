@@ -1,7 +1,6 @@
-Middag-app v20.6.
-Kun reell bunnmeny-fix:
-- Nav får id appBottomNav
-- CSS treffer #appBottomNav direkte
-- Fast lav høyde
-- Full bredde på iPhone
-- Ingen endringer i app-logikk
+Middag-app v20.7.
+- Stabiliserer ukeplan-lagring så tekstretter/oppskrifter ikke forsvinner
+- Hindrer live-sync i å overskrive egne nylige endringer
+- Oppskriftsvelger i ukeplan viser preview før legg til
+- Søkefelt låses til normal høyde
+- Polling hyppigere og med no-store cache

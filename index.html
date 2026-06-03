@@ -8,7 +8,7 @@
   <link rel="icon" type="image/png" href="favicon.png" />
   <link rel="apple-touch-icon" href="icons/icon-180.png" />
   <meta name="theme-color" content="#4f7f5f" />
-  <link rel="stylesheet" href="styles.css?v=20_6" />
+  <link rel="stylesheet" href="styles.css?v=20_7" />
 </head>
 <body>
   <header>
@@ -243,7 +243,21 @@
     </form>
   </dialog>
 
+
+  <dialog id="pickerPreviewDialog">
+    <form method="dialog" class="dialog-form">
+      <div class="section-title">
+        <h2 id="pickerPreviewTitle">Oppskrift</h2>
+        <button value="cancel" class="ghost">Lukk</button>
+      </div>
+      <div id="pickerPreviewBody"></div>
+      <div class="inline-actions">
+        <button type="button" id="pickerPreviewAddBtn" class="primary">Legg til valgt dag</button>
+      </div>
+    </form>
+  </dialog>
+
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script src="app.js?v=20_6"></script>
+  <script src="app.js?v=20_7"></script>
 </body>
 </html>

@@ -535,4 +535,207 @@ renderFreezer=function(){
   renderUseFirstCard();
 }
 
+
+/* ===== v20.7 stability overrides ===== */
+let pendingPickerRecipeId = null;
+let pendingPickerDay = null;
+let isSavingPlan = false;
+let lastLocalSaveAt = 0;
+
+function canonicalPlanPayload(){
+  return {
+    items: plan || {},
+    shoppingItems: shoppingItems || [],
+    freezerItems: freezerItems || [],
+    meta: appMeta || {},
+    updatedAt: appMeta.updatedAt || new Date().toISOString()
+  };
+}
+
+savePlan = function(){
+  appMeta.updatedAt = new Date().toISOString();
+  lastRemoteUpdatedAt = appMeta.updatedAt;
+  lastLocalSaveAt = Date.now();
+  isSavingPlan = true;
+
+  try { localStorage.setItem("middag_plan", JSON.stringify(plan)); } catch(e) { console.warn("Kunne ikke lagre lokalt", e); }
+
+  setLiveStatus("Lagrer", "syncing");
+
+  fetch("/api/plan", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({plan: canonicalPlanPayload()})
+  })
+  .then(r => r.json().catch(() => ({})))
+  .then(data => {
+    if (data && data.ok === false) throw new Error(data.error || "Plan-lagring feilet");
+    isSavingPlan = false;
+    setLiveStatus("Live");
+  })
+  .catch(e => {
+    isSavingPlan = false;
+    console.warn("savePlan-feil", e);
+    setLiveStatus("Sync-feil", "error");
+  });
+};
+
+syncFromServer = async function(){
+  try {
+    if (isSavingPlan || Date.now() - lastLocalSaveAt < 2500) return;
+
+    setLiveStatus("Syncer", "syncing");
+    const pr = await fetch("/api/plan?ts=" + Date.now(), {cache: "no-store"}).then(r => r.json());
+    const remote = pr.plan?.updatedAt || "";
+
+    if (remote && remote !== lastRemoteUpdatedAt && remote !== appMeta.updatedAt) {
+      plan = migratePlan(pr.plan?.items || {});
+      shoppingItems = pr.plan?.shoppingItems || [];
+      freezerItems = pr.plan?.freezerItems || freezerItems || [];
+      appMeta = pr.plan?.meta || appMeta;
+      lastRemoteUpdatedAt = remote;
+      createDayRows();
+      renderShoppingList(shoppingItems);
+      renderRecipeResults();
+      renderFreezer();
+    }
+
+    const rr = await fetch("/api/recipes?ts=" + Date.now(), {cache: "no-store"}).then(r => r.json());
+    if (rr.recipes && rr.recipes.length !== recipes.length) {
+      recipes = rr.recipes;
+      mergeCustomData();
+      renderRecipeResults();
+      createDayRows();
+    }
+
+    setLiveStatus("Live");
+  } catch(e) {
+    console.warn("sync-feil", e);
+    setLiveStatus("Offline?", "error");
+  }
+};
+
+startRealtimeSync = function(){
+  if (syncTimer) clearInterval(syncTimer);
+  syncTimer = setInterval(syncFromServer, 2500);
+  setLiveStatus("Live");
+};
+
+function ensurePlanDay(day){
+  if (!plan || typeof plan !== "object") plan = {};
+  if (!Array.isArray(plan[day])) plan[day] = [];
+}
+
+addFreeTextToDay = function(day, text){
+  const t = String(text || "").trim();
+  if (!t) return;
+  ensurePlanDay(day);
+  plan[day].push({type: "text", text: t});
+  savePlan();
+  createDayRows();
+};
+
+window.addRecipeToDay = function(day, id){
+  ensurePlanDay(day);
+  plan[day].push({type: "recipe", recipeId: id});
+  bumpUsage(id);
+  savePlan();
+  createDayRows();
+  renderRecipeResults();
+  if ($("recipePickerDialog")) $("recipePickerDialog").close();
+  if ($("pickerPreviewDialog")) $("pickerPreviewDialog").close();
+};
+
+openRecipePicker = function(day){
+  activePickerDay = day;
+  pendingPickerDay = day;
+  if ($("pickerSearch")) $("pickerSearch").value = "";
+  renderPickerResults();
+  $("recipePickerDialog").showModal();
+};
+
+renderPickerResults = function(){
+  const q = normalize($("pickerSearch")?.value || "");
+  const filtered = recipes
+    .filter(r => !q || searchableText(r).includes(q))
+    .sort((a,b) => Number(hasRecipe(b)) - Number(hasRecipe(a)) || a.name.localeCompare(b.name, "no"))
+    .slice(0, 300);
+
+  const box = $("pickerResults");
+  if (!box) return;
+
+  box.innerHTML = filtered.map(r => `
+    <div class="recipe-card" onclick="openPickerPreview('${escapeAttr(r.id)}')">
+      <div class="recipe-thumb recipe-emoji">${emojiForRecipe(r)}</div>
+      <div>
+        <strong>${escapeHtml(r.name)}</strong>
+        <div class="recipe-meta">${escapeHtml(r.category || "Ukjent")} · ${hasRecipe(r) ? "✅ Oppskrift funnet" : "🟡 mangler oppskrift"}</div>
+        <div class="recipe-tags">${enrichTags(r).slice(0,4).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join("")}</div>
+      </div>
+      <button type="button" class="ghost" onclick="event.stopPropagation(); openPickerPreview('${escapeAttr(r.id)}')">Se</button>
+    </div>
+  `).join("") || `<div class="empty-state">Ingen oppskrifter funnet.</div>`;
+};
+
+window.openPickerPreview = function(recipeId){
+  const r = recipeById(recipeId);
+  if (!r) return;
+  pendingPickerRecipeId = recipeId;
+
+  const title = $("pickerPreviewTitle");
+  const body = $("pickerPreviewBody");
+  if (title) title.textContent = `${emojiForRecipe(r)} ${r.name}`;
+  if (body) {
+    body.innerHTML = `
+      <p class="recipe-meta">${escapeHtml(r.category || "Ukjent")} · ${hasRecipe(r) ? "Oppskrift funnet" : "Mangler oppskrift"}</p>
+      <div class="recipe-tags">${enrichTags(r).slice(0,8).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join("")}</div>
+      <div class="recipe-detail-section">
+        <h3>Ingredienser</h3>
+        <div class="picker-preview-ingredients">${formatList(ingredientsToText(r))}</div>
+      </div>
+      <div class="recipe-detail-section">
+        <h3>Fremgangsmåte</h3>
+        <div class="picker-preview-instructions">${formatSteps(instructionsToText(r))}</div>
+      </div>
+      ${r.link ? `<a class="source-link-inline" href="${escapeAttr(r.link)}" target="_blank" rel="noopener">Åpne kilde</a>` : ""}
+    `;
+  }
+
+  const btn = $("pickerPreviewAddBtn");
+  if (btn) {
+    btn.onclick = () => {
+      if (!pendingPickerDay || !pendingPickerRecipeId) return;
+      window.addRecipeToDay(pendingPickerDay, pendingPickerRecipeId);
+    };
+  }
+
+  $("pickerPreviewDialog").showModal();
+};
+
+confirmAddToDay = function(){
+  const day = $("addToDaySelect")?.value;
+  if (!day || !pendingAddRecipeId) return;
+  ensurePlanDay(day);
+  plan[day].push({type: "recipe", recipeId: pendingAddRecipeId});
+  bumpUsage(pendingAddRecipeId);
+  savePlan();
+  createDayRows();
+  renderRecipeResults();
+  if ($("addToDayDialog")) $("addToDayDialog").close();
+  if ($("recipeDialog")) $("recipeDialog").close();
+  showView("viewPlan");
+};
+
+const originalCreateDayRowsV207 = createDayRows;
+createDayRows = function(){
+  originalCreateDayRowsV207();
+  renderWeekOverview();
+};
+
+document.addEventListener("input", (e) => {
+  if (e.target && (e.target.id === "recipeSearch" || e.target.id === "pickerSearch")) {
+    e.target.style.height = "42px";
+  }
+}, true);
+
 init();

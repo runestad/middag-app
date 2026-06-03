@@ -1193,3 +1193,27 @@ html body #appBottomNav.app-bottom-nav .nav-btn.active {
     font-size: 10px !important;
   }
 }
+
+/* ===== v20.7 stability / picker preview / input polish ===== */
+.recipe-toolbar input,
+#recipeSearch,
+#pickerSearch {
+  min-height: 42px !important;
+  height: 42px !important;
+  max-height: 42px !important;
+  resize: none !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.picker-results .recipe-card { cursor: pointer; }
+
+.picker-preview-ingredients,
+.picker-preview-instructions {
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: .7rem;
+  background: rgba(255,255,255,.66);
+}
