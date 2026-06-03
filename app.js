@@ -869,4 +869,222 @@ syncFromServer = async function(){
   }
 };
 
+
+/* ===== v21 shopping model + recipe data cleanup ===== */
+let lastShoppingEditAt = 0;
+
+function ensureShoppingIds(){
+  let changed=false;
+  shoppingItems=(shoppingItems||[]).map((it,idx)=>{
+    if(!it.id){changed=true; return {...it,id:`shop-${Date.now()}-${idx}-${Math.random().toString(16).slice(2)}`};}
+    return it;
+  });
+  return changed;
+}
+
+function saveShoppingSoon(){
+  lastShoppingEditAt=Date.now();
+  ensureShoppingIds();
+  savePlan();
+}
+
+function getShoppingItem(id){
+  return (shoppingItems||[]).find(x=>x.id===id);
+}
+
+renderShoppingList=function(items){
+  shoppingItems=items||[];
+  ensureShoppingIds();
+
+  const grouped=Object.fromEntries(CATEGORIES.map(c=>[c,[]]));
+  for(const item of shoppingItems){
+    const cat=item.category||categorize(item.text||"");
+    item.category=cat;
+    if(!grouped[cat])grouped[cat]=[];
+    grouped[cat].push(item);
+  }
+
+  const total=shoppingItems.length, merged=shoppingItems.filter(x=>x.merged).length;
+  const summary=`<p class="shopping-summary">${total} varer${merged?` · ${merged} slått sammen`:""}</p>`;
+
+  $("shoppingList").innerHTML=summary+CATEGORIES.map(cat=>{
+    const arr=grouped[cat]||[];
+    return`<div class="category" data-category="${escapeAttr(cat)}"><div class="category-head"><h3>${cat}</h3><button class="tiny-add" onclick="addCustomShoppingItem('${escapeAttr(cat)}')">+ Legg til</button></div><div class="category-items">${arr.length?arr.map(it=>shoppingItemHtml(it)).join(""):`<p class="hint small-hint">Ingen varer enda.</p>`}</div></div>`;
+  }).join("");
+}
+
+shoppingItemHtml=function(it){
+  return`<div class="item" data-shopping-id="${escapeAttr(it.id)}"><input type="checkbox" ${it.done?"checked":""} onchange="toggleShoppingDone('${escapeAttr(it.id)}', this.checked)"><input type="text" value="${escapeAttr(it.text)}" title="Fra: ${escapeAttr(it.recipe||'Egen vare')}" onblur="updateShoppingText('${escapeAttr(it.id)}', this.value)" onkeydown="if(event.key==='Enter'){this.blur()}">${it.merged?`<span class="merged-badge">slått sammen</span>`:""}<button class="remove-btn" title="Fjern" onclick="removeShoppingItem('${escapeAttr(it.id)}')">×</button></div>`;
+}
+
+window.toggleShoppingDone=function(id,checked){
+  const it=getShoppingItem(id); if(!it)return;
+  it.done=!!checked;
+  saveShoppingSoon();
+}
+
+window.updateShoppingText=function(id,value){
+  const it=getShoppingItem(id); if(!it)return;
+  const text=String(value||"").trim();
+  if(!text)return;
+  it.text=text;
+  it.category=categorize(text);
+  saveShoppingSoon();
+  renderShoppingList(shoppingItems);
+}
+
+window.removeShoppingItem=function(id){
+  const el=document.querySelector(`[data-shopping-id="${CSS.escape(id)}"]`);
+  if(el)el.classList.add("removing");
+  shoppingItems=(shoppingItems||[]).filter(x=>x.id!==id);
+  saveShoppingSoon();
+  renderShoppingList(shoppingItems);
+}
+
+window.addCustomShoppingItem=function(category){
+  const text=prompt(`Legg til vare i ${category}:`);
+  if(!text||!text.trim())return;
+  shoppingItems.push({id:`shop-${Date.now()}-${Math.random().toString(16).slice(2)}`,text:normalizeIngredientLineForDisplay(text.trim()),category,recipe:"Egen vare",done:false});
+  renderShoppingList(shoppingItems);
+  saveShoppingSoon();
+}
+
+function normalizeForMergeUnit(unit,name){
+  const n=normalize(name);
+  const u=String(unit||"").toLowerCase();
+  const produce=["stangselleri","selleri","løk","gulrot","paprika","agurk","tomat","sitron","lime","avokado","squash","brokkoli","blomkål","hvitløk"];
+  if(produce.some(p=>n.includes(p))){
+    if(["dl","ml","cup","cups"].includes(u)) return "stk";
+  }
+  return u || "stk";
+}
+
+function parseAmount(text){
+  let s=normalizeIngredientLineForDisplay(String(text||"").replace(/\s*\[[^\]]+\]\s*$/,"").trim());
+  const m=s.match(/^(\d+(?:[.,]\d+)?)\s*(g|kg|dl|l|ml|ss|ts|stk|pk|pose|poser|boks|fedd|stilker|stilk)?\s+(.+)$/i);
+  if(!m)return{amount:null,unit:"",name:normalizeIngredientName(s),original:s};
+  let amount=parseFloat(m[1].replace(",",".")),unit=(m[2]||"stk").toLowerCase(),name=normalizeIngredientName(m[3]);
+  if(unit==="kg"){amount*=1000;unit="g"}
+  if(unit==="l"){amount*=10;unit="dl"}
+  if(unit==="stilker")unit="stilk";
+  unit=normalizeForMergeUnit(unit,name);
+  return{amount,unit,name,original:s}
+}
+
+function normalizeIngredientName(name){
+  let s=String(name||"").toLowerCase().trim();
+  s=translateIngredientWords(s);
+  s=s.replace(/\([^)]*\)/g,"").replace(/[,].*$/,"").trim();
+  s=s.replace(/\b(chopped|finely|thinly|sliced|diced|minced|grated|fresh|freshly|large|medium|small|heaped|smooth|natural|drained|rinsed|optional|to serve|hakket|finhakket|skivet|revet|fersk|stor|liten|medium|valgfritt|til servering|i terninger|terninger)\b/g,"");
+  s=s.replace(/\s+/g," ").trim();
+  const aliases={"garlic":"hvitløk","onion":"løk","yellow onion":"løk","red onion":"rødløk","spring onion":"vårløk","carrot":"gulrot","carrots":"gulrot","celery":"stangselleri","celery stalk":"stangselleri","cucumber":"agurk","tomatoes":"tomat","tomato":"tomat","chickpeas":"kikerter","beans":"bønner","rice noodles":"risnudler","noodles":"nudler","soy sauce":"soyasaus","olive oil":"olivenolje","cornstarch":"maizena","corn starch":"maizena","bell pepper":"paprika"};
+  return aliases[s]||s;
+}
+
+function translateIngredientWords(s){
+  const replacements=[
+    [/celery stalks?/g,"stangselleri"],[/celery/g,"stangselleri"],[/garlic cloves?/g,"fedd hvitløk"],[/garlic/g,"hvitløk"],
+    [/yellow onion/g,"gul løk"],[/red onion/g,"rødløk"],[/onion/g,"løk"],[/spring onion/g,"vårløk"],
+    [/carrots?/g,"gulrot"],[/cucumber/g,"agurk"],[/tomatoes/g,"tomat"],[/tomato/g,"tomat"],
+    [/bell pepper/g,"paprika"],[/mushrooms?/g,"sopp"],[/spinach/g,"spinat"],[/lettuce/g,"salat"],
+    [/chickpeas/g,"kikerter"],[/beans/g,"bønner"],[/chicken/g,"kylling"],[/beef/g,"biff"],[/pork/g,"svin"],
+    [/shrimp/g,"scampi"],[/salmon/g,"laks"],[/halloumi/g,"halloumi"],[/cornstarch|corn starch/g,"maizena"],
+    [/soy sauce/g,"soyasaus"],[/olive oil/g,"olivenolje"],[/sesame oil/g,"sesamolje"],[/rice vinegar/g,"riseddik"],
+    [/coconut milk/g,"kokosmelk"],[/stock|broth/g,"kraft"],[/noodles/g,"nudler"],[/rice/g,"ris"]
+  ];
+  let out=String(s||"").toLowerCase();
+  for(const [from,to] of replacements)out=out.replace(from,to);
+  return out;
+}
+
+function normalizeIngredientLineForDisplay(line){
+  let s=String(line||"").trim();
+  s=s.replace(/\s+/g," ");
+  s=translateIngredientWords(s);
+
+  // Avoid nonsense like "4,2 dl stangselleri". Cups of chopped vegetables become approximate pieces/stalks.
+  s=s.replace(/(\d+(?:[.,]\d+)?)\s*cups?\s+(?:chopped\s+|diced\s+|sliced\s+)?(celery|stangselleri)\b/gi,(_,n)=>`${Math.max(1,Math.round(parseFloat(n.replace(",","."))*2))} stilker stangselleri`);
+  s=s.replace(/(\d+(?:[.,]\d+)?)\s*cups?\s+(?:chopped\s+|diced\s+|sliced\s+)?(onion|løk)\b/gi,(_,n)=>`${Math.max(1,Math.round(parseFloat(n.replace(",","."))))} løk`);
+  s=s.replace(/(\d+(?:[.,]\d+)?)\s*cups?\s+(?:chopped\s+|diced\s+|sliced\s+)?(carrot|gulrot|carrots)\b/gi,(_,n)=>`${Math.max(1,Math.round(parseFloat(n.replace(",","."))*2))} gulrot`);
+  s=s.replace(/(\d+(?:[.,]\d+)?)\s*cups?\s+(?:chopped\s+|diced\s+|sliced\s+)?(bell pepper|paprika)\b/gi,(_,n)=>`${Math.max(1,Math.round(parseFloat(n.replace(",","."))))} paprika`);
+
+  // Generic cups: keep dl for liquids/dry goods.
+  s=s.replace(/(\d+(?:[.,]\d+)?)\s*cups?\b/gi,(_,n)=>`${String(Math.round(parseFloat(n.replace(",","."))*24)/10).replace(".",",")} dl`);
+  s=s.replace(/(\d+(?:[.,]\d+)?)\s*(tbsp|tablespoons?)\b/gi,"$1 ss");
+  s=s.replace(/(\d+(?:[.,]\d+)?)\s*(tsp|teaspoons?)\b/gi,"$1 ts");
+  s=s.replace(/(\d+(?:[.,]\d+)?)\s*(oz|ounces?)\b/gi,(_,n)=>`${Math.round(parseFloat(n.replace(",","."))*28.35)} g`);
+
+  return s.trim();
+}
+
+convertIngredientLine=function(line){
+  return normalizeIngredientLineForDisplay(line);
+}
+
+function mergeShoppingItems(items){
+  const map=new Map(),pass=[];
+  for(const it of items){
+    const normalizedText=normalizeIngredientLineForDisplay(it.text);
+    const p=parseAmount(normalizedText);
+    if(!p.name){pass.push({...it,text:normalizedText});continue}
+    const key=normalize(p.name+"|"+(p.unit||""));
+    if(!map.has(key)){
+      map.set(key,{...it,id:it.id||`shop-${Date.now()}-${Math.random().toString(16).slice(2)}`,text:formatMergedItem(p),category:categorize(p.name),_p:p,_recipes:new Set([it.recipe])});
+    }else{
+      const cur=map.get(key);
+      if(p.amount!=null&&cur._p.amount!=null&&p.unit===cur._p.unit){
+        cur._p.amount+=p.amount;cur.text=formatMergedItem(cur._p)
+      }else{
+        cur.text=cur.text+" + "+normalizedText
+      }
+      cur._recipes.add(it.recipe);cur.recipe=[...cur._recipes].join(", ");cur.merged=true;cur.category=bestCategory(cur.category,categorize(p.name))
+    }
+  }
+  return[...map.values(),...pass].map(x=>{delete x._p;delete x._recipes;if(!x.id)x.id=`shop-${Date.now()}-${Math.random().toString(16).slice(2)}`;return x})
+}
+
+function categorize(line){
+  const s=normalize(line);
+  const spice=["salt","pepper","oregano","basilikum","basil","gochugaru","paprika powder","spisskummen","cumin","kanel","cinnamon","chili flakes","chiliflak","curry powder","karri","garam masala","laurbær","sesamfrø","sukker","honning","timian","rosmarin","kajenne"];
+  if(spice.some(w=>s.includes(normalize(w))))return"Krydder";
+  const dry=["maizena","maisstivelse","cornstarch","soyasaus","soya","tamari","sesamolje","olivenolje","olje","riseddik","eddik","sriracha","hot sauce","fiskesaus","kraft","buljong","peanøttsmør","tomatpure","panko","brødsmuler","mel","hoisin","worcestershire"];
+  if(dry.some(w=>s.includes(normalize(w))))return"Tørrvarer";
+  const map=[
+    ["Kjøtt",["flankestek","flank steak","steak","biff","okse","kjøttdeig","karbonadedeig","svin","kotelett","pølse","kalkun","bacon","lamm","skinke"]],
+    ["Kjølevarer",["tofu"]],
+    ["Meieri",["halloumi","melk","fløte","rømme","ost","parmesan","feta","cottage cheese","yoghurt","smør","mozzarella","cheddar"]],
+    ["Kjøtt",["kylling"]],
+    ["Frys",["frossen","frosne","edamame"]],
+    ["Hermetikk/halvfabrikat",["boks","kokosmelk","kidney","kikerter","hakkede tomater","bønner","mais"]],
+    ["Tørrvarer",["pasta","nudler","ris","orzo","bulgur","quinoa","couscous","linser"]],
+    ["Glutenfritt",["glutenfri"]],
+    ["Bakevarer",["brød","pita","tortilla","burgerbrød","wrap","naan"]],
+    ["Frukt og grønt",["stangselleri","selleri","agurk","gulrot","løk","rødløk","gul løk","vårløk","hvitløk","ingefær","potet","søtpotet","squash","tomat","paprika","sopp","brokkoli","blomkål","kål","spinat","salat","lime","sitron","koriander","persille","avokado","aubergine","chili","ruccola","asparges"]]
+  ];
+  for(const[cat,words]of map)if(words.some(w=>s.includes(normalize(w))))return cat;
+  return"Annet";
+}
+
+cleanupVisibleRecipes=async function(){
+  if(!confirm("Rydde og oversette ingredienser i oppskriftene? Dette lagrer tilbake til Supabase."))return;
+  const btn=$("cleanupRecipesBtn");if(btn){btn.disabled=true;btn.textContent="Rydder/oversetter …"}
+  let updated=0;
+  for(const r of recipes){
+    const patch={
+      tags:enrichTags(r),
+      emoji:emojiForRecipe(r),
+      ingredientsText:ingredientsToText(r).split(/\n/).map(normalizeIngredientLineForDisplay).join("\n"),
+      updatedAt:new Date().toISOString()
+    };
+    try{
+      const response=await fetch("/api/save-recipe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:r.id,patch})});
+      const data=await response.json().catch(()=>({}));
+      if(response.ok&&data.ok!==false){Object.assign(r,patch);updated++}
+    }catch(e){console.warn("rydd feilet",r.name,e)}
+  }
+  renderRecipeResults();createDayRows();
+  if(btn){btn.disabled=false;btn.textContent="Rydd/oversett oppskrifter"}
+  alert(`Ryddet/oversatte ${updated} oppskrifter.`);
+}
+
 init();

@@ -1223,3 +1223,20 @@ html body #appBottomNav.app-bottom-nav .nav-btn.active {
 .live-status.error {
   font-weight: 900 !important;
 }
+
+
+/* ===== v21 data quality + shopping sync ===== */
+.item input[type="text"] {
+  min-width: 0;
+}
+
+.item.removing {
+  opacity: .45;
+  transform: scale(.99);
+}
+
+.clean-warning {
+  margin-top: .5rem;
+  font-size: .78rem;
+  color: var(--muted);
+}

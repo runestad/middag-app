@@ -1,6 +1,6 @@
-Middag-app v20.9.
-Kritisk stabilitetsfix:
-- migratePlan bevarer datonøkler som 2026-06-11
-- sync kan ikke lenger tolke datobasert ukeplan som tom
-- sikkerhet mot at tom remote-plan overskriver synlig lokal ukeplan
-- beholder nye ikoner fra v20.8
+Middag-app v21.
+- Handleliste-endringer lagres i datamodellen: slett, kryss av og tekstendring
+- Hindrer at gamle handlelistevarer dukker opp igjen ved sync
+- Bedre normalisering/sammenslåing: stangselleri, Maizena, halloumi m.m.
+- Rydd/oversett oppskrifter-knapp for Supabase-data
+- Nye oppskrifter/ingredienser normaliseres bedre
