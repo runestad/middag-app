@@ -1,1 +1,8 @@
-Middag-app v16 product. PWA, favicon/app icon, ny ukesmeny, oppskriftsdetaljer, tags, sortering, full liste.
+Middag-app v19.
+- Smart handleliste med sammenslåing
+- Fikset duplikatknapper
+- Nullstill ukeplan kun i ukeplan
+- Tydeligere ukeplan med farger
+- Smart/tilfeldig meny kan velge retter med manglende oppskrift
+- Importer manglende oppskrift direkte fra ukeplan
+- Forbedret ingredienssortering

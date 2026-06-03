@@ -740,3 +740,16 @@ dialog {
 .usage-pill { font-size:.72rem; color:var(--muted); }
 .clean-note { font-size:.78rem; color:var(--muted); margin-top:.35rem; }
 @media (max-width: 820px) { .header-actions { width:100%; justify-content:space-between; } }
+
+/* ===== v19 smart shopping + clearer week plan ===== */
+.day-row.day-card-v16{background:linear-gradient(135deg,rgba(255,255,255,.88),rgba(243,249,241,.82))!important;border:1px solid rgba(211,230,210,.95)!important;box-shadow:0 8px 22px rgba(49,93,69,.07)}
+.day-head-v16 h3{color:var(--accent-2)}
+.plan-item.recipe-plan-item{background:#eef6ee;border-color:#cfe4ce}
+.plan-item.text-plan-item{background:#fff7e6;border-color:#ffe1a3}
+.plan-item.missing-plan-item{background:#fff1f0;border-color:#ffd1cc}
+.plan-actions{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;justify-content:flex-end}
+.plan-item .mini-action{min-height:28px!important;padding:.12rem .55rem!important;font-size:.76rem!important;white-space:nowrap}
+.shopping-summary{color:var(--muted);font-size:.84rem;margin:.35rem 0 .7rem}
+.merged-badge{font-size:.72rem;color:var(--accent-2);background:#eef6ee;border-radius:999px;padding:.08rem .38rem;margin-left:.25rem}
+.day-actions-row button[data-addtext]{background:#fff7e6!important;border-color:#ffe1a3!important;color:#8a5a00!important}
+.day-head-v16 button{background:#eef6ee!important;border-color:#cfe4ce!important;color:var(--accent-2)!important}
