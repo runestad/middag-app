@@ -4,7 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Middag</title>
-  <link rel="stylesheet" href="styles.css?v=15" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png" />
+  <meta name="theme-color" content="#4f7f5f" />
+  <link rel="stylesheet" href="styles.css?v=16" />
 </head>
 <body>
   <header>
@@ -18,8 +22,13 @@
   <main>
     <section id="viewPlan" class="view active">
       <section class="card hero-card">
-        <h2>Ukesmeny</h2>
-        <p class="hint">Velg perioden dere skal handle for, og legg inn middager for dagene.</p>
+        <div class="section-title">
+          <div>
+            <h2>Ukesmeny</h2>
+            <p class="hint">Skriv inn retter fritt, eller legg til én/flere oppskrifter per dag.</p>
+          </div>
+          <button id="resetPlanInlineBtn" class="ghost">Nullstill ukeplan</button>
+        </div>
         <div class="period-grid">
           <label>Fra dag
             <select id="startDay"></select>
@@ -31,9 +40,21 @@
         </div>
       </section>
 
+      <section class="card smart-card">
+        <div class="section-title">
+          <h2>Smart velger</h2>
+          <button id="randomWeekBtn" class="ghost">🎲 Tilfeldig uke</button>
+        </div>
+        <label>Spør appen
+          <textarea id="smartPrompt" rows="2" placeholder="F.eks. Lag en uke med mye vegetar og én kjøttrett."></textarea>
+        </label>
+        <button id="aiWeekBtn" class="primary">Lag smart ukesmeny</button>
+        <p id="smartStatus" class="hint"></p>
+      </section>
+
       <section class="card">
         <div class="section-title">
-          <h2>Velg middager</h2>
+          <h2>Dager</h2>
           <span id="recipeCount" class="pill"></span>
         </div>
         <div id="dayRows" class="day-rows"></div>
@@ -44,7 +65,7 @@
       <section class="card">
         <div class="section-title">
           <h2>Handleliste</h2>
-          <button id="generateListBtn">Generer fra ukesmeny</button>
+          <button id="generateListBtn">Generer fra ukesmeny</button><button id="resetShoppingBtn" class="ghost">Nullstill handleliste</button>
         </div>
         <p class="hint">Endre tekst direkte, kryss av det dere har, eller legg til egne varer under riktig kategori.</p>
         <div id="shoppingList" class="shopping-list"></div>
@@ -57,7 +78,17 @@
           <h2>Oppskrifter</h2>
           <button id="addRecipeBtn" class="primary">+ Legg til oppskrift</button>
         </div>
-        <input id="recipeSearch" placeholder="Søk etter rett, kategori eller kilde …" />
+        <div class="recipe-toolbar">
+          <input id="recipeSearch" placeholder="Søk etter rett, kategori, tag eller kilde …" />
+          <select id="recipeSort">
+            <option value="az">Alfabetisk A–Å</option>
+            <option value="za">Alfabetisk Å–A</option>
+            <option value="category">Kategori</option>
+            <option value="used">Mest brukt</option>
+            <option value="recent">Nylig lagt til</option>
+            <option value="missing">Mangler oppskrift</option>
+          </select>
+        </div>
         <div id="recipeResults" class="recipe-results"></div>
       </section>
     </section>
@@ -140,7 +171,43 @@
     </form>
   </dialog>
 
+
+  <dialog id="recipeDialog">
+    <form method="dialog" class="dialog-form">
+      <div class="section-title">
+        <h2 id="recipeDialogTitle">Oppskrift</h2>
+        <button value="cancel" class="ghost">Lukk</button>
+      </div>
+      <div id="recipeDialogBody"></div>
+    </form>
+  </dialog>
+
+  <dialog id="addToDayDialog">
+    <form method="dialog" class="dialog-form small-dialog">
+      <div class="section-title">
+        <h2>Legg til i ukesmeny</h2>
+        <button value="cancel" class="ghost">Lukk</button>
+      </div>
+      <p id="addToDayRecipeName" class="hint"></p>
+      <label>Velg dag
+        <select id="addToDaySelect"></select>
+      </label>
+      <button type="button" id="confirmAddToDayBtn" class="primary">Legg til</button>
+    </form>
+  </dialog>
+
+  <dialog id="recipePickerDialog">
+    <form method="dialog" class="dialog-form">
+      <div class="section-title">
+        <h2>Velg oppskrift</h2>
+        <button value="cancel" class="ghost">Lukk</button>
+      </div>
+      <input id="pickerSearch" placeholder="Søk etter oppskrift …" />
+      <div id="pickerResults" class="recipe-results picker-results"></div>
+    </form>
+  </dialog>
+
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script src="app.js?v=15"></script>
+  <script src="app.js?v=16"></script>
 </body>
 </html>

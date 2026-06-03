@@ -45,7 +45,9 @@ Returner KUN gyldig JSON."""
   "instructions": ["string"],
   "tags": ["string"],
   "confidence": "high|medium|low",
-  "notes": "string"
+  "notes": "string",
+  "tags": ["string"],
+  "emoji": "string"
 }"""
 
             user = {
