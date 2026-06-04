@@ -1087,4 +1087,41 @@ cleanupVisibleRecipes=async function(){
   alert(`Ryddet/oversatte ${updated} oppskrifter.`);
 }
 
+
+/* ===== v22 remember selected date range + UI stability ===== */
+function rememberDateRange(){
+  const start=$("startDate")?.value||"";
+  const end=$("endDate")?.value||"";
+  if(start&&end){
+    localStorage.setItem("middag_date_range", JSON.stringify({start,end,updatedAt:new Date().toISOString()}));
+  }
+}
+const oldFillDaySelectorsV22 = fillDaySelectorsV20;
+fillDaySelectorsV20=function(){
+  let saved=null;
+  try{saved=JSON.parse(localStorage.getItem("middag_date_range")||"null")}catch(e){}
+  if(saved?.start&&saved?.end){
+    if($("startDate"))$("startDate").value=saved.start;
+    if($("endDate"))$("endDate").value=saved.end;
+    updateDateLabels();
+    return;
+  }
+  oldFillDaySelectorsV22();
+}
+const oldUpdateDateLabelsV22 = updateDateLabels;
+updateDateLabels=function(){
+  oldUpdateDateLabelsV22();
+  rememberDateRange();
+}
+const oldCreateDayRowsV22 = createDayRows;
+createDayRows=function(){
+  rememberDateRange();
+  oldCreateDayRowsV22();
+}
+document.addEventListener("change",(e)=>{
+  if(e.target && (e.target.id==="startDate"||e.target.id==="endDate")){
+    rememberDateRange();
+  }
+},true);
+
 init();

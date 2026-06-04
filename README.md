@@ -1,6 +1,6 @@
-Middag-app v21.
-- Handleliste-endringer lagres i datamodellen: slett, kryss av og tekstendring
-- Hindrer at gamle handlelistevarer dukker opp igjen ved sync
-- Bedre normalisering/sammenslåing: stangselleri, Maizena, halloumi m.m.
-- Rydd/oversett oppskrifter-knapp for Supabase-data
-- Nye oppskrifter/ingredienser normaliseres bedre
+Middag-app v22.
+- UI-polish inspirert av native iPhone-app
+- Ny mykere bakgrunn, kort og bunnmeny
+- Bunnmeny som ikonbar
+- Husker valgt datoperiode mellom app-åpninger
+- Bygger videre på v21-datafix

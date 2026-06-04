@@ -1240,3 +1240,223 @@ html body #appBottomNav.app-bottom-nav .nav-btn.active {
   font-size: .78rem;
   color: var(--muted);
 }
+
+
+/* ===== v22 UI polish: softer native app feel ===== */
+:root {
+  --v22-bg: #eef3ef;
+  --v22-card: rgba(255,255,255,.84);
+  --v22-green: #347a55;
+  --v22-green-soft: #e6f1e9;
+  --v22-text: #151a18;
+  --v22-muted: #6f7774;
+  --v22-line: rgba(44, 86, 60, .13);
+}
+
+html,
+body {
+  background: var(--v22-bg) !important;
+}
+
+body {
+  color: var(--v22-text) !important;
+  padding-bottom: calc(82px + env(safe-area-inset-bottom)) !important;
+}
+
+header,
+.app-header {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding-top: calc(20px + env(safe-area-inset-top)) !important;
+}
+
+h1, h2 {
+  letter-spacing: -.03em;
+}
+
+.card,
+.hero-card,
+.smart-card,
+.week-overview-card {
+  background: var(--v22-card) !important;
+  border: 1px solid rgba(255,255,255,.72) !important;
+  box-shadow: 0 16px 45px rgba(22, 35, 28, .07) !important;
+  border-radius: 28px !important;
+}
+
+.section-title h2 {
+  font-weight: 900 !important;
+  letter-spacing: -.035em;
+}
+
+input,
+select,
+textarea {
+  border-radius: 18px !important;
+  border: 1px solid var(--v22-line) !important;
+  background: rgba(255,255,255,.86) !important;
+}
+
+button,
+.primary,
+.ghost {
+  border-radius: 999px !important;
+  font-weight: 850 !important;
+}
+
+.primary {
+  background: var(--v22-green) !important;
+  color: white !important;
+}
+
+.ghost {
+  background: rgba(255,255,255,.72) !important;
+  border: 1px solid rgba(255,255,255,.85) !important;
+}
+
+.day-row.day-card-v16 {
+  border-radius: 28px !important;
+  background: rgba(255,255,255,.78) !important;
+  border: 1px solid rgba(255,255,255,.76) !important;
+  box-shadow: 0 14px 35px rgba(22,35,28,.055) !important;
+}
+
+.day-head-v16 h3 {
+  color: var(--v22-text) !important;
+  font-size: 1.3rem !important;
+  letter-spacing: -.035em;
+}
+
+.plan-item {
+  border-radius: 20px !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.plan-item.recipe-plan-item {
+  background: var(--v22-green-soft) !important;
+}
+
+.plan-item.text-plan-item {
+  background: #fff6df !important;
+}
+
+.week-overview-row {
+  border: 0 !important;
+  background: rgba(255,255,255,.72) !important;
+  border-radius: 22px !important;
+}
+
+.week-chip {
+  border: 0 !important;
+  background: var(--v22-green-soft) !important;
+  color: var(--v22-text) !important;
+}
+
+/* iOS-style bottom navigation */
+html body #appBottomNav.app-bottom-nav,
+html body nav#appBottomNav,
+#appBottomNav {
+  position: fixed !important;
+  z-index: 999999 !important;
+  left: 18px !important;
+  right: 18px !important;
+  bottom: calc(12px + env(safe-area-inset-bottom)) !important;
+  width: auto !important;
+  max-width: none !important;
+  height: 64px !important;
+  min-height: 64px !important;
+  max-height: 64px !important;
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  align-items: center !important;
+  justify-items: stretch !important;
+  gap: 4px !important;
+  padding: 6px !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  border-radius: 34px !important;
+  border: 1px solid rgba(255,255,255,.82) !important;
+  background: rgba(255,255,255,.88) !important;
+  box-shadow: 0 14px 45px rgba(35,47,40,.16) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+}
+
+html body #appBottomNav.app-bottom-nav .nav-btn,
+html body nav#appBottomNav .nav-btn,
+#appBottomNav .nav-btn {
+  width: 100% !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  max-height: 52px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 28px !important;
+  background: transparent !important;
+  font-size: 1.25rem !important;
+  line-height: 1 !important;
+  color: #111 !important;
+  white-space: nowrap !important;
+}
+
+html body #appBottomNav.app-bottom-nav .nav-btn span,
+html body nav#appBottomNav .nav-btn span,
+#appBottomNav .nav-btn span {
+  display: none !important;
+}
+
+html body #appBottomNav.app-bottom-nav .nav-btn.active,
+html body nav#appBottomNav .nav-btn.active,
+#appBottomNav .nav-btn.active {
+  background: rgba(52,122,85,.14) !important;
+  color: var(--v22-green) !important;
+}
+
+@media (max-width: 430px) {
+  html body #appBottomNav.app-bottom-nav,
+  html body nav#appBottomNav,
+  #appBottomNav {
+    left: 16px !important;
+    right: 16px !important;
+    height: 62px !important;
+    min-height: 62px !important;
+    max-height: 62px !important;
+    border-radius: 32px !important;
+  }
+
+  html body #appBottomNav.app-bottom-nav .nav-btn,
+  html body nav#appBottomNav .nav-btn,
+  #appBottomNav .nav-btn {
+    height: 50px !important;
+    min-height: 50px !important;
+    max-height: 50px !important;
+    font-size: 1.22rem !important;
+  }
+}
+
+.recipe-card,
+.freezer-item,
+.category,
+.item {
+  border-radius: 24px !important;
+}
+
+.recipe-card {
+  background: rgba(255,255,255,.78) !important;
+  border: 1px solid rgba(255,255,255,.7) !important;
+  box-shadow: 0 10px 30px rgba(22,35,28,.045) !important;
+}
+
+.tag {
+  background: var(--v22-green-soft) !important;
+  color: var(--v22-green) !important;
+}
