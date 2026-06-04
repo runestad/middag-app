@@ -1124,4 +1124,91 @@ document.addEventListener("change",(e)=>{
   }
 },true);
 
+
+/* ===== v23 completeness + safer parser status ===== */
+function recipeHasIngredientsV23(r){
+  if(!r) return false;
+  const d = r.data || r;
+  const ingText = d.ingredientsText || r.ingredientsText || "";
+  const lines = d.ingredientLines || r.ingredientLines || [];
+  const structured = d.structuredIngredients || r.structuredIngredients || [];
+  return !!(String(ingText).trim() || (Array.isArray(lines)&&lines.length) || (Array.isArray(structured)&&structured.length));
+}
+const oldHasRecipeV23 = typeof hasRecipe === "function" ? hasRecipe : null;
+hasRecipe = function(r){ return recipeHasIngredientsV23(r); }
+function statusTextV23(r){ return recipeHasIngredientsV23(r) ? "✅ Oppskrift funnet" : "⚠️ mangler ingredienser"; }
+function statusClassV23(r){ return recipeHasIngredientsV23(r) ? "complete-recipe" : "missing-ingredients"; }
+
+function normalizeNorwegianTextV23(value){
+  if(value == null) return value;
+  const clean = (line)=>{
+    let s=String(line||"");
+    const reps=[
+      [/\bwhite onion\b/gi,"gul løk"],[/\bwhite\s+løk\b/gi,"gul løk"],[/\byellow onion\b/gi,"gul løk"],[/\byellow\s+løk\b/gi,"gul løk"],[/\bred onion\b/gi,"rødløk"],[/\bred\s+løk\b/gi,"rødløk"],
+      [/\bspring onion\b/gi,"vårløk"],[/\bgreen onion\b/gi,"vårløk"],[/\bcelery stalks?\b/gi,"stangselleri"],[/\bcelery\b/gi,"stangselleri"],[/\bgarlic cloves?\b/gi,"fedd hvitløk"],[/\bgarlic\b/gi,"hvitløk"],
+      [/\bcarrots?\b/gi,"gulrot"],[/\btomatoes\b/gi,"tomater"],[/\btomato\b/gi,"tomat"],[/\bchicken\b/gi,"kylling"],[/\bcornstarch\b/gi,"maizena"],[/\bcorn starch\b/gi,"maizena"],[/\bsoy sauce\b/gi,"soyasaus"],[/\bolive oil\b/gi,"olivenolje"]
+    ];
+    for(const [a,b] of reps) s=s.replace(a,b);
+    const num=x=>parseFloat(String(x).replace(",","."));
+    s=s.replace(/(\d+(?:[.,]\d+)?)\s*cups?\s+(?:chopped\s+|diced\s+|sliced\s+)?(?:celery|stangselleri)\b/gi,(_,n)=>`${Math.max(1,Math.round(num(n)*2))} stilker stangselleri`);
+    s=s.replace(/(\d+(?:[.,]\d+)?)\s*cups?\s+(?:chopped\s+|diced\s+|sliced\s+)?(?:onion|løk|gul løk)\b/gi,(_,n)=>`${Math.max(1,Math.round(num(n)))} gul løk`);
+    s=s.replace(/(\d+(?:[.,]\d+)?)\s*cups?\b/gi,(_,n)=>`${String(Math.round(num(n)*24)/10).replace(".",",")} dl`);
+    s=s.replace(/(\d+(?:[.,]\d+)?)\s*(tbsp|tablespoons?)\b/gi,"$1 ss").replace(/(\d+(?:[.,]\d+)?)\s*(tsp|teaspoons?)\b/gi,"$1 ts");
+    return s.replace(/\s+/g," ").trim();
+  };
+  if(typeof value==="string") return value.split(/\n/).map(clean).filter(Boolean).join("\n");
+  if(Array.isArray(value)) return value.map(x=>typeof x==="string"?clean(x):(x&&typeof x==="object"?normalizeNorwegianTextV23(x):x));
+  if(typeof value==="object"){const out={...value};for(const k of Object.keys(out))out[k]=normalizeNorwegianTextV23(out[k]);return out;}
+  return value;
+}
+const oldExtractIngredientLinesV23 = typeof extractIngredientLines === "function" ? extractIngredientLines : null;
+extractIngredientLines = function(r){ return (oldExtractIngredientLinesV23 ? oldExtractIngredientLinesV23(r) : []).map(x=>normalizeNorwegianTextV23(x)).filter(Boolean); }
+
+const oldRenderRecipeResultsV23 = typeof renderRecipeResults === "function" ? renderRecipeResults : null;
+renderRecipeResults = function(){
+  if(oldRenderRecipeResultsV23) oldRenderRecipeResultsV23();
+  document.querySelectorAll(".recipe-card").forEach(card=>{
+    const name=card.querySelector("strong")?.textContent?.trim();
+    const r=recipes.find(x=>x.name===name);
+    if(!r)return;
+    card.classList.add(statusClassV23(r));
+    const meta=card.querySelector(".recipe-meta");
+    if(meta){
+      meta.innerHTML=meta.innerHTML.replace(/✅ Oppskrift funnet|🟡 mangler oppskrift|⚠️ mangler ingredienser/g,statusTextV23(r));
+      if(!recipeHasIngredientsV23(r)&&!meta.innerHTML.includes("mangler ingredienser")) meta.innerHTML += ` <span class="missing-ingredients-badge">mangler ingredienser</span>`;
+    }
+  });
+}
+const oldRenderPickerResultsV23 = typeof renderPickerResults === "function" ? renderPickerResults : null;
+renderPickerResults = function(){
+  const q=normalize($("pickerSearch")?.value||"");
+  const filtered=recipes.filter(r=>!q||searchableText(r).includes(q)).sort((a,b)=>Number(recipeHasIngredientsV23(b))-Number(recipeHasIngredientsV23(a))||a.name.localeCompare(b.name,"no")).slice(0,300);
+  const box=$("pickerResults"); if(!box)return;
+  box.innerHTML=filtered.map(r=>`<div class="recipe-card ${statusClassV23(r)}" onclick="openPickerPreview('${escapeAttr(r.id)}')"><div class="recipe-thumb recipe-emoji">${emojiForRecipe(r)}</div><div><strong>${escapeHtml(r.name)}</strong><div class="recipe-meta">${escapeHtml(r.category||"Ukjent")} · ${statusTextV23(r)}</div><div class="recipe-tags">${enrichTags(r).slice(0,4).map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join("")}</div></div><button type="button" class="ghost" onclick="event.stopPropagation(); openPickerPreview('${escapeAttr(r.id)}')">Se</button></div>`).join("")||`<div class="empty-state">Ingen oppskrifter funnet.</div>`;
+}
+const oldOpenRecipeDetailsV23 = typeof openRecipeDetails === "function" ? openRecipeDetails : null;
+openRecipeDetails = function(id){
+  if(oldOpenRecipeDetailsV23) oldOpenRecipeDetailsV23(id);
+  const r=recipeById(id);
+  const body=$("recipeBody")||$("recipeDetailBody")||document.querySelector("#recipeDialog .dialog-form");
+  if(r&&body&&!recipeHasIngredientsV23(r)&&!body.querySelector(".recipe-health-panel")) body.insertAdjacentHTML("afterbegin",`<div class="recipe-health-panel">⚠️ Mangler ingredienser. Handlelisten blir ikke komplett før oppskriften repareres/AI-parses på nytt.</div>`);
+}
+const oldAddRecipeToDayV23 = window.addRecipeToDay;
+window.addRecipeToDay = function(day,id){
+  const r=recipeById(id);
+  if(r&&!recipeHasIngredientsV23(r)&&!confirm("Denne oppskriften mangler ingredienser, så handlelisten blir ikke komplett. Legge til likevel?")) return;
+  oldAddRecipeToDayV23(day,id);
+}
+const oldGenerateShoppingListV23 = typeof generateShoppingList === "function" ? generateShoppingList : null;
+generateShoppingList = function(){
+  const missing=[];
+  for(const d of selectedDays()){
+    for(const item of(plan[d.key]||[])){
+      if(item.type==="recipe"){const r=recipeById(item.recipeId); if(r&&!recipeHasIngredientsV23(r))missing.push(r.name);}
+    }
+  }
+  if(missing.length) alert("Noen retter mangler ingredienser og kommer ikke komplett på handlelisten:\n\n"+[...new Set(missing)].join("\n"));
+  oldGenerateShoppingListV23();
+}
+
 init();

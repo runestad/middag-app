@@ -1460,3 +1460,34 @@ html body nav#appBottomNav .nav-btn.active,
   background: var(--v22-green-soft) !important;
   color: var(--v22-green) !important;
 }
+
+
+/* ===== v23 recipe completeness + parser polish ===== */
+.recipe-card.missing-ingredients,
+.plan-item.missing-ingredients,
+.week-chip.missing-ingredients {
+  background: #fff4e5 !important;
+  border-color: #ffd899 !important;
+}
+
+.missing-ingredients-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: #fff4e5;
+  color: #9a5a00;
+  padding: .16rem .48rem;
+  font-weight: 900;
+  font-size: .72rem;
+  margin-left: .25rem;
+}
+
+.recipe-health-panel {
+  border: 1px solid #ffd899;
+  background: #fff8ed;
+  border-radius: 20px;
+  padding: .75rem;
+  margin: .75rem 0;
+  color: #7a4b00;
+  font-weight: 750;
+}

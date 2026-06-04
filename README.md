@@ -1,34 +1,6 @@
-Middag-app v22.
-- UI-polish inspirert av native iPhone-app
-- Ny mykere bakgrunn, kort og bunnmeny
-- Bunnmeny som ikonbar
-- Husker valgt datoperiode mellom app-åpninger
-- Bygger videre på v21-datafix
-
-
-# Engangsrydd av oppskrifter
-
-Kjør fra prosjektmappen på Mac:
-
-```bash
-python3 scripts/cleanup_recipes_with_ai.py --dry-run
-```
-
-Hvis det ser greit ut:
-
-```bash
-python3 scripts/cleanup_recipes_with_ai.py --apply
-```
-
-Mer grundig med AI:
-
-```bash
-python3 scripts/cleanup_recipes_with_ai.py --ai --dry-run
-python3 scripts/cleanup_recipes_with_ai.py --ai --apply
-```
-
-Tips: test først på noen få:
-
-```bash
-python3 scripts/cleanup_recipes_with_ai.py --ai --dry-run --limit 10
-```
+Middag-app v23.
+- Marker oppskrifter uten ingredienser som “mangler ingredienser”
+- Status “Fullført” er ikke nok hvis ingrediensfelt er tomme
+- Advarsel før slike oppskrifter legges i ukeplan/handleliste
+- AI-parser/save normaliserer bort hybrider som “white løk”
+- Beskytter mot rare enheter som dl stangselleri
