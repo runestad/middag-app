@@ -479,22 +479,7 @@ def record_has(record, field):
 
 
 def build_recovery_track(rows):
-    sources = []
-    for path in local_source_files():
-        for record in load_recipe_file(path):
-            sources.append((str(path), record))
-    # Git snapshots are kept separate from current working files.
-    try:
-        commits = subprocess.check_output(["git", "log", "--all", "--format=%H", "--", "recipes.json"], cwd=str(ROOT), text=True).splitlines()
-        for commit in commits:
-            raw = subprocess.check_output(["git", "show", f"{commit}:recipes.json"], cwd=str(ROOT), text=True, stderr=subprocess.DEVNULL)
-            loaded = json.loads(raw)
-            loaded = loaded.get("recipes", loaded) if isinstance(loaded, dict) else loaded
-            for record in loaded if isinstance(loaded, list) else []:
-                sources.append((f"git:{commit[:12]}:recipes.json", record))
-    except Exception:
-        pass
-
+    sources = collect_recovery_sources()
     reports = []
     for row in rows:
         recipe = row_to_recipe(row)
@@ -541,6 +526,25 @@ def build_recovery_track(rows):
     return {"recipes": reports, "sourceFilesScanned": len(set(source for source, _ in sources)), "sourceRecordsScanned": len(sources)}
 
 
+def collect_recovery_sources():
+    sources = []
+    for path in local_source_files():
+        for record in load_recipe_file(path):
+            sources.append((str(path), record))
+    # Git snapshots are kept separate from current working files.
+    try:
+        commits = subprocess.check_output(["git", "log", "--all", "--format=%H", "--", "recipes.json"], cwd=str(ROOT), text=True).splitlines()
+        for commit in commits:
+            raw = subprocess.check_output(["git", "show", f"{commit}:recipes.json"], cwd=str(ROOT), text=True, stderr=subprocess.DEVNULL)
+            loaded = json.loads(raw)
+            loaded = loaded.get("recipes", loaded) if isinstance(loaded, dict) else loaded
+            for record in loaded if isinstance(loaded, list) else []:
+                sources.append((f"git:{commit[:12]}:recipes.json", record))
+    except Exception:
+        pass
+    return sources
+
+
 def recovery_html(track):
     order = ["høy", "middels", "lav", "ingen kjent kilde"]
     sections = []
@@ -561,6 +565,153 @@ def recovery_html(track):
 <script>q.oninput=()=>document.querySelectorAll('article').forEach(r=>r.hidden=!r.innerText.toLowerCase().includes(q.value.toLowerCase()))</script></main></html>"""
 
 
+def recovery_field_value(record, field):
+    if field == "ingredienser":
+        return {
+            "ingredientsText": record.get("ingredientsText"),
+            "structuredIngredients": record.get("structuredIngredients"),
+        }
+    return {
+        "instructions": record.get("instructions"),
+        "structuredInstructions": record.get("structuredInstructions"),
+    }
+
+
+def build_high_recovery_preview(rows, recovery):
+    production = {str(row.get("id")): row_to_recipe(row) for row in rows}
+    sources = collect_recovery_sources()
+    previews = []
+    for item in recovery["recipes"]:
+        if item["recoveryProbability"] != "høy":
+            continue
+        current = production[str(item["id"])]
+        candidate_groups = {}
+        for source_name, candidate in sources:
+            match_type = ""
+            if str(candidate.get("id") or "") == str(item["id"]):
+                match_type = "id"
+            elif item.get("link") and str(candidate.get("link") or "").strip() == str(item["link"]).strip():
+                match_type = "lenke"
+            if not match_type:
+                continue
+            recoverable = {}
+            for missing_field in item["missingFields"]:
+                value = recovery_field_value(candidate, missing_field)
+                if any(record_has(value, key) for key in value):
+                    recoverable[missing_field] = value
+            if not recoverable:
+                continue
+            fingerprint = hash_json(recoverable)
+            group = candidate_groups.setdefault(fingerprint, {
+                "recoverableFields": recoverable, "sources": [], "matchTypes": set(),
+            })
+            group["sources"].append(source_name)
+            group["matchTypes"].add(match_type)
+        groups = []
+        for fingerprint, group in candidate_groups.items():
+            groups.append({
+                "fingerprint": fingerprint,
+                "recoverableFields": group["recoverableFields"],
+                "sources": sorted(set(group["sources"])),
+                "matchTypes": sorted(group["matchTypes"]),
+            })
+        groups.sort(key=lambda group: (-len(group["sources"]), group["fingerprint"]))
+        previews.append({
+            "id": item["id"], "name": item["name"], "link": item.get("link"),
+            "production": {
+                "ingredientsText": current.get("ingredientsText"),
+                "structuredIngredients": current.get("structuredIngredients"),
+                "instructions": current.get("instructions"),
+                "structuredInstructions": current.get("structuredInstructions"),
+            },
+            "missingFields": item["missingFields"], "candidateVersions": groups,
+            "hasConflictingVersions": len(groups) > 1,
+        })
+    return previews
+
+
+def high_recovery_html(previews):
+    cards = []
+    for recipe in previews:
+        versions = []
+        for index, version in enumerate(recipe["candidateVersions"], 1):
+            fields = []
+            for field, value in version["recoverableFields"].items():
+                fields.append(f"<h4>{html.escape(field)}</h4><pre>{html.escape(json.dumps(value, ensure_ascii=False, indent=2))}</pre>")
+            sources = "".join(f"<li><code>{html.escape(source)}</code></li>" for source in version["sources"])
+            versions.append(f"""<div class="candidate"><h3>Historisk kandidat {index}</h3>
+<p><b>Kan gjenopprette:</b> {html.escape(', '.join(version['recoverableFields']))}<br>
+<b>Treff:</b> {html.escape(', '.join(version['matchTypes']))}<br><b>Identiske kilder:</b> {len(version['sources'])}</p>
+{''.join(fields)}<details><summary>Vis alle kilder</summary><ul>{sources}</ul></details></div>""")
+        current = html.escape(json.dumps(recipe["production"], ensure_ascii=False, indent=2))
+        conflict = '<span class="warn">Flere ulike historiske versjoner – må velges manuelt</span>' if recipe["hasConflictingVersions"] else '<span class="ok">Én unik historisk versjon</span>'
+        cards.append(f"""<article><header><div><h2>{html.escape(str(recipe['name']))}</h2><small>ID {html.escape(str(recipe['id']))}</small></div>{conflict}</header>
+<p><b>Mangler i produksjon:</b> {html.escape(', '.join(recipe['missingFields']))} · <a href="{html.escape(str(recipe.get('link') or '#'))}">Original kilde</a></p>
+<div class="compare"><div><h3>Produksjon nå</h3><pre>{current}</pre></div><div><h3>Mulige gjenopprettingsdata</h3>{''.join(versions)}</div></div></article>""")
+    return f"""<!doctype html><html lang="no"><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>Recipe Recovery – høy sannsynlighet</title><style>
+body{{font:15px system-ui;background:#f5f3ee;color:#263126;margin:0}}main{{max-width:1400px;margin:auto;padding:28px}}article{{background:white;border-radius:16px;padding:20px;margin:18px 0;box-shadow:0 4px 18px #0001}}header{{display:flex;justify-content:space-between;gap:16px;align-items:start}}
+.compare{{display:grid;grid-template-columns:1fr 1fr;gap:16px}}pre{{white-space:pre-wrap;overflow-wrap:anywhere;background:#f2f4f0;padding:12px;border-radius:10px;max-height:440px;overflow:auto}}.candidate{{border:1px solid #d8ded4;padding:12px;border-radius:12px;margin-bottom:12px}}
+.warn{{background:#fff0cd;color:#744b00;padding:6px 10px;border-radius:20px}}.ok{{background:#dff1df;color:#28552c;padding:6px 10px;border-radius:20px}}code{{word-break:break-all}}small{{color:#69736a}}a{{color:#356344}}@media(max-width:800px){{.compare{{grid-template-columns:1fr}}header{{display:block}}}}
+</style><main><h1>Recipe Recovery – side-by-side preview</h1><p>{len(previews)} oppskrifter med høy gjenopprettingssannsynlighet. Dette er kun sammenligning; ingen data er skrevet tilbake.</p>{''.join(cards)}</main></html>"""
+
+
+def build_url_reimport_plan(recovery):
+    queue = []
+    for recipe in recovery["recipes"]:
+        if recipe["recoveryProbability"] != "lav":
+            continue
+        link = str(recipe.get("link") or "").strip()
+        source_type = "Instagram" if "instagram" in link else "TikTok" if "tiktok" in link else "Nettside" if link else "Mangler URL"
+        queue.append({
+            "id": recipe["id"], "name": recipe["name"], "source": recipe.get("source"),
+            "url": link, "sourceType": source_type, "missingFields": recipe["missingFields"],
+            "workflow": [
+                "Åpne original URL",
+                "Hent caption/tekst eller velg skjermbilder",
+                "Kjør automatisk OCR og AI-parser",
+                "Kontroller markerte usikre felt i forhåndsvisningen",
+                "Sammenlign med eksisterende metadata",
+                "Lagre bare etter eksplisitt brukergodkjenning",
+            ],
+            "databaseWriteAllowed": False,
+        })
+    return queue
+
+
+def url_reimport_html(queue):
+    rows = "".join(f"""<tr><td>{html.escape(str(item['name']))}<small>ID {html.escape(str(item['id']))}</small></td>
+<td>{html.escape(item['sourceType'])}</td><td>{html.escape(', '.join(item['missingFields']))}</td>
+<td><a href="{html.escape(item['url'] or '#')}">{html.escape(item['url'] or 'Mangler URL')}</a></td><td>Venter på reimport</td></tr>""" for item in queue)
+    return f"""<!doctype html><html lang="no"><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>Recipe Recovery – URL-reimportplan</title><style>body{{font:15px system-ui;background:#f5f3ee;color:#263126;margin:0}}main{{max-width:1200px;margin:auto;padding:28px}}.notice{{background:#fff0cd;padding:14px;border-radius:12px}}table{{width:100%;border-collapse:collapse;background:white}}th,td{{padding:10px;border-bottom:1px solid #e1e5df;text-align:left;vertical-align:top}}th{{background:#324b35;color:white}}small{{display:block;color:#69736a}}a{{color:#356344;word-break:break-all}}.table{{overflow:auto;border-radius:14px}}input{{width:100%;box-sizing:border-box;padding:12px;margin:18px 0}}</style>
+<main><h1>Recipe Recovery – URL-basert reimport</h1><p class="notice">Ingen lokale kopier brukes til rekonstruksjon. Hver av de {len(queue)} oppskriftene skal gå gjennom original URL, automatisk OCR/AI og redigerbar forhåndsvisning. Lagring krever alltid et eksplisitt valg.</p>
+<ol><li>Åpne original URL.</li><li>Hent caption eller velg skjermbilder.</li><li>OCR og AI-parser starter automatisk.</li><li>Kontroller usikre felt.</li><li>Lagre først etter godkjenning.</li></ol>
+<input id="q" placeholder="Søk i reimportkøen"><div class="table"><table><thead><tr><th>Oppskrift</th><th>Kildetype</th><th>Mangler</th><th>Original URL</th><th>Status</th></tr></thead><tbody>{rows}</tbody></table></div>
+<script>q.oninput=()=>document.querySelectorAll('tbody tr').forEach(r=>r.hidden=!r.innerText.toLowerCase().includes(q.value.toLowerCase()))</script></main></html>"""
+
+
+def generate_recipe_recovery_project(rows, recovery, output):
+    project = output / "Recipe Recovery"
+    project.mkdir()
+    high = build_high_recovery_preview(rows, recovery)
+    queue = build_url_reimport_plan(recovery)
+    (project / "high-confidence-side-by-side.json").write_text(json.dumps(high, ensure_ascii=False, indent=2), encoding="utf-8")
+    (project / "high-confidence-side-by-side.html").write_text(high_recovery_html(high), encoding="utf-8")
+    (project / "url-reimport-plan.json").write_text(json.dumps(queue, ensure_ascii=False, indent=2), encoding="utf-8")
+    (project / "url-reimport-plan.html").write_text(url_reimport_html(queue), encoding="utf-8")
+    readme = f"""# Recipe Recovery
+
+- Høy sannsynlighet: {len(high)} side-by-side-sammenligninger
+- Lav sannsynlighet: {len(queue)} oppskrifter i URL-basert reimportkø
+- Produksjonsendringer fra dette prosjektet: ingen
+- Historiske kilder brukes kun som sammenligningsgrunnlag.
+- Reimport krever redigerbar forhåndsvisning og eksplisitt lagring.
+"""
+    (project / "README.md").write_text(readme, encoding="utf-8")
+    return project, high, queue
+
+
 def generate_review_tracks(rows, output):
     safe = build_safe_track(rows)
     rollback = {"createdAt": datetime.datetime.now().isoformat(), "appId": APP_ID, "recipes": [recipe["rollback"] for recipe in safe["recipes"]]}
@@ -572,16 +723,94 @@ def generate_review_tracks(rows, output):
     recovery = build_recovery_track(rows)
     (output / "missing-recipes-recovery.json").write_text(json.dumps(recovery, ensure_ascii=False, indent=2), encoding="utf-8")
     (output / "missing-recipes-recovery-report.html").write_text(recovery_html(recovery), encoding="utf-8")
+    generate_recipe_recovery_project(rows, recovery, output)
     return safe, recovery
+
+
+def patch_recipe_fields(recipe_id, current_recipe, fields):
+    updated = dict(current_recipe)
+    updated.update(fields)
+    query = urllib.parse.urlencode({"id": f"eq.{recipe_id}", "app_id": f"eq.{APP_ID}"})
+    supabase_request("PATCH", "recipes", payload=recipe_to_row(updated), query=query, prefer="return=minimal")
+
+
+def rollback_safe_changes(original_by_id, safe_recipes, applied_ids):
+    for recipe in reversed(safe_recipes):
+        recipe_id = str(recipe["id"])
+        if recipe_id not in applied_ids:
+            continue
+        original = original_by_id[recipe_id]
+        patch_recipe_fields(recipe["id"], original, recipe["rollback"]["fields"])
+
+
+def verify_safe_application(before_rows, after_rows, safe):
+    before = {str(row.get("id")): row_to_recipe(row) for row in before_rows}
+    after = {str(row.get("id")): row_to_recipe(row) for row in after_rows}
+    failures = []
+    for change in safe["recipes"]:
+        recipe_id = str(change["id"])
+        expected = dict(before[recipe_id])
+        expected.update(change["after"])
+        if after.get(recipe_id) != expected:
+            failures.append({"id": change["id"], "name": change["name"]})
+    return {"verified": not failures, "checkedRecipes": len(safe["recipes"]), "failures": failures}
+
+
+def execute_safe_track(rows, safe, approved_sha, output):
+    safe_sha = hash_json(safe)
+    if approved_sha != safe_sha:
+        raise SystemExit(f"Avbrutt: godkjent Spor A-SHA samsvarer ikke. Dagens SHA er {safe_sha}.")
+    original_by_id = {str(row.get("id")): row_to_recipe(row) for row in rows}
+    applied = set()
+    try:
+        for recipe in safe["recipes"]:
+            recipe_id = str(recipe["id"])
+            patch_recipe_fields(recipe["id"], original_by_id[recipe_id], recipe["after"])
+            applied.add(recipe_id)
+    except Exception:
+        rollback_safe_changes(original_by_id, safe["recipes"], applied)
+        raise
+    after_rows = fetch_rows()
+    verification = verify_safe_application(rows, after_rows, safe)
+    (output / "safe-normalization-application-verification.json").write_text(
+        json.dumps(verification, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    if not verification["verified"]:
+        rollback_safe_changes(original_by_id, safe["recipes"], applied)
+        raise SystemExit("Etterkontroll feilet. Alle anvendte Spor A-endringer ble rullet tilbake.")
+    return verification
+
+
+def execute_rollback(rows, rollback_path, approved_sha):
+    payload = json.loads(rollback_path.read_text(encoding="utf-8"))
+    rollback_sha = hash_json(payload)
+    if approved_sha != rollback_sha:
+        raise SystemExit(f"Avbrutt: rollback-SHA samsvarer ikke. Dagens SHA er {rollback_sha}.")
+    current = {str(row.get("id")): row_to_recipe(row) for row in rows}
+    for item in payload.get("recipes", []):
+        recipe_id = str(item["id"])
+        if recipe_id not in current:
+            raise SystemExit(f"Avbrutt: oppskrift {recipe_id} finnes ikke lenger.")
+        patch_recipe_fields(item["id"], current[recipe_id], item["fields"])
+    return len(payload.get("recipes", []))
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--apply", action="store_true")
-    parser.add_argument("--approved-sha", default="")
+    parser.add_argument("--apply", action="store_true", help="Deaktivert gammel bred migrering")
+    parser.add_argument("--apply-safe", action="store_true")
+    parser.add_argument("--approved-safe-sha", default="")
+    parser.add_argument("--rollback", type=pathlib.Path)
+    parser.add_argument("--approved-rollback-sha", default="")
     args = parser.parse_args()
+    if args.apply:
+        raise SystemExit("Den brede --apply-modusen er deaktivert. Bruk kun --apply-safe med godkjent Spor A-SHA.")
     load_env()
     rows = fetch_rows()
+    if args.rollback:
+        count = execute_rollback(rows, args.rollback, args.approved_rollback_sha)
+        print(f"Rollback fullført for {count} oppskrifter.")
+        return
     timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     output = ROOT / ".data-migrations" / timestamp
     output.mkdir(parents=True)
@@ -603,21 +832,20 @@ def main():
     (output / "report.md").write_text(report_markdown({**result, "changes": changes}, verification, output), encoding="utf-8")
     safe_track, recovery_track = generate_review_tracks(json.loads(backup_path.read_text(encoding="utf-8")), output)
     recovery_counts = collections.Counter(recipe["recoveryProbability"] for recipe in recovery_track["recipes"])
+    safe_approval_sha = hash_json(safe_track)
     summary = {
         **result["stats"], "approvalSha": approval_sha, "backupVerified": verification["verified"],
         "safeRecipes": len(safe_track["recipes"]), "safeEvents": len(safe_track["events"]),
-        "safeChangeTypes": safe_track["totals"], "recovery": dict(recovery_counts), "output": str(output),
+        "safeChangeTypes": safe_track["totals"], "safeApprovalSha": safe_approval_sha,
+        "rollbackSha": hash_json(json.loads((output / "safe-normalization-rollback.json").read_text(encoding="utf-8"))),
+        "recovery": dict(recovery_counts), "output": str(output),
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
-    if not args.apply:
+    if not args.apply_safe:
         print("DRY RUN: Ingen databaseendringer eller SQL ble generert.")
         return
-    if args.approved_sha != approval_sha:
-        raise SystemExit("Avbrutt: eksplisitt godkjent SHA samsvarer ikke med dagens diff.")
-    for change in changes:
-        query = urllib.parse.urlencode({"id": f"eq.{change['id']}", "app_id": f"eq.{APP_ID}"})
-        supabase_request("PATCH", "recipes", payload=change["row"], query=query, prefer="return=minimal")
-    print(f"Oppdatert {len(changes)} oppskrifter. Backup: {backup_path}")
+    application_verification = execute_safe_track(rows, safe_track, args.approved_safe_sha, output)
+    print(f"Spor A fullført og verifisert for {application_verification['checkedRecipes']} oppskrifter. Backup: {backup_path}")
 
 
 if __name__ == "__main__":
