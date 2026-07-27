@@ -3,32 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Middag</title>
-    <link rel="manifest" href="manifest.webmanifest?v=23" />
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png?v=23" />
-  <link rel="icon" type="image/jpeg" href="favicon.jpeg?v=23" />
-  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=23" />
-  <meta name="theme-color" content="#407946" />
-  <link rel="stylesheet" href="styles.css?v=23" />
+  <title>Matplan</title>
+  <meta name="description" content="Ukesmeny, oppskrifter, handleliste og fryseroversikt." />
+  <link rel="manifest" href="manifest.webmanifest?v=25" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png?v=25" />
+  <link rel="icon" type="image/jpeg" href="favicon.jpeg?v=25" />
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=25" />
+  <meta name="theme-color" content="#f7f3ec" />
+  <link rel="stylesheet" href="styles.css?v=25" />
 </head>
 <body>
-  <header>
-    <div>
-      <h1>🍝 Middag</h1>
-      <p>Ukehandel, oppskrifter og handleliste for Øyvind & Melanie</p>
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">M</span>
+      <div>
+        <h1>Matplan</h1>
+        <p>God middag, uten mer styr.</p>
+      </div>
     </div>
     <div class="header-actions"><span id="liveStatus" class="live-status">● Live</span></div>
   </header>
 
   <main>
     <section id="viewPlan" class="view active">
-      <section class="card hero-card">
+      <section class="screen-intro">
         <div class="section-title">
           <div>
             <h2>Ukesmeny</h2>
-            <p class="hint">Skriv inn retter fritt, eller legg til én/flere oppskrifter per dag.</p>
+            <p class="hint">Planlegg dagene slik det passer dere.</p>
           </div>
-          <button id="resetPlanInlineBtn" class="ghost">Nullstill ukeplan</button>
+          <button id="resetPlanInlineBtn" class="ghost danger-subtle">Tøm planen</button>
         </div>
         <div class="period-grid">
           <label>Fra dato
@@ -39,19 +43,19 @@
             <input type="date" id="endDate">
             <span id="endDateLabel" class="date-weekday"></span>
           </label>
-          <button id="createDaysBtn">Lag dager</button>
+          <button id="createDaysBtn">Vis periode</button>
         </div>
       </section>
 
-      <section class="card smart-card">
+      <section class="card smart-card accent-card">
         <div class="section-title">
           <h2>Smart velger</h2>
-          <button id="randomWeekBtn" class="ghost">🎲 Tilfeldig uke</button>
+          <button id="randomWeekBtn" class="ghost">Overrask meg</button>
         </div>
         <label>Spør appen
           <textarea id="smartPrompt" rows="2" placeholder="F.eks. Lag en uke med mye vegetar og én kjøttrett."></textarea>
         </label>
-        <button id="aiWeekBtn" class="primary">Lag smart ukesmeny</button>
+        <button id="aiWeekBtn" class="primary">Foreslå ukesmeny</button>
         <p id="smartStatus" class="hint"></p>
       </section>
 
@@ -65,20 +69,36 @@
 
       <section class="card week-overview-card">
         <div class="section-title">
-          <h2>📅 Planlagt meny</h2>
+          <h2>Planlagt meny</h2>
           <span id="weekOverviewRange" class="pill">Oversikt</span>
         </div>
         <div id="weekOverview" class="week-overview"></div>
       </section>
     </section>
 
-    <section id="viewShopping" class="view">
-      <section class="card">
+    <section id="viewShopping" class="view shopping-view">
+      <section class="screen-intro shopping-heading">
         <div class="section-title">
-          <h2>Handleliste</h2>
-          <button id="generateListBtn">Generer fra ukesmeny</button><button id="resetShoppingBtn" class="ghost">Nullstill handleliste</button>
+          <div>
+            <h2>Handleliste</h2>
+            <p id="shoppingRemaining" class="hint">Listen er klar.</p>
+          </div>
+          <button id="generateListBtn" class="ghost">Hent fra ukesmenyen</button>
         </div>
-        <p class="hint">Endre tekst direkte, kryss av det dere har, eller legg til egne varer under riktig kategori.</p>
+      </section>
+      <section class="shopping-shell" aria-label="Handleliste">
+        <form id="shoppingQuickAdd" class="shopping-composer" autocomplete="off">
+          <span class="composer-plus" aria-hidden="true">+</span>
+          <input id="shoppingQuickInput" enterkeyhint="done" aria-label="Ny vare" placeholder="Legg til vare" />
+          <select id="shoppingQuickCategory" aria-label="Kategori">
+            <option value="">Automatisk kategori</option>
+          </select>
+          <button type="submit" class="composer-submit" aria-label="Legg til vare">Legg til</button>
+        </form>
+        <div class="shopping-toolbar">
+          <span id="shoppingSaveStatus" class="save-status" role="status" aria-live="polite">Alle endringer er lagret</span>
+          <button id="resetShoppingBtn" class="text-button danger-subtle" type="button">Tøm listen</button>
+        </div>
         <div id="shoppingList" class="shopping-list"></div>
       </section>
     </section>
@@ -87,7 +107,7 @@
       <section class="card">
         <div class="section-title">
           <h2>Oppskrifter</h2>
-          <button id="cleanupRecipesBtn" class="ghost">Rydd/oversett oppskrifter</button><button id="addRecipeBtn" class="primary">+ Legg til oppskrift</button>
+          <button id="addRecipeBtn" class="primary">Legg til oppskrift</button>
         </div>
         <div class="recipe-toolbar">
           <input id="recipeSearch" placeholder="Søk etter rett, kategori, tag eller kilde …" />
@@ -110,10 +130,10 @@
       <section class="card hero-card">
         <div class="section-title">
           <div>
-            <h2>❄️ Fryser</h2>
-            <p class="hint">Hold oversikt over det dere har, og få middagsforslag basert på fryseren.</p>
+          <h2>Fryser</h2>
+            <p class="hint">Se hva dere har, og finn oppskrifter som bruker det.</p>
           </div>
-          <button id="freezerSuggestBtn" class="primary">💡 Forslag</button>
+          <button id="freezerSuggestBtn" class="primary">Finn middagsforslag</button>
         </div>
         <div id="freezerSuggestion" class="freezer-suggestion">Trykk “Forslag” for å få konkrete forslag fra oppskriftsboken.</div>
         <div id="freezerUseFirst" class="freezer-use-first"></div>
@@ -131,10 +151,10 @@
   </main>
 
   <nav id="appBottomNav" class="app-bottom-nav">
-    <button type="button" class="nav-btn active" data-view="viewPlan">🍽️<span>Ukesmeny</span></button>
-    <button type="button" class="nav-btn" data-view="viewShopping">🛒<span>Handleliste</span></button>
-    <button type="button" class="nav-btn" data-view="viewRecipes">📚<span>Oppskrifter</span></button>
-      <button type="button" class="nav-btn" data-view="viewFreezer">❄️<span>Fryser</span></button>
+    <button type="button" class="nav-btn active" data-view="viewPlan" aria-label="Ukesmeny"><span class="nav-icon" aria-hidden="true">⌂</span><span>Ukesmeny</span></button>
+    <button type="button" class="nav-btn" data-view="viewShopping" aria-label="Handleliste"><span class="nav-icon" aria-hidden="true">✓</span><span>Handleliste</span></button>
+    <button type="button" class="nav-btn" data-view="viewRecipes" aria-label="Oppskrifter"><span class="nav-icon" aria-hidden="true">▤</span><span>Oppskrifter</span></button>
+    <button type="button" class="nav-btn" data-view="viewFreezer" aria-label="Fryser"><span class="nav-icon" aria-hidden="true">❄</span><span>Fryser</span></button>
   </nav>
 
   <dialog id="importDialog">
@@ -259,6 +279,6 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script src="app.js?v=23"></script>
+  <script src="app.js?v=25"></script>
 </body>
 </html>

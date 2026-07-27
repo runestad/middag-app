@@ -1211,4 +1211,507 @@ generateShoppingList = function(){
   oldGenerateShoppingListV23();
 }
 
+/* ===== v25 professional UI, resilient sync and seamless shopping ===== */
+const SHOPPING_EPOCH = "2000-01-01T00:00:00.000Z";
+let saveRevisionV25 = 0;
+let savedRevisionV25 = 0;
+let saveWorkerV25 = null;
+let saveRetryV25 = null;
+let shoppingRenderTimerV25 = null;
+const collapsedShoppingCategoriesV25 = new Set();
+
+function nowIsoV25(){ return new Date().toISOString(); }
+categorize = function(line){
+  const value = normalize(line);
+  const has = words => words.some(word => value.includes(normalize(word)));
+  if (has(["kylling","biff","flankestek","okse","kjøttdeig","karbonadedeig","svin","kotelett","pølse","kalkun","bacon","lam","skinke"])) return "Kjøtt";
+  if (has(["halloumi","melk","fløte","rømme","parmesan","feta","cottage cheese","yoghurt","smør","mozzarella","cheddar","ost"])) return "Meieri";
+  if (has(["tofu"])) return "Kjølevarer";
+  if (has(["frossen","frosne","edamame"])) return "Frys";
+  if (has(["paprikapulver","chilipulver","salt","pepper","oregano","basilikum","gochugaru","spisskummen","kanel","chiliflak","karri","garam masala","laurbær","sesamfrø","timian","rosmarin","kajenne"])) return "Krydder";
+  if (has(["boks","kokosmelk","kidneybønner","kikerter","hakkede tomater","hermetisk","mais på boks"])) return "Hermetikk/halvfabrikat";
+  if (has(["maizena","maisstivelse","soyasaus","tamari","sesamolje","olivenolje","riseddik","eddik","sriracha","fiskesaus","kraft","buljong","peanøttsmør","tomatpuré","tomatpure","panko","brødsmuler","hvetemel"," hoisin","worcestershire","pasta","nudler","ris","orzo","bulgur","quinoa","couscous","linser"])) return "Tørrvarer";
+  if (has(["glutenfri"])) return "Glutenfritt";
+  if (has(["brød","pita","tortilla","burgerbrød","wrap","naan"])) return "Bakevarer";
+  if (has(["stangselleri","selleri","agurk","gulrot","rødløk","gul løk","vårløk","løk","hvitløk","ingefær","potet","søtpotet","squash","tomat","paprika","sopp","brokkoli","blomkål","kål","spinat","salat","lime","sitron","koriander","persille","avokado","aubergine","chili","ruccola","asparges"])) return "Frukt og grønt";
+  return "Annet";
+};
+function shoppingIdV25(){
+  if (globalThis.crypto?.randomUUID) return `shop-${crypto.randomUUID()}`;
+  return `shop-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+function shoppingItemTimeV25(item){ return Date.parse(item?.updatedAt || SHOPPING_EPOCH) || 0; }
+function isVisibleShoppingItemV25(item){ return item && !item.deleted; }
+function ensureShoppingMetadataV25(items){
+  return (Array.isArray(items) ? items : []).map((item, index) => ({
+    ...item,
+    id: item.id || `shop-legacy-${index}-${normalize(item.text || "")}`,
+    text: String(item.text || "").trim(),
+    category: item.category || categorize(item.text || ""),
+    done: Boolean(item.done),
+    deleted: Boolean(item.deleted),
+    updatedAt: item.updatedAt || SHOPPING_EPOCH
+  }));
+}
+function mergeShoppingStatesV25(localItems, remoteItems){
+  const merged = new Map();
+  for (const item of [...ensureShoppingMetadataV25(remoteItems), ...ensureShoppingMetadataV25(localItems)]) {
+    const current = merged.get(item.id);
+    if (!current || shoppingItemTimeV25(item) >= shoppingItemTimeV25(current)) merged.set(item.id, item);
+  }
+  return [...merged.values()];
+}
+function visibleShoppingItemsV25(){ return ensureShoppingMetadataV25(shoppingItems).filter(isVisibleShoppingItemV25); }
+function setShoppingStatusV25(text, state = ""){
+  const el = $("shoppingSaveStatus");
+  if (!el) return;
+  el.textContent = text;
+  el.className = `save-status${state ? ` ${state}` : ""}`;
+}
+function updateShoppingRemainingV25(){
+  const visible = visibleShoppingItemsV25();
+  const remaining = visible.filter(item => !item.done).length;
+  const done = visible.length - remaining;
+  const el = $("shoppingRemaining");
+  if (el) el.textContent = visible.length
+    ? `${remaining} ${remaining === 1 ? "vare" : "varer"} gjenstår${done ? ` · ${done} fullført` : ""}`
+    : "Legg til en vare, eller hent listen fra ukesmenyen.";
+}
+function statePayloadV25(){
+  return {
+    items: clonePlanSafe(plan),
+    shoppingItems: ensureShoppingMetadataV25(shoppingItems),
+    freezerItems: freezerItems || [],
+    meta: appMeta || {},
+    updatedAt: appMeta.updatedAt || nowIsoV25()
+  };
+}
+function persistLocalStateV25(){
+  try {
+    localStorage.setItem("middag_state_v25", JSON.stringify(statePayloadV25()));
+    localStorage.setItem("middag_plan", JSON.stringify(plan || {}));
+  } catch (error) {
+    console.warn("Kunne ikke lagre lokalt", error);
+  }
+}
+async function runSaveWorkerV25(){
+  if (saveWorkerV25) return saveWorkerV25;
+  saveWorkerV25 = (async () => {
+    while (savedRevisionV25 < saveRevisionV25) {
+      const revision = saveRevisionV25;
+      const payload = statePayloadV25();
+      isSavingPlan = true;
+      setLiveStatus("Lagrer", "syncing");
+      setShoppingStatusV25("Lagrer endringer …", "pending");
+      try {
+        const response = await fetch("/api/plan", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({plan: payload})
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.ok === false) throw new Error(data.error || "Lagringen feilet");
+        savedRevisionV25 = revision;
+        lastRemoteUpdatedAt = payload.updatedAt;
+        setLiveStatus("Live");
+        setShoppingStatusV25("Alle endringer er lagret");
+      } catch (error) {
+        console.warn("Lagring feilet", error);
+        setLiveStatus("Ikke synkronisert", "error");
+        setShoppingStatusV25("Kunne ikke lagre. Prøver igjen …", "error");
+        clearTimeout(saveRetryV25);
+        saveRetryV25 = setTimeout(runSaveWorkerV25, 3500);
+        break;
+      } finally {
+        isSavingPlan = false;
+      }
+    }
+  })().finally(() => { saveWorkerV25 = null; });
+  return saveWorkerV25;
+}
+
+savePlan = function(){
+  appMeta.updatedAt = nowIsoV25();
+  lastLocalSaveAt = Date.now();
+  saveRevisionV25 += 1;
+  persistLocalStateV25();
+  void runSaveWorkerV25();
+};
+
+function shoppingCategoryOptionsV25(){
+  const select = $("shoppingQuickCategory");
+  if (!select || select.options.length > 1) return;
+  select.insertAdjacentHTML("beforeend", CATEGORIES.map(category =>
+    `<option value="${escapeAttr(category)}">${escapeHtml(category)}</option>`
+  ).join(""));
+}
+function findDuplicateShoppingItemV25(text, category){
+  const needle = normalize(normalizeIngredientName(text));
+  return visibleShoppingItemsV25().find(item =>
+    normalize(normalizeIngredientName(item.text)) === needle &&
+    (item.category || categorize(item.text)) === category
+  );
+}
+function flashShoppingItemV25(id){
+  const row = document.querySelector(`[data-shopping-id="${CSS.escape(String(id))}"]`);
+  if (!row) return;
+  row.classList.remove("shopping-duplicate");
+  requestAnimationFrame(() => row.classList.add("shopping-duplicate"));
+  row.scrollIntoView({block: "nearest", behavior: "smooth"});
+}
+function addShoppingItemV25(text, preferredCategory = ""){
+  let cleaned = normalizeIngredientLineForDisplay(String(text || "").trim());
+  if (/^[a-zæøå]/i.test(cleaned)) cleaned = capitalize(cleaned);
+  if (!cleaned) return false;
+  const category = preferredCategory || categorize(cleaned);
+  const duplicate = findDuplicateShoppingItemV25(cleaned, category);
+  if (duplicate) {
+    if (duplicate.done) {
+      duplicate.done = false;
+      duplicate.updatedAt = nowIsoV25();
+      savePlan();
+      renderShoppingList(shoppingItems);
+    }
+    flashShoppingItemV25(duplicate.id);
+    setShoppingStatusV25("Varen finnes allerede i listen");
+    return false;
+  }
+  const item = {
+    id: shoppingIdV25(),
+    text: cleaned,
+    category,
+    recipe: "Egen vare",
+    done: false,
+    deleted: false,
+    updatedAt: nowIsoV25()
+  };
+  shoppingItems = [...ensureShoppingMetadataV25(shoppingItems), item];
+  renderShoppingList(shoppingItems);
+  savePlan();
+  requestAnimationFrame(() => flashShoppingItemV25(item.id));
+  return true;
+}
+function bindShoppingComposerV25(){
+  shoppingCategoryOptionsV25();
+  const form = $("shoppingQuickAdd");
+  if (!form || form.dataset.bound === "true") return;
+  form.dataset.bound = "true";
+  form.addEventListener("submit", event => {
+    event.preventDefault();
+    const input = $("shoppingQuickInput");
+    if (!input) return;
+    if (addShoppingItemV25(input.value, $("shoppingQuickCategory")?.value || "")) input.value = "";
+    input.focus({preventScroll: true});
+  });
+  $("shoppingQuickInput")?.addEventListener("keydown", event => {
+    if (event.key !== "Enter" || event.isComposing) return;
+    event.preventDefault();
+    const input = event.currentTarget;
+    if (addShoppingItemV25(input.value, $("shoppingQuickCategory")?.value || "")) input.value = "";
+    input.focus({preventScroll: true});
+  });
+}
+
+function shoppingRowHtmlV25(item){
+  const source = item.recipe && item.recipe !== "Egen vare" ? item.recipe : "";
+  return `<div class="shopping-row${item.done ? " done" : ""}" data-shopping-id="${escapeAttr(item.id)}">
+    <input class="shopping-check" type="checkbox" aria-label="${item.done ? "Marker som ikke kjøpt" : "Marker som kjøpt"}" ${item.done ? "checked" : ""} onchange="toggleShoppingDoneV25('${escapeAttr(item.id)}', this.checked)">
+    <div class="shopping-item-main">
+      <button type="button" class="shopping-item-text" onclick="editShoppingItemV25('${escapeAttr(item.id)}')">${escapeHtml(item.text)}</button>
+      ${source ? `<span class="shopping-source">Fra ${escapeHtml(source)}</span>` : ""}
+    </div>
+    <button type="button" class="shopping-more" aria-label="Flere valg" aria-expanded="false" onclick="toggleShoppingActionsV25('${escapeAttr(item.id)}', this)">•••</button>
+    <div class="shopping-actions"><button type="button" class="shopping-delete" onclick="removeShoppingItemV25('${escapeAttr(item.id)}')">Slett vare</button></div>
+  </div>`;
+}
+function renderShoppingCategoryV25(category, items){
+  if (!items.length) return "";
+  const collapsed = collapsedShoppingCategoriesV25.has(category);
+  return `<section class="shopping-category" data-shopping-category="${escapeAttr(category)}">
+    <button type="button" class="category-toggle" aria-expanded="${!collapsed}" onclick="toggleShoppingCategoryV25('${escapeAttr(category)}')">
+      <span>${escapeHtml(category)}</span><span class="category-count">${items.length}</span>
+    </button>
+    <div class="category-items" ${collapsed ? "hidden" : ""}>${items.map(shoppingRowHtmlV25).join("")}</div>
+  </section>`;
+}
+renderShoppingList = function(items){
+  shoppingItems = ensureShoppingMetadataV25(items || []);
+  const box = $("shoppingList");
+  if (!box) return;
+  const visible = visibleShoppingItemsV25();
+  const active = visible.filter(item => !item.done);
+  const done = visible.filter(item => item.done);
+  const grouped = new Map(CATEGORIES.map(category => [category, []]));
+  for (const item of active) {
+    const predictedCategory = categorize(item.text);
+    const category = predictedCategory !== "Annet"
+      ? predictedCategory
+      : (CATEGORIES.includes(item.category) ? item.category : "Annet");
+    item.category = category;
+    if (!grouped.has(category)) grouped.set(category, []);
+    grouped.get(category).push(item);
+  }
+  const activeMarkup = [...grouped.entries()].map(([category, categoryItems]) =>
+    renderShoppingCategoryV25(category, categoryItems)
+  ).join("");
+  box.innerHTML = visible.length
+    ? `<p class="shopping-summary">${active.length} ${active.length === 1 ? "vare" : "varer"} igjen</p>
+       ${activeMarkup || `<div class="empty-state">Alt er handlet inn.</div>`}
+       ${done.length ? `<section class="completed-section">
+         <div class="completed-head">
+           <button type="button" class="completed-toggle" aria-expanded="false" onclick="toggleCompletedShoppingV25(this)">Fullført (${done.length})</button>
+           <button type="button" class="text-button danger-subtle" onclick="clearCompletedShoppingV25()">Fjern fullførte</button>
+         </div>
+         <div class="completed-items" hidden>${done.map(shoppingRowHtmlV25).join("")}</div>
+       </section>` : ""}`
+    : `<div class="empty-state"><strong>Handlelisten er tom</strong><br>Legg til en vare over, eller hent ingrediensene fra ukesmenyen.</div>`;
+  updateShoppingRemainingV25();
+};
+
+window.toggleShoppingCategoryV25 = function(category){
+  if (collapsedShoppingCategoriesV25.has(category)) collapsedShoppingCategoriesV25.delete(category);
+  else collapsedShoppingCategoriesV25.add(category);
+  const section = document.querySelector(`[data-shopping-category="${CSS.escape(category)}"]`);
+  const items = section?.querySelector(".category-items");
+  const button = section?.querySelector(".category-toggle");
+  if (items) items.hidden = collapsedShoppingCategoriesV25.has(category);
+  if (button) button.setAttribute("aria-expanded", String(!collapsedShoppingCategoriesV25.has(category)));
+};
+window.toggleCompletedShoppingV25 = function(button){
+  const items = button.closest(".completed-section")?.querySelector(".completed-items");
+  if (!items) return;
+  items.hidden = !items.hidden;
+  button.setAttribute("aria-expanded", String(!items.hidden));
+};
+window.toggleShoppingDoneV25 = function(id, checked){
+  const item = getShoppingItem(id);
+  if (!item) return;
+  item.done = Boolean(checked);
+  item.updatedAt = nowIsoV25();
+  const row = document.querySelector(`[data-shopping-id="${CSS.escape(String(id))}"]`);
+  if (row) row.classList.toggle("done", item.done);
+  updateShoppingRemainingV25();
+  savePlan();
+  clearTimeout(shoppingRenderTimerV25);
+  shoppingRenderTimerV25 = setTimeout(() => renderShoppingList(shoppingItems), 420);
+};
+window.toggleShoppingActionsV25 = function(id, button){
+  const row = document.querySelector(`[data-shopping-id="${CSS.escape(String(id))}"]`);
+  if (!row) return;
+  document.querySelectorAll(".shopping-row.actions-open").forEach(other => {
+    if (other !== row) other.classList.remove("actions-open");
+  });
+  row.classList.toggle("actions-open");
+  button.setAttribute("aria-expanded", String(row.classList.contains("actions-open")));
+};
+window.editShoppingItemV25 = function(id){
+  const item = getShoppingItem(id);
+  const row = document.querySelector(`[data-shopping-id="${CSS.escape(String(id))}"]`);
+  const container = row?.querySelector(".shopping-item-main");
+  if (!item || !container || container.querySelector("input")) return;
+  const input = document.createElement("input");
+  input.className = "shopping-edit-input";
+  input.value = item.text;
+  input.setAttribute("aria-label", "Rediger vare");
+  const finish = commit => {
+    if (!input.isConnected) return;
+    const value = input.value.trim();
+    if (commit && value) {
+      item.text = normalizeIngredientLineForDisplay(value);
+      item.category = categorize(item.text);
+      item.updatedAt = nowIsoV25();
+      savePlan();
+    }
+    renderShoppingList(shoppingItems);
+  };
+  input.addEventListener("keydown", event => {
+    if (event.key === "Enter") { event.preventDefault(); finish(true); }
+    if (event.key === "Escape") finish(false);
+  });
+  input.addEventListener("blur", () => finish(true), {once: true});
+  container.replaceChildren(input);
+  input.focus();
+  input.select();
+};
+window.removeShoppingItemV25 = function(id){
+  const item = getShoppingItem(id);
+  if (!item) return;
+  item.deleted = true;
+  item.updatedAt = nowIsoV25();
+  const row = document.querySelector(`[data-shopping-id="${CSS.escape(String(id))}"]`);
+  if (row) {
+    row.classList.add("is-pending");
+    row.style.opacity = "0";
+    row.style.transform = "translateX(12px)";
+    setTimeout(() => renderShoppingList(shoppingItems), 180);
+  } else renderShoppingList(shoppingItems);
+  savePlan();
+};
+window.clearCompletedShoppingV25 = function(){
+  const done = visibleShoppingItemsV25().filter(item => item.done);
+  if (!done.length) return;
+  if (done.length > 2 && !confirm(`Fjerne ${done.length} fullførte varer?`)) return;
+  const timestamp = nowIsoV25();
+  done.forEach(item => { item.deleted = true; item.updatedAt = timestamp; });
+  renderShoppingList(shoppingItems);
+  savePlan();
+};
+window.retryShoppingSaveV25 = function(){ void runSaveWorkerV25(); };
+
+resetShoppingList = function(){
+  const visible = visibleShoppingItemsV25();
+  if (visible.length && !confirm("Vil du tømme hele handlelisten?")) return;
+  const timestamp = nowIsoV25();
+  shoppingItems = ensureShoppingMetadataV25(shoppingItems).map(item =>
+    isVisibleShoppingItemV25(item) ? {...item, deleted: true, updatedAt: timestamp} : item
+  );
+  renderShoppingList(shoppingItems);
+  savePlan();
+};
+generateShoppingList = function(){
+  const raw = [];
+  const missing = [];
+  for (const day of selectedDays()) {
+    for (const planItem of (plan[day.key] || [])) {
+      if (planItem.type !== "recipe") continue;
+      const recipe = recipeById(planItem.recipeId);
+      if (!recipe || !hasRecipe(recipe)) {
+        if (recipe) missing.push(recipe.name);
+        continue;
+      }
+      for (const line of extractIngredientLines(recipe)) {
+        raw.push({
+          id: shoppingIdV25(),
+          text: line,
+          category: categorize(line),
+          recipe: recipe.name,
+          done: false,
+          deleted: false,
+          updatedAt: nowIsoV25()
+        });
+      }
+    }
+  }
+  const timestamp = nowIsoV25();
+  const tombstones = ensureShoppingMetadataV25(shoppingItems).map(item =>
+    isVisibleShoppingItemV25(item) ? {...item, deleted: true, updatedAt: timestamp} : item
+  );
+  const generated = (typeof mergeShoppingItems === "function" ? mergeShoppingItems(raw) : raw)
+    .map(item => ({...item, id: item.id || shoppingIdV25(), deleted: false, updatedAt: timestamp}));
+  shoppingItems = [...tombstones, ...generated];
+  renderShoppingList(shoppingItems);
+  savePlan();
+  showView("viewShopping");
+  if (missing.length) {
+    setShoppingStatusV25(`${[...new Set(missing)].length} oppskrift mangler ingredienser`, "error");
+  }
+};
+
+syncFromServer = async function(){
+  try {
+    if (isSavingPlan || saveRevisionV25 > savedRevisionV25 || Date.now() - lastLocalSaveAt < 1800) return;
+    setLiveStatus("Synkroniserer", "syncing");
+    const response = await fetch(`/api/plan?ts=${Date.now()}`, {cache: "no-store"});
+    if (!response.ok) throw new Error("Kunne ikke hente fellesdata");
+    const result = await response.json();
+    const remoteState = result.plan || {};
+    const remoteUpdatedAt = remoteState.updatedAt || "";
+    if (remoteUpdatedAt && remoteUpdatedAt !== lastRemoteUpdatedAt && remoteUpdatedAt !== appMeta.updatedAt) {
+      const migrated = migratePlan(remoteState.items || {});
+      const visibleKeys = selectedDays().map(day => day.key);
+      const currentCount = visibleKeys.reduce((sum, key) => sum + ((plan[key] || []).length), 0);
+      const remoteCount = visibleKeys.reduce((sum, key) => sum + ((migrated[key] || []).length), 0);
+      if (!(currentCount > 0 && remoteCount === 0)) plan = migrated;
+      shoppingItems = mergeShoppingStatesV25(shoppingItems, remoteState.shoppingItems || []);
+      freezerItems = remoteState.freezerItems || freezerItems || [];
+      appMeta = remoteState.meta || appMeta;
+      lastRemoteUpdatedAt = remoteUpdatedAt;
+      persistLocalStateV25();
+      createDayRows();
+      renderShoppingList(shoppingItems);
+      renderFreezer();
+    }
+    setLiveStatus("Live");
+  } catch (error) {
+    console.warn("Synkronisering feilet", error);
+    setLiveStatus("Frakoblet", "error");
+    setShoppingStatusV25("Frakoblet – endringer lagres lokalt", "error");
+  }
+};
+startRealtimeSync = function(){
+  if (syncTimer) clearInterval(syncTimer);
+  syncTimer = setInterval(syncFromServer, 2500);
+  setLiveStatus("Live");
+};
+
+const oldShowViewV25 = showView;
+showView = function(view){
+  oldShowViewV25(view);
+  localStorage.setItem("middag_active_view", view);
+  if (view === "viewShopping") {
+    renderShoppingList(shoppingItems);
+    setTimeout(() => $("shoppingQuickInput")?.focus({preventScroll: true}), 50);
+  }
+  window.scrollTo({top: 0, behavior: "smooth"});
+};
+const oldBindAllV25 = bindAll;
+bindAll = function(){
+  oldBindAllV25();
+  bindShoppingComposerV25();
+  document.addEventListener("click", event => {
+    if (!event.target.closest(".shopping-row")) {
+      document.querySelectorAll(".shopping-row.actions-open").forEach(row => row.classList.remove("actions-open"));
+    }
+  });
+};
+
+init = async function(){
+  setLiveStatus("Henter", "syncing");
+  let localState = {};
+  try { localState = JSON.parse(localStorage.getItem("middag_state_v25") || "{}"); } catch (error) {}
+  try {
+    const [recipeResponse, planResponse] = await Promise.all([
+      fetch("/api/recipes", {cache: "no-store"}),
+      fetch("/api/plan", {cache: "no-store"})
+    ]);
+    if (!recipeResponse.ok || !planResponse.ok) throw new Error("Tjenesten svarte ikke");
+    const recipeResult = await recipeResponse.json();
+    const planResult = await planResponse.json();
+    recipes = recipeResult.recipes || [];
+    mergeCustomData();
+    const remoteState = planResult.plan || {};
+    plan = migratePlan(remoteState.items || localState.items || {});
+    shoppingItems = mergeShoppingStatesV25(localState.shoppingItems || [], remoteState.shoppingItems || []);
+    freezerItems = remoteState.freezerItems || localState.freezerItems || defaultFreezerItems();
+    appMeta = remoteState.meta || localState.meta || appMeta;
+    lastRemoteUpdatedAt = remoteState.updatedAt || "";
+    savedRevisionV25 = saveRevisionV25;
+  } catch (error) {
+    console.warn("Starter med lokale data", error);
+    plan = migratePlan(localState.items || JSON.parse(localStorage.getItem("middag_plan") || "{}"));
+    shoppingItems = ensureShoppingMetadataV25(localState.shoppingItems || []);
+    freezerItems = localState.freezerItems || defaultFreezerItems();
+    appMeta = localState.meta || appMeta;
+    try {
+      const fallback = await fetch("recipes.json").then(response => response.json());
+      recipes = Array.isArray(fallback) ? fallback : (fallback.recipes || []);
+      mergeCustomData();
+    } catch (fallbackError) {
+      recipes = [];
+    }
+    setLiveStatus("Frakoblet", "error");
+  }
+  fillDaySelectorsV20();
+  fillAddToDaySelect();
+  if ($("recipeCount")) $("recipeCount").textContent = `${recipes.length} oppskrifter`;
+  bindAll();
+  createDayRows();
+  renderRecipeResults();
+  renderShoppingList(shoppingItems);
+  renderFreezer();
+  const savedView = localStorage.getItem("middag_active_view");
+  if (savedView && $(savedView)) oldShowViewV25(savedView);
+  startRealtimeSync();
+};
+
 init();
