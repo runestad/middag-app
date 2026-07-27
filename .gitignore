@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+.tools/
+__pycache__/
+*.py[cod]
+.DS_Store
+*.log
+*.backup
+*.bak
+supabase_recipes_*_BACKUP_*.json
