@@ -16,7 +16,11 @@ SHOPPING_CATEGORIES = [
 
 
 def get_ssl_context():
-    return ssl.create_default_context()
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except ImportError:
+        return ssl.create_default_context()
 
 
 def supabase_config():
@@ -24,7 +28,10 @@ def supabase_config():
     key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
     if not url or not key:
         raise RuntimeError("SUPABASE_URL eller SUPABASE_SERVICE_ROLE_KEY mangler i Vercel Environment Variables")
-    return url.rstrip("/"), key
+    url = url.rstrip("/")
+    if url.endswith("/rest/v1"):
+        url = url[:-8]
+    return url, key
 
 
 def supabase_request(method, path, payload=None, query=None, prefer="return=representation"):
