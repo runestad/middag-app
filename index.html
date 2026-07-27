@@ -167,15 +167,16 @@
       <p id="importTarget" class="hint"></p>
       <p id="importLinkWrap" class="hint"></p>
 
-      <label>Tittel / navn
+      <label id="importNameField">Tittel / navn
         <input id="importName" />
+        <span id="nameWarning" class="field-warning" hidden></span>
       </label>
 
       <label>Kildelenke
         <input id="importLink" placeholder="Instagram/TikTok/nettside …" />
       </label>
 
-      <label>Kategori
+      <label id="importCategoryField">Kategori
         <select id="importCategory">
           <option>Vegetar</option>
           <option>Salat</option>
@@ -187,6 +188,7 @@
           <option>Snacks</option>
           <option>Annet</option>
         </select>
+        <span id="categoryWarning" class="field-warning" hidden></span>
       </label>
 
       <label>Porsjoner
@@ -202,15 +204,18 @@
       </label>
 
       <div class="ocr-actions">
-        <button type="button" id="readScreenshotsBtn" class="ghost">Les tekst fra skjermbilder</button>
         <button type="button" id="clearCaptionBtn" class="ghost">Tøm caption-felt</button>
       </div>
 
-      <p id="ocrStatus" class="hint ocr-status-box">Du kan velge flere screenshots samtidig. Trykk “Les tekst fra skjermbilder”. Hvis ingenting skjer, sjekk status her.</p>
+      <div id="importProgress" class="import-progress" hidden>
+        <div class="import-progress-head"><span id="importProgressLabel">Forbereder analyse …</span><strong id="importProgressPercent">0 %</strong></div>
+        <div class="import-progress-track"><span id="importProgressBar"></span></div>
+      </div>
+      <p id="ocrStatus" class="hint ocr-status-box">Velg ett eller flere bilder. Tekstlesing og AI-analyse starter automatisk.</p>
       <div id="ocrPreview" class="ocr-preview"></div>
 
       <div class="dialog-actions">
-        <button type="button" id="aiParseCaptionBtn" class="primary">AI-parse caption</button>
+        <button type="button" id="aiParseCaptionBtn" class="primary">Analyser tekst på nytt</button>
         <button type="button" id="parseCaptionBtn">Lokal parse caption</button>
         <button type="button" id="saveParsedBtn" class="primary">Lagre i oppskrift</button>
       </div>
@@ -218,11 +223,13 @@
       <p id="aiStatus" class="hint ai-status-box">AI-parser bruker OpenAI API hvis .env er satt opp. Lokal parser kan brukes som fallback.</p>
 
       <div class="parsed-grid">
-        <label>Ingredienser
+        <label id="ingredientsPreviewField">Ingredienser
           <textarea id="parsedIngredients" rows="8"></textarea>
+          <span id="ingredientsWarning" class="field-warning" hidden></span>
         </label>
-        <label>Fremgangsmåte
+        <label id="instructionsPreviewField">Fremgangsmåte
           <textarea id="parsedInstructions" rows="8"></textarea>
+          <span id="instructionsWarning" class="field-warning" hidden></span>
         </label>
       </div>
     </form>

@@ -1714,4 +1714,185 @@ init = async function(){
   startRealtimeSync();
 };
 
+// ===== v26 seamless image import + field-level uncertainty =====
+let importRunV26 = 0;
+
+function setImportProgressV26(label, percent, visible=true) {
+  const box = $("importProgress"), bar = $("importProgressBar"), value = Math.max(0, Math.min(100, Math.round(percent || 0)));
+  if (!box) return;
+  box.hidden = !visible;
+  $("importProgressLabel").textContent = label;
+  $("importProgressPercent").textContent = `${value} %`;
+  bar.style.width = `${value}%`;
+}
+
+function clearImportWarningsV26() {
+  ["importNameField", "importCategoryField", "ingredientsPreviewField", "instructionsPreviewField"]
+    .forEach(id => $(id)?.classList.remove("preview-uncertain"));
+  ["nameWarning", "categoryWarning", "ingredientsWarning", "instructionsWarning"].forEach(id => {
+    const element = $(id);
+    if (element) { element.hidden = true; element.textContent = ""; }
+  });
+}
+
+function showImportUncertaintiesV26(uncertainties=[]) {
+  clearImportWarningsV26();
+  const groups = {name: [], category: [], ingredients: [], instructions: []};
+  for (const item of uncertainties) {
+    const field = String(item?.field || "");
+    const reason = String(item?.reason || "Kontroller dette feltet.");
+    if (field === "title") groups.name.push(reason);
+    else if (field === "category") groups.category.push(reason);
+    else if (field.startsWith("ingredients")) groups.ingredients.push(`${field.replace("ingredients.", "Linje ")}: ${reason}`);
+    else if (field.startsWith("instructions")) groups.instructions.push(`${field.replace("instructions.", "Steg ")}: ${reason}`);
+  }
+  const mapping = {
+    name: ["importNameField", "nameWarning"],
+    category: ["importCategoryField", "categoryWarning"],
+    ingredients: ["ingredientsPreviewField", "ingredientsWarning"],
+    instructions: ["instructionsPreviewField", "instructionsWarning"]
+  };
+  Object.entries(groups).forEach(([group, messages]) => {
+    if (!messages.length) return;
+    const [fieldId, warningId] = mapping[group], warning = $(warningId);
+    $(fieldId)?.classList.add("preview-uncertain");
+    warning.textContent = messages.join(" · ");
+    warning.hidden = false;
+  });
+}
+
+function previewIngredientsV26() {
+  const current = $("parsedIngredients").value.trim();
+  const parsed = window.lastAiParsedRecipe || {};
+  if (current === (parsed.__displayIngredients || "")) return parsed.ingredients || [];
+  return current.split(/\n+/).map(line => {
+    const categoryMatch = line.match(/\s*\[([^\]]+)\]\s*$/);
+    const withoutCategory = line.replace(/\s*\[[^\]]+\]\s*$/, "").trim();
+    const match = withoutCategory.match(/^([\d.,/½¼¾]+|etter smak)?\s*(kg|g|mg|l|dl|ml|ss|ts|stk|boks|pakke|fedd|stilk)?\s*(.*)$/i);
+    return {
+      amount: (match?.[1] || "").trim(),
+      unit: (match?.[2] || "").trim(),
+      item: (match?.[3] || withoutCategory).trim(),
+      note: "",
+      shoppingCategory: categoryMatch?.[1] || "Annet",
+      original: line
+    };
+  }).filter(item => item.item);
+}
+
+parseCaptionAI = async function(options={}) {
+  const caption = $("captionInput").value.trim(), status = $("aiStatus"), button = $("aiParseCaptionBtn"), recipe = recipeById(activeImportId) || {};
+  if (!caption) { if (!options.automatic) alert("Lim inn oppskriftstekst først."); return null; }
+  try {
+    button.disabled = true;
+    setImportProgressV26("AI strukturerer oppskriften …", 88);
+    status.textContent = "Analyserer tekst og normaliserer ingredienser …";
+    const response = await fetch("/api/parse-caption", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({caption, recipeName: $("importName").value.trim() || recipe.name || "", sourceUrl: $("importLink").value.trim() || recipe.link || "", category: $("importCategory").value || recipe.category || ""})
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.error || "AI-analysen feilet");
+    const parsed = data.parsed || {};
+    $("importName").value = parsed.title || $("importName").value.trim() || recipe.name || "";
+    $("importCategory").value = parsed.category || $("importCategory").value || "Annet";
+    $("importServings").value = parsed.servings || $("importServings").value || "";
+    const ingredientText = (parsed.ingredients || []).map(formatAiIngredient).join("\n");
+    $("parsedIngredients").value = ingredientText;
+    $("parsedInstructions").value = (parsed.instructions || []).map((step, index) => `${index + 1}. ${step}`).join("\n");
+    parsed.__displayIngredients = ingredientText;
+    parsed.tags = enrichTags({...recipe, ...parsed, name: parsed.title || $("importName").value});
+    parsed.emoji = emojiForRecipe({...recipe, ...parsed, name: parsed.title || $("importName").value});
+    window.lastAiParsedRecipe = parsed;
+    showImportUncertaintiesV26(parsed.uncertainties || []);
+    setImportProgressV26("Ferdig – se over og rediger før lagring", 100);
+    status.textContent = parsed.uncertainties?.length ? `${parsed.uncertainties.length} felt bør kontrolleres.` : "Oppskriften er klar til gjennomgang.";
+    return parsed;
+  } catch (error) {
+    setImportProgressV26("Analysen feilet", 100);
+    status.textContent = `AI-analysen feilet: ${error?.message || error}`;
+    if (!options.automatic) alert("AI-analysen feilet. Se statusfeltet.");
+    return null;
+  } finally {
+    button.disabled = false;
+  }
+};
+
+async function processScreenshotsV26() {
+  const files = Array.from($("screenshotInput")?.files || []);
+  if (!files.length) return;
+  if (!window.Tesseract) return alert("Tekstleseren kunne ikke lastes.");
+  const run = ++importRunV26, chunks = [];
+  clearImportWarningsV26();
+  $("saveParsedBtn").disabled = true;
+  try {
+    for (let index = 0; index < files.length; index++) {
+      if (run !== importRunV26) return;
+      const base = index / files.length;
+      const result = await Tesseract.recognize(files[index], "eng", {
+        logger: message => {
+          if (message.status === "recognizing text") {
+            const progress = 5 + (base + (message.progress || 0) / files.length) * 72;
+            setImportProgressV26(`Leser bilde ${index + 1} av ${files.length} …`, progress);
+          }
+        }
+      });
+      if (result?.data?.text?.trim()) chunks.push(result.data.text.trim());
+    }
+    if (run !== importRunV26) return;
+    $("captionInput").value = chunks.join("\n\n");
+    $("ocrStatus").textContent = `Tekst lest fra ${files.length} bilde${files.length === 1 ? "" : "r"}. AI-analyse startet automatisk.`;
+    setImportProgressV26("Teksten er lest – starter AI-analyse …", 80);
+    await parseCaptionAI({automatic: true});
+  } catch (error) {
+    setImportProgressV26("Kunne ikke lese bildene", 100);
+    $("ocrStatus").textContent = `Feil under tekstlesing: ${error?.message || error}`;
+  } finally {
+    if (run === importRunV26) $("saveParsedBtn").disabled = false;
+  }
+}
+
+saveParsedRecipe = async function() {
+  if (!activeImportId) return alert("Ingen oppskrift valgt.");
+  const ai = window.lastAiParsedRecipe || {}, base = recipeById(activeImportId) || {};
+  const ingredients = previewIngredientsV26();
+  const instructionsText = $("parsedInstructions").value.trim();
+  const patch = {
+    name: $("importName").value.trim() || "Ny oppskrift",
+    link: $("importLink").value.trim(),
+    category: $("importCategory").value || "Annet",
+    source: $("importLink").value.includes("instagram") ? "Instagram" : $("importLink").value.includes("tiktok") ? "TikTok" : $("importLink").value ? "Nettside" : "Manuell",
+    servings: $("importServings").value.trim(),
+    ingredientsText: $("parsedIngredients").value.trim(),
+    instructions: instructionsText,
+    structuredIngredients: ingredients,
+    structuredInstructions: instructionsText.split(/\n+/).map(line => line.replace(/^\d+[.)]\s*/, "").trim()).filter(Boolean),
+    tags: ai.tags || enrichTags({...base, name: $("importName").value, category: $("importCategory").value}),
+    emoji: ai.emoji || emojiForRecipe({...base, name: $("importName").value, category: $("importCategory").value}),
+    aiParsed: !!window.lastAiParsedRecipe,
+    aiConfidence: ai.confidence || "",
+    aiUncertainties: ai.uncertainties || [],
+    status: ingredients.length && instructionsText ? "Fullført" : "Må sjekkes manuelt",
+    manualCheck: ingredients.length && instructionsText ? "Nei" : "Ja – mangler ingredienser eller fremgangsmåte.",
+    updatedAt: new Date().toISOString()
+  };
+  try {
+    const response = await fetch("/api/save-recipe", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({id: activeImportId, patch})});
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || result.ok === false) throw new Error(result.error || "Lagring feilet");
+    const index = recipes.findIndex(recipe => String(recipe.id) === String(activeImportId));
+    if (index >= 0) recipes[index] = {...recipes[index], ...patch}; else recipes.push({id: activeImportId, ...patch});
+    $("importDialog").close(); createDayRows(); renderRecipeResults();
+    alert("Oppskriften er lagret ✅");
+  } catch (error) {
+    alert(`Oppskriften ble ikke lagret: ${error?.message || error}`);
+  }
+};
+
+const bindAllBeforeV26 = bindAll;
+bindAll = function() {
+  bindAllBeforeV26();
+  $("screenshotInput")?.addEventListener("change", processScreenshotsV26);
+};
+
 init();

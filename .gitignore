@@ -9,3 +9,4 @@ __pycache__/
 *.backup
 *.bak
 supabase_recipes_*_BACKUP_*.json
+.data-migrations/
