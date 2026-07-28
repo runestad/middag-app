@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Matplan</title>
   <meta name="description" content="Ukesmeny, oppskrifter, handleliste og fryseroversikt." />
-  <link rel="manifest" href="manifest.webmanifest?v=25" />
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png?v=25" />
-  <link rel="icon" type="image/jpeg" href="favicon.jpeg?v=25" />
-  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=25" />
+  <link rel="manifest" href="manifest.webmanifest?v=27" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png?v=27" />
+  <link rel="icon" type="image/jpeg" href="favicon.jpeg?v=27" />
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=27" />
   <meta name="theme-color" content="#f7f3ec" />
-  <link rel="stylesheet" href="styles.css?v=25" />
+  <link rel="stylesheet" href="styles.css?v=27" />
 </head>
 <body>
   <header class="app-header">
@@ -148,6 +148,40 @@
       </section>
     </section>
 
+    <section id="viewRecovery" class="view recovery-view">
+      <section class="screen-intro recovery-heading">
+        <div class="section-title">
+          <div>
+            <h2>Recipe Recovery</h2>
+            <p id="recoverySummary" class="hint">Henter trygg gjenopprettingskø …</p>
+          </div>
+          <button id="recoveryHistoryBtn" class="ghost" type="button">Historikk</button>
+        </div>
+        <div id="recoveryStats" class="recovery-stats" aria-live="polite"></div>
+      </section>
+      <section id="recoveryDashboard" class="recovery-dashboard" aria-label="Gjenopprettingskøer"></section>
+      <section id="recoveryWorkspace" class="card recovery-workspace" hidden>
+        <div class="section-title">
+          <div>
+            <p id="recoveryEyebrow" class="eyebrow">Gjennomgang</p>
+            <h2 id="recoveryWorkspaceTitle">Oppskrift</h2>
+          </div>
+          <button id="recoveryCloseWorkspaceBtn" class="ghost" type="button">Til oversikten</button>
+        </div>
+        <div id="recoveryWorkspaceBody"></div>
+      </section>
+      <section id="recoveryHistory" class="card recovery-history" hidden>
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">Audit-logg</p>
+            <h2>Recovery History</h2>
+          </div>
+          <button id="recoveryCloseHistoryBtn" class="ghost" type="button">Til oversikten</button>
+        </div>
+        <div id="recoveryHistoryList"></div>
+      </section>
+    </section>
+
   </main>
 
   <nav id="appBottomNav" class="app-bottom-nav">
@@ -155,6 +189,7 @@
     <button type="button" class="nav-btn" data-view="viewShopping" aria-label="Handleliste"><span class="nav-icon" aria-hidden="true">✓</span><span>Handleliste</span></button>
     <button type="button" class="nav-btn" data-view="viewRecipes" aria-label="Oppskrifter"><span class="nav-icon" aria-hidden="true">▤</span><span>Oppskrifter</span></button>
     <button type="button" class="nav-btn" data-view="viewFreezer" aria-label="Fryser"><span class="nav-icon" aria-hidden="true">❄</span><span>Fryser</span></button>
+    <button type="button" class="nav-btn" data-view="viewRecovery" aria-label="Recipe Recovery"><span class="nav-icon" aria-hidden="true">↺</span><span>Recovery</span></button>
   </nav>
 
   <dialog id="importDialog">
@@ -285,7 +320,36 @@
     </form>
   </dialog>
 
+  <dialog id="recoveryConfirmDialog">
+    <form method="dialog" class="dialog-form recovery-confirm-form">
+      <div class="section-title">
+        <div>
+          <p class="eyebrow">Sikker forhåndsvisning</p>
+          <h2 id="recoveryConfirmTitle">Bekreft gjenoppretting</h2>
+        </div>
+        <button value="cancel" class="ghost">Lukk</button>
+      </div>
+      <div id="recoveryConfirmBody"></div>
+      <p class="safety-note">Ingen data lagres før du trykker «Confirm Restore».</p>
+      <div class="dialog-actions">
+        <button value="cancel" class="ghost">Avbryt</button>
+        <button type="button" id="recoveryConfirmBtn" class="primary">Confirm Restore</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="recoveryDiffDialog">
+    <form method="dialog" class="dialog-form">
+      <div class="section-title">
+        <h2 id="recoveryDiffTitle">Endringsdetaljer</h2>
+        <button value="cancel" class="ghost">Lukk</button>
+      </div>
+      <div id="recoveryDiffBody"></div>
+      <div id="recoveryRollbackActions" class="dialog-actions"></div>
+    </form>
+  </dialog>
+
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script src="app.js?v=25"></script>
+  <script src="app.js?v=27"></script>
 </body>
 </html>

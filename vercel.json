@@ -1,3 +1,11 @@
 {
-  "version": 2
+  "version": 2,
+  "functions": {
+    "api/recovery.py": {
+      "includeFiles": "recovery-manifest.json"
+    }
+  },
+  "rewrites": [
+    {"source": "/recovery", "destination": "/index.html"}
+  ]
 }

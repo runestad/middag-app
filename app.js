@@ -1862,6 +1862,8 @@ saveParsedRecipe = async function() {
     link: $("importLink").value.trim(),
     category: $("importCategory").value || "Annet",
     source: $("importLink").value.includes("instagram") ? "Instagram" : $("importLink").value.includes("tiktok") ? "TikTok" : $("importLink").value ? "Nettside" : "Manuell",
+    caption: $("captionInput").value.trim() || base.caption || "",
+    image: importSourceMediaV27 || base.image || "",
     servings: $("importServings").value.trim(),
     ingredientsText: $("parsedIngredients").value.trim(),
     instructions: instructionsText,
@@ -1893,6 +1895,500 @@ const bindAllBeforeV26 = bindAll;
 bindAll = function() {
   bindAllBeforeV26();
   $("screenshotInput")?.addEventListener("change", processScreenshotsV26);
+};
+
+// ===== v27 permanent Recipe Recovery =====
+let recoveryDataV27 = null;
+let recoveryHighIndexV27 = 0;
+let recoveryUrlIndexV27 = 0;
+let recoveryPreviewV27 = null;
+let recoveryRollbackPreviewV27 = null;
+let recoveryImportContextV27 = null;
+let recoveryBatchRemainingV27 = 0;
+let recoverySaveInProgressV27 = false;
+let importSourceMediaV27 = "";
+
+function recoveryTextV27(value) {
+  if (value === null || value === undefined || value === "" || (Array.isArray(value) && !value.length)) {
+    return `<span class="recovery-empty">(tomt)</span>`;
+  }
+  if (typeof value === "string") return escapeHtml(value);
+  return escapeHtml(JSON.stringify(value, null, 2));
+}
+
+async function recoveryRequestV27(payload) {
+  const response = await fetch("/api/recovery", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(payload)
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result.ok) throw new Error(result.error || "Recovery-handlingen feilet.");
+  return result;
+}
+
+async function loadRecoveryV27(force=false) {
+  if (recoveryDataV27 && !force) return recoveryDataV27;
+  let result;
+  try {
+    const response = await fetch(`/api/recovery?ts=${Date.now()}`, {cache: "no-store"});
+    result = await response.json();
+    if (!response.ok || !result.ok) throw new Error(result.error || "Kunne ikke hente Recipe Recovery.");
+  } catch (error) {
+    const manifest = await fetch(`/recovery-manifest.json?ts=${Date.now()}`, {cache: "no-store"}).then(response => {
+      if (!response.ok) throw error;
+      return response.json();
+    });
+    result = {ok:true, manifest, state:{items:{}, paused:false}, readOnly:true};
+  }
+  recoveryDataV27 = result;
+  renderRecoveryDashboardV27();
+  return result;
+}
+
+function recoveryQueueCountsV27() {
+  const manifest = recoveryDataV27?.manifest || {};
+  const state = recoveryDataV27?.state?.items || {};
+  const outstanding = type => (manifest[type] || []).filter(item => state[String(item.id)]?.status !== "recovered").length;
+  return {high: outstanding("high"), medium: outstanding("medium"), url: outstanding("url"), manual: outstanding("manual")};
+}
+
+function renderRecoveryDashboardV27() {
+  if (!recoveryDataV27) return;
+  const counts = recoveryQueueCountsV27();
+  const total = counts.high + counts.medium + counts.url + counts.manual;
+  $("recoverySummary").textContent = `${total} oppskrifter trenger oppfølging`;
+  $("recoveryStats").innerHTML = [
+    ["Høy", counts.high], ["Middels", counts.medium], ["URL", counts.url], ["Manuell", counts.manual]
+  ].map(([label, count]) => `<span class="recovery-stat">${count} ${label}</span>`).join("");
+  const cards = [
+    {type:"high", icon:"✓", title:"High Confidence", count:counts.high, text:"Historisk kopi funnet", action:"Review"},
+    {type:"medium", icon:"?", title:"Medium Confidence", count:counts.medium, text:"Krever manuell vurdering", action:"Review"},
+    {type:"url", icon:"↗", title:"URL Reimport", count:counts.url, text:"Instagram · TikTok · Web", action:"Start Recovery"},
+    {type:"manual", icon:"⋯", title:"Manual Queue", count:counts.manual, text:"Ingen kjent kilde", action:"Open"}
+  ];
+  $("recoveryDashboard").innerHTML = cards.map(card => `
+    <article class="recovery-card ${card.type}">
+      <span class="recovery-card-icon" aria-hidden="true">${card.icon}</span>
+      <h3>${card.title}</h3>
+      <p><strong>${card.count}</strong> ${card.count === 1 ? "oppskrift" : "oppskrifter"}</p>
+      <p>${card.text}</p>
+      <button type="button" class="${card.type === "high" || card.type === "url" ? "primary" : "ghost"}" onclick="openRecoveryQueueV27('${card.type}')">${card.action}</button>
+    </article>`).join("");
+}
+
+function showRecoveryPanelV27(panel) {
+  $("recoveryDashboard").hidden = panel !== "dashboard";
+  $("recoveryWorkspace").hidden = panel !== "workspace";
+  $("recoveryHistory").hidden = panel !== "history";
+}
+
+window.openRecoveryQueueV27 = async function(type) {
+  await loadRecoveryV27();
+  showRecoveryPanelV27("workspace");
+  if (type === "high") {
+    recoveryHighIndexV27 = 0;
+    renderHighRecoveryV27();
+  } else if (type === "url") {
+    recoveryUrlIndexV27 = 0;
+    renderUrlRecoveryV27();
+  } else {
+    renderSimpleRecoveryQueueV27(type);
+  }
+};
+
+function highQueueV27() {
+  const state = recoveryDataV27?.state?.items || {};
+  return (recoveryDataV27?.manifest?.high || []).filter(item => state[String(item.id)]?.status !== "recovered");
+}
+
+async function renderHighRecoveryV27() {
+  const queue = highQueueV27();
+  const item = queue[recoveryHighIndexV27];
+  $("recoveryEyebrow").textContent = `High Confidence · ${Math.min(recoveryHighIndexV27 + 1, queue.length)} / ${queue.length}`;
+  $("recoveryWorkspaceTitle").textContent = item?.name || "Køen er ferdig";
+  if (!item) {
+    $("recoveryWorkspaceBody").innerHTML = `<div class="empty-state">Alle historiske kandidater er gjennomgått.</div>`;
+    return;
+  }
+  const detail = await fetch(`/api/recovery?action=item&id=${encodeURIComponent(item.id)}&ts=${Date.now()}`, {cache:"no-store"}).then(response => response.json());
+  if (!detail.ok) throw new Error(detail.error || "Kunne ikke hente oppskriften.");
+  const production = detail.production || {}, candidate = detail.item?.candidate || {};
+  const candidateIngredients = candidate.ingredienser || {};
+  const candidateInstructions = candidate.fremgangsmåte || {};
+  const fields = [
+    ["Navn", production.name, candidate.name],
+    ["Kilde / URL", production.link, detail.item.link],
+    ["Ingredienser", production.ingredientsText || production.structuredIngredients, candidateIngredients.ingredientsText || candidateIngredients.structuredIngredients],
+    ["Fremgangsmåte", production.instructions || production.structuredInstructions, candidateInstructions.instructions || candidateInstructions.structuredInstructions],
+    ["Tags", production.tags, candidate.tags],
+    ["Kategori", production.category, candidate.category],
+    ["AI metadata", {aiParsed:production.aiParsed, aiConfidence:production.aiConfidence, uncertainties:production.aiUncertainties}, candidate.aiMetadata],
+    ["OCR metadata", production.ocrMetadata, candidate.ocrMetadata],
+  ];
+  const pane = (label, kind, index) => `
+    <div class="recovery-pane ${kind}">
+      <h3>${label}</h3>
+      <div class="recovery-image">${index === 1 && production.image ? `<img src="${escapeAttr(production.image)}" alt="">` : index === 2 && candidate.image ? `<img src="${escapeAttr(candidate.image)}" alt="">` : `<span>Ingen bilde lagret</span>`}</div>
+      ${fields.map(field => `<div class="recovery-field"><strong>${field[0]}</strong><div class="recovery-value">${recoveryTextV27(field[index])}</div></div>`).join("")}
+    </div>`;
+  const available = [];
+  if (candidateIngredients.ingredientsText || candidateIngredients.structuredIngredients) {
+    if (candidateIngredients.ingredientsText) available.push("ingredientsText");
+    if (candidateIngredients.structuredIngredients) available.push("structuredIngredients");
+  }
+  if (candidateInstructions.instructions || candidateInstructions.structuredInstructions) {
+    if (candidateInstructions.instructions) available.push("instructions");
+    if (candidateInstructions.structuredInstructions) available.push("structuredInstructions");
+  }
+  const onlyIngredients = available.length && available.every(field => field.includes("Ingredient") || field === "ingredientsText");
+  $("recoveryWorkspaceBody").innerHTML = `
+    <div class="recovery-compare">${pane("Produksjonsversjon", "production", 1)}${pane("Historisk kandidat", "candidate", 2)}</div>
+    <p class="hint">Kilde: ${escapeHtml((detail.item.sources || []).slice(0, 3).join(" · "))}${detail.item.sources?.length > 3 ? ` · +${detail.item.sources.length - 3} like treff` : ""}</p>
+    <div class="recovery-actions">
+      ${available.some(field => field.includes("Ingredient") || field === "ingredientsText") ? `<button class="primary" onclick='previewRestoreV27(${JSON.stringify(String(item.id))}, ${JSON.stringify(available.filter(field => field.includes("Ingredient") || field === "ingredientsText"))})'>Restore Ingredients</button>` : ""}
+      ${available.some(field => field.includes("Instruction") || field === "instructions") ? `<button class="primary" onclick='previewRestoreV27(${JSON.stringify(String(item.id))}, ${JSON.stringify(available.filter(field => field.includes("Instruction") || field === "instructions"))})'>Restore Instructions</button>` : ""}
+      ${!onlyIngredients && available.length > 1 ? `<button class="primary" onclick='previewRestoreV27(${JSON.stringify(String(item.id))}, ${JSON.stringify(available)})'>Restore Both</button>` : ""}
+      <button class="ghost" onclick="skipHighRecoveryV27()">Skip</button>
+      <button class="ghost" onclick="nextHighRecoveryV27()">Next</button>
+    </div>`;
+}
+
+window.nextHighRecoveryV27 = function() {
+  recoveryHighIndexV27 = Math.min(recoveryHighIndexV27 + 1, highQueueV27().length);
+  renderHighRecoveryV27().catch(error => alert(error.message));
+};
+window.skipHighRecoveryV27 = async function() {
+  const item = highQueueV27()[recoveryHighIndexV27];
+  if (item) await recoveryRequestV27({action:"queue-state", id:item.id, status:"skipped"});
+  nextHighRecoveryV27();
+};
+
+window.previewRestoreV27 = async function(id, fields) {
+  try {
+    const result = await recoveryRequestV27({action:"preview", id, fields});
+    recoveryPreviewV27 = {...result.preview, requestedFields: fields};
+    $("recoveryConfirmTitle").textContent = `Bekreft: ${result.preview.recipeName}`;
+    $("recoveryConfirmBody").innerHTML = recoveryDiffHtmlV27(result.preview.fields);
+    $("recoveryConfirmBtn").disabled = false;
+    $("recoveryConfirmBtn").textContent = "Confirm Restore";
+    $("recoveryConfirmDialog").showModal();
+  } catch (error) {
+    alert(error.message);
+  }
+};
+
+function recoveryDiffHtmlV27(fields) {
+  return `<div class="recovery-diff-list">${(fields || []).map(change => `
+    <div class="recovery-diff-row">
+      <strong>${escapeHtml(change.field)}</strong>
+      <div class="recovery-diff-values">
+        <pre>Før\n${escapeHtml(change.before === undefined || change.before === null || change.before === "" ? "(tomt)" : typeof change.before === "string" ? change.before : JSON.stringify(change.before, null, 2))}</pre>
+        <pre>Etter\n${escapeHtml(typeof change.after === "string" ? change.after : JSON.stringify(change.after, null, 2))}</pre>
+      </div>
+    </div>`).join("")}</div>`;
+}
+
+async function confirmRecoveryV27() {
+  if (!recoveryPreviewV27) return;
+  const button = $("recoveryConfirmBtn");
+  try {
+    button.disabled = true;
+    button.textContent = "Gjenoppretter …";
+    await recoveryRequestV27({
+      action:"confirm",
+      id:recoveryPreviewV27.recipeId,
+      fields:recoveryPreviewV27.requestedFields,
+      previewToken:recoveryPreviewV27.previewToken
+    });
+    $("recoveryConfirmDialog").close();
+    recoveryPreviewV27 = null;
+    await refreshRecipesV27();
+    await loadRecoveryV27(true);
+    recoveryHighIndexV27 = Math.min(recoveryHighIndexV27, Math.max(0, highQueueV27().length - 1));
+    await renderHighRecoveryV27();
+  } catch (error) {
+    alert(error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Confirm Restore";
+  }
+}
+
+async function refreshRecipesV27() {
+  const result = await fetch(`/api/recipes?ts=${Date.now()}`, {cache:"no-store"}).then(response => response.json());
+  if (result.ok && result.recipes) {
+    recipes = result.recipes;
+    mergeCustomData();
+    renderRecipeResults();
+    createDayRows();
+  }
+}
+
+function urlQueueV27() {
+  const state = recoveryDataV27?.state?.items || {};
+  return (recoveryDataV27?.manifest?.url || []).filter(item => state[String(item.id)]?.status !== "recovered");
+}
+
+function renderUrlRecoveryV27() {
+  const queue = urlQueueV27();
+  if (recoveryUrlIndexV27 >= queue.length) recoveryUrlIndexV27 = Math.max(0, queue.length - 1);
+  const item = queue[recoveryUrlIndexV27];
+  const recovered = (recoveryDataV27.manifest.url || []).length - queue.length;
+  $("recoveryEyebrow").textContent = `URL Recovery · ${item ? recoveryUrlIndexV27 + 1 : 0} / ${queue.length}`;
+  $("recoveryWorkspaceTitle").textContent = item?.name || "URL-køen er ferdig";
+  if (!item) {
+    $("recoveryWorkspaceBody").innerHTML = `<div class="empty-state">Ingen URL-oppskrifter gjenstår.</div>`;
+    return;
+  }
+  const percent = Math.round((recovered / Math.max(1, recoveryDataV27.manifest.url.length)) * 100);
+  $("recoveryWorkspaceBody").innerHTML = `
+    <div class="recovery-progress">
+      <div class="section-title"><strong>Recovered</strong><span>${recovered} / ${recoveryDataV27.manifest.url.length}</span></div>
+      <div class="recovery-progress-track"><span style="width:${percent}%"></span></div>
+    </div>
+    <article class="recovery-queue-item">
+      <span class="recovery-source">${escapeHtml(item.source || "Web")}</span>
+      <h3>${escapeHtml(item.name)}</h3>
+      <a class="recovery-url" href="${escapeAttr(item.link)}" target="_blank" rel="noopener">${escapeHtml(item.link)}</a>
+      <p class="hint">Mangler: ${escapeHtml((item.missingFields || []).join(", "))}</p>
+      <div class="queue-actions">
+        <button class="primary" onclick="startRecoveryImportV27()">Start Import</button>
+        <button class="ghost" onclick="recoverNextUrlV27()">Recover Next</button>
+        <button class="ghost" onclick="startRecoveryBatchV27()">Recover Next 10</button>
+        <button class="ghost" onclick="pauseRecoveryQueueV27()">${recoveryDataV27.state?.paused ? "Fortsett kø" : "Pause Queue"}</button>
+        <a class="ghost button-link" href="${escapeAttr(item.link)}" target="_blank" rel="noopener">Open URL</a>
+        <button class="ghost" onclick="markUrlRecoveryV27('skipped')">Skip</button>
+        <button class="ghost" onclick="markUrlRecoveryV27('manual')">Manual</button>
+      </div>
+    </article>`;
+}
+
+window.nextUrlRecoveryV27 = function(delta=1) {
+  recoveryUrlIndexV27 = Math.max(0, recoveryUrlIndexV27 + delta);
+  renderUrlRecoveryV27();
+};
+window.recoverNextUrlV27 = function() {
+  nextUrlRecoveryV27(1);
+  startRecoveryImportV27();
+};
+window.markUrlRecoveryV27 = async function(status) {
+  const item = urlQueueV27()[recoveryUrlIndexV27];
+  if (!item) return;
+  await recoveryRequestV27({action:"queue-state", id:item.id, status});
+  recoveryDataV27.state.items[String(item.id)] = {status};
+  renderUrlRecoveryV27();
+};
+window.pauseRecoveryQueueV27 = async function() {
+  const paused = !recoveryDataV27.state?.paused;
+  const result = await recoveryRequestV27({action:"queue-state", paused});
+  recoveryDataV27.state = result.state;
+  recoveryBatchRemainingV27 = paused ? 0 : recoveryBatchRemainingV27;
+  renderUrlRecoveryV27();
+};
+window.startRecoveryBatchV27 = function() {
+  recoveryBatchRemainingV27 = Math.min(10, urlQueueV27().length);
+  startRecoveryImportV27();
+};
+window.startRecoveryImportV27 = async function() {
+  const item = urlQueueV27()[recoveryUrlIndexV27];
+  if (!item) return;
+  recoveryImportContextV27 = {id:String(item.id), queue:"url"};
+  openImport(item.id);
+  setImportProgressV26("Henter metadata fra originalkilden …", 8);
+  $("ocrStatus").textContent = "Prøver automatisk metadata, caption og tilgjengelige bilder.";
+  await autoFetchRecipeUrlV27(item.link, true);
+};
+
+async function autoFetchRecipeUrlV27(url, automatic=false) {
+  const clean = String(url || "").trim();
+  if (!/^https?:\/\//i.test(clean)) return null;
+  try {
+    setImportProgressV26("Henter metadata fra originalkilden …", 12);
+    const response = await fetch("/api/fetch-recipe", {
+      method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({url:clean})
+    });
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.error || "Kilden kunne ikke leses automatisk.");
+    const result = data.result || {};
+    importSourceMediaV27 = result.image || "";
+    if (result.title && (!$("importName").value.trim() || $("importName").value === "Ny oppskrift")) $("importName").value = result.title;
+    if (result.resolvedUrl) $("importLink").value = result.resolvedUrl;
+    let sourceText = result.caption || "";
+    if (!sourceText && result.image && window.Tesseract) {
+      try {
+        setImportProgressV26("Leser tilgjengelig kildebilde …", 48);
+        const ocr = await Tesseract.recognize(result.image, "eng");
+        sourceText = ocr?.data?.text?.trim() || "";
+      } catch (ocrError) {
+        console.warn("OCR av kildebilde var ikke tilgjengelig", ocrError);
+      }
+    }
+    if (sourceText) {
+      $("captionInput").value = sourceText;
+      $("ocrStatus").textContent = `Kilden ble lest via ${result.method || "metadata"}. AI-analyse startet automatisk.`;
+      setImportProgressV26("Metadata funnet – starter AI-analyse …", 70);
+      return await parseCaptionAI({automatic:true});
+    }
+    setImportProgressV26("Kilden krever litt hjelp", 35);
+    $("ocrStatus").innerHTML = `Caption var ikke tilgjengelig automatisk. Åpne kilden, lim inn caption eller velg skjermbilder. Resten går automatisk.`;
+    return null;
+  } catch (error) {
+    setImportProgressV26("Automatisk henting var ikke tilgjengelig", 30);
+    $("ocrStatus").textContent = `Bruk Open URL, lim inn caption eller velg skjermbilder. ${error.message}`;
+    if (!automatic) console.warn(error);
+    return null;
+  }
+}
+
+function renderSimpleRecoveryQueueV27(type) {
+  const queue = recoveryDataV27.manifest[type] || [];
+  $("recoveryEyebrow").textContent = type === "medium" ? "Medium Confidence" : "Manuell kø";
+  $("recoveryWorkspaceTitle").textContent = type === "medium" ? "Krever manuell vurdering" : "Ingen kjent kilde";
+  $("recoveryWorkspaceBody").innerHTML = queue.map(item => `
+    <article class="recovery-queue-item">
+      <span class="recovery-source">${escapeHtml(item.source || "Manuell")}</span>
+      <h3>${escapeHtml(item.name)}</h3>
+      ${item.link ? `<a class="recovery-url" href="${escapeAttr(item.link)}" target="_blank" rel="noopener">${escapeHtml(item.link)}</a>` : ""}
+      <p class="hint">Mangler: ${escapeHtml((item.missingFields || []).join(", ") || "oppskriftsdata")}</p>
+      ${item.link ? `<button class="primary" onclick="recoveryImportByIdV27('${escapeAttr(item.id)}','${escapeAttr(item.link)}')">Åpne import</button>` : ""}
+    </article>`).join("") || `<div class="empty-state">Køen er tom.</div>`;
+}
+window.recoveryImportByIdV27 = async function(id, link) {
+  recoveryImportContextV27 = {id:String(id), queue:"manual"};
+  openImport(id);
+  await autoFetchRecipeUrlV27(link, true);
+};
+
+async function showRecoveryHistoryV27() {
+  showRecoveryPanelV27("history");
+  const result = await fetch(`/api/recovery?action=history&ts=${Date.now()}`, {cache:"no-store"}).then(response => response.json());
+  const entries = result.entries || [];
+  $("recoveryHistoryList").innerHTML = entries.map(entry => `
+    <div class="history-row">
+      <div><strong>${escapeHtml(entry.recipeName)}</strong><p>${new Date(entry.createdAt).toLocaleString("no-NO")} · ${entry.fields.map(field => field.field).join(", ")}${entry.rolledBackAt ? " · rullet tilbake" : ""}</p></div>
+      <div class="history-actions"><button class="ghost" onclick='showHistoryDiffV27(${JSON.stringify(entry.id)})'>Se diff</button></div>
+    </div>`).join("") || `<div class="empty-state">Ingen gjenopprettinger er gjennomført ennå.</div>`;
+  window.recoveryHistoryEntriesV27 = entries;
+}
+
+window.showHistoryDiffV27 = function(historyId) {
+  const entry = (window.recoveryHistoryEntriesV27 || []).find(item => item.id === historyId);
+  if (!entry) return;
+  $("recoveryDiffTitle").textContent = entry.recipeName;
+  $("recoveryDiffBody").innerHTML = recoveryDiffHtmlV27(entry.fields);
+  $("recoveryRollbackActions").innerHTML = entry.rollbackAvailable && !entry.rolledBackAt
+    ? `<button type="button" class="ghost danger-subtle" onclick='previewRollbackV27(${JSON.stringify(entry.id)})'>Forhåndsvis rollback</button>`
+    : `<span class="hint">${entry.rolledBackAt ? "Denne endringen er rullet tilbake." : "Rollback er ikke tilgjengelig."}</span>`;
+  $("recoveryDiffDialog").showModal();
+};
+
+window.previewRollbackV27 = async function(historyId) {
+  try {
+    const result = await recoveryRequestV27({action:"rollback-preview", historyId});
+    recoveryRollbackPreviewV27 = result.preview;
+    $("recoveryDiffBody").innerHTML = `<p class="safety-note">Kontroller tilbakeføringen. Nyere data blir aldri overskrevet.</p>${recoveryDiffHtmlV27(result.preview.fields)}`;
+    $("recoveryRollbackActions").innerHTML = `<button type="button" class="primary" onclick="confirmRollbackV27()">Bekreft rollback</button>`;
+  } catch (error) { alert(error.message); }
+};
+window.confirmRollbackV27 = async function() {
+  if (!recoveryRollbackPreviewV27) return;
+  try {
+    await recoveryRequestV27({action:"rollback-confirm", historyId:recoveryRollbackPreviewV27.historyId, previewToken:recoveryRollbackPreviewV27.previewToken});
+    recoveryRollbackPreviewV27 = null;
+    $("recoveryDiffDialog").close();
+    await refreshRecipesV27();
+    await showRecoveryHistoryV27();
+  } catch (error) { alert(error.message); }
+};
+
+const showViewBeforeV27 = showView;
+showView = function(view) {
+  showViewBeforeV27(view);
+  const path = view === "viewRecovery" ? "/recovery" : "/";
+  if (window.location.pathname !== path) history.pushState({view}, "", path);
+  if (view === "viewRecovery") {
+    showRecoveryPanelV27("dashboard");
+    loadRecoveryV27().catch(error => {
+      $("recoverySummary").textContent = error.message;
+    });
+  }
+};
+
+const openImportBeforeV27 = openImport;
+openImport = function(id) {
+  importSourceMediaV27 = "";
+  return openImportBeforeV27(id);
+};
+
+const openAddRecipeBeforeV27 = openAddRecipe;
+openAddRecipe = function() {
+  importSourceMediaV27 = "";
+  recoveryImportContextV27 = null;
+  return openAddRecipeBeforeV27();
+};
+
+const bindAllBeforeV27 = bindAll;
+bindAll = function() {
+  bindAllBeforeV27();
+  $("recoveryHistoryBtn")?.addEventListener("click", () => showRecoveryHistoryV27().catch(error => alert(error.message)));
+  for (const id of ["recoveryCloseWorkspaceBtn", "recoveryCloseHistoryBtn"]) {
+    $(id)?.addEventListener("click", () => showRecoveryPanelV27("dashboard"));
+  }
+  $("recoveryConfirmBtn")?.addEventListener("click", confirmRecoveryV27);
+  $("importLink")?.addEventListener("paste", () => {
+    setTimeout(() => autoFetchRecipeUrlV27($("importLink").value, true), 40);
+  });
+  $("importDialog")?.addEventListener("close", () => {
+    if (recoverySaveInProgressV27) return;
+    recoveryImportContextV27 = null;
+    recoveryBatchRemainingV27 = 0;
+  });
+  window.addEventListener("popstate", () => {
+    showViewBeforeV27(window.location.pathname === "/recovery" ? "viewRecovery" : "viewPlan");
+  });
+};
+
+const saveParsedRecipeBeforeV27 = saveParsedRecipe;
+saveParsedRecipe = async function() {
+  const context = recoveryImportContextV27 ? {...recoveryImportContextV27} : null;
+  recoverySaveInProgressV27 = true;
+  try {
+    await saveParsedRecipeBeforeV27();
+  } finally {
+    recoverySaveInProgressV27 = false;
+  }
+  if (!context || $("importDialog")?.open) return;
+  try {
+    const result = await recoveryRequestV27({action:"queue-state", id:context.id, status:"recovered"});
+    if (recoveryDataV27) recoveryDataV27.state = result.state;
+    recoveryImportContextV27 = null;
+    await loadRecoveryV27(true);
+    if (context.queue === "url") {
+      if (recoveryBatchRemainingV27 > 1 && !recoveryDataV27.state?.paused) {
+        recoveryBatchRemainingV27 -= 1;
+        recoveryUrlIndexV27 = 0;
+        renderUrlRecoveryV27();
+        setTimeout(startRecoveryImportV27, 350);
+      } else {
+        recoveryBatchRemainingV27 = 0;
+        recoveryUrlIndexV27 = 0;
+        renderUrlRecoveryV27();
+      }
+    }
+  } catch (error) {
+    console.warn("Oppskriften ble lagret, men Recovery-status kunne ikke oppdateres.", error);
+  }
+};
+
+const initBeforeV27 = init;
+init = async function() {
+  await initBeforeV27();
+  if (window.location.pathname === "/recovery") {
+    showViewBeforeV27("viewRecovery");
+    localStorage.setItem("middag_active_view", "viewRecovery");
+    await loadRecoveryV27().catch(error => { $("recoverySummary").textContent = error.message; });
+  }
 };
 
 init();
