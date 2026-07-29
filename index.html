@@ -282,8 +282,8 @@
         <span id="categoryWarning" class="field-warning" hidden></span>
       </label>
 
-      <label>Porsjoner
-        <input id="importServings" placeholder="f.eks. 2 eller 4" />
+      <label>Grunnporsjoner
+        <input id="importServings" type="number" min="0.1" step="0.5" placeholder="f.eks. 2 eller 4" />
       </label>
 
       <label>Lim inn Instagram/TikTok-caption
@@ -356,6 +356,19 @@
       <label>Velg dag
         <select id="addToDaySelect"></select>
       </label>
+      <label>Antall porsjoner
+        <input id="plannedServingsInput" type="number" min="0.1" step="0.5" inputmode="decimal" />
+      </label>
+      <div class="serving-quick-actions" aria-label="Hurtigvalg for porsjoner">
+        <button type="button" class="ghost" data-planned-servings="1">1</button>
+        <button type="button" class="ghost" data-planned-servings="2">2</button>
+        <button type="button" class="ghost" data-planned-servings="4">4</button>
+        <button type="button" class="ghost" data-planned-servings="6">6</button>
+        <button type="button" class="ghost" data-planned-servings="8">8</button>
+        <button type="button" class="ghost" data-planned-scale="0.5">Halver</button>
+        <button type="button" class="ghost" data-planned-scale="2">Dobbel</button>
+      </div>
+      <p id="plannedServingsHint" class="hint"></p>
       <button type="button" id="confirmAddToDayBtn" class="primary">Legg til</button>
     </form>
   </dialog>
@@ -443,6 +456,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="data-safety.js?v=29"></script>
-  <script src="app.js?v=29"></script>
+  <script src="serving-scaling.js?v=30"></script>
+  <script src="app.js?v=30"></script>
 </body>
 </html>

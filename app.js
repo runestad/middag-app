@@ -1870,6 +1870,7 @@ saveParsedRecipe = async function() {
     caption: $("captionInput").value.trim() || base.caption || "",
     image: importSourceMediaV27 || base.image || "",
     servings: $("importServings").value.trim(),
+    baseServings: ServingScaling.parsePositiveServings($("importServings").value),
     ingredientsText: $("parsedIngredients").value.trim(),
     instructions: instructionsText,
     structuredIngredients: ingredients,
@@ -2748,5 +2749,183 @@ bindAll=function(){
 };
 const initBeforeV28=init;
 init=async function(){await initBeforeV28();ensureMetaV28();randomOrderV28=new Map(recipes.map(recipe=>[String(recipe.id),Math.random()]));renderRecipeResults();renderPantryV28()};
+
+/* ===== v30: porsjonsskalering ===== */
+const recipeServingSelectionV30=new Map();
+let plannedServingEditV30=null;
+const openImportBeforeV30=openImport;
+openImport=function(id){
+  openImportBeforeV30(id);
+  const recipe=recipeById(id);
+  if($("importServings"))$("importServings").value=recipe?.baseServings||recipe?.servings||"";
+};
+
+function baseServingsV30(recipe){return ServingScaling.recipeBaseServings(recipe)}
+function plannedServingsV30(item,recipe){
+  return ServingScaling.parsePositiveServings(item?.plannedServings)||
+    ServingScaling.parsePositiveServings(item?.baseServings)||
+    baseServingsV30(recipe);
+}
+function plannedItemV30(recipe,servings){return ServingScaling.makePlannedRecipeItem(recipe,servings)}
+function formatServingsV30(value){return ServingScaling.formatScaledAmount(Number(value))}
+function scaledIngredientLineV30(ingredient){
+  return formatAiIngredient(ingredient);
+}
+function scaledIngredientLinesV30(recipe,servings){
+  if(Array.isArray(recipe?.structuredIngredients)&&recipe.structuredIngredients.length){
+    return ServingScaling.scaledStructuredIngredients(recipe,servings).map(scaledIngredientLineV30);
+  }
+  return extractIngredientLines(recipe);
+}
+function servingControlsHtmlV30(recipe,selected){
+  const base=baseServingsV30(recipe);
+  if(!base)return `<div class="serving-warning"><strong>Mangler porsjonsgrunnlag</strong><p>Ingrediensene kan ikke skaleres trygt før grunnporsjoner er angitt.</p><button type="button" class="ghost" onclick="openImport('${escapeAttr(recipe.id)}');$('recipeDialog').close()">Angi grunnporsjoner</button></div>`;
+  const value=ServingScaling.parsePositiveServings(selected)||base;
+  return `<section class="serving-picker">
+    <strong>Velg porsjoner</strong>
+    <div class="serving-stepper">
+      <button type="button" class="ghost" onclick="adjustRecipeServingsV30('${escapeAttr(recipe.id)}',-1)">−</button>
+      <input id="recipeServingsV30" type="number" min="0.1" step="0.5" inputmode="decimal" value="${escapeAttr(value)}" onchange="setRecipeServingsV30('${escapeAttr(recipe.id)}',this.value)">
+      <button type="button" class="ghost" onclick="adjustRecipeServingsV30('${escapeAttr(recipe.id)}',1)">+</button>
+    </div>
+    <div class="serving-quick-actions">${[1,2,4,6,8].map(number=>`<button type="button" class="ghost" onclick="setRecipeServingsV30('${escapeAttr(recipe.id)}',${number})">${number}</button>`).join("")}
+      <button type="button" class="ghost" onclick="scaleRecipeServingsV30('${escapeAttr(recipe.id)}',0.5)">Halver</button>
+      <button type="button" class="ghost" onclick="scaleRecipeServingsV30('${escapeAttr(recipe.id)}',2)">Dobbel</button>
+    </div>
+    <div class="serving-scale-note">Oppskriften er skalert fra ${formatServingsV30(base)} til ${formatServingsV30(value)} porsjoner.</div>
+  </section>`;
+}
+function refreshRecipeScalingV30(recipe){
+  const base=baseServingsV30(recipe);
+  if(!base)return;
+  const selected=recipeServingSelectionV30.get(String(recipe.id))||base;
+  const picker=$("recipeServingControlsV30");
+  if(picker)picker.innerHTML=servingControlsHtmlV30(recipe,selected);
+  const ingredients=$("recipeScaledIngredientsV30");
+  if(ingredients){
+    ingredients.innerHTML=formatList(scaledIngredientLinesV30(recipe,selected).join("\n"));
+    const note=ingredients.nextElementSibling;
+    if(note?.classList.contains("serving-scale-note"))note.hidden=Array.isArray(recipe.structuredIngredients)&&recipe.structuredIngredients.length;
+  }
+}
+window.setRecipeServingsV30=function(id,value){
+  const recipe=recipeById(id),selected=ServingScaling.parsePositiveServings(value);
+  if(!recipe||!selected)return;
+  recipeServingSelectionV30.set(String(id),selected);refreshRecipeScalingV30(recipe);
+};
+window.adjustRecipeServingsV30=function(id,delta){
+  const recipe=recipeById(id),base=baseServingsV30(recipe);if(!recipe||!base)return;
+  const current=recipeServingSelectionV30.get(String(id))||base;
+  window.setRecipeServingsV30(id,Math.max(0.1,current+delta));
+};
+window.scaleRecipeServingsV30=function(id,factor){
+  const recipe=recipeById(id),base=baseServingsV30(recipe);if(!recipe||!base)return;
+  const current=recipeServingSelectionV30.get(String(id))||base;
+  window.setRecipeServingsV30(id,current*factor);
+};
+
+const openRecipeDetailsBeforeV30=window.openRecipeDetails;
+window.openRecipeDetails=function(id){
+  openRecipeDetailsBeforeV30(id);
+  const recipe=recipeById(id),body=$("recipeDialogBody");if(!recipe||!body)return;
+  const selected=recipeServingSelectionV30.get(String(id))||baseServingsV30(recipe);
+  const sections=[...body.querySelectorAll(".recipe-detail-section")];
+  if(sections[0]){
+    const controls=document.createElement("div");controls.id="recipeServingControlsV30";controls.innerHTML=servingControlsHtmlV30(recipe,selected);
+    sections[0].before(controls);
+    sections[0].innerHTML=`<h3>Ingredienser</h3><div id="recipeScaledIngredientsV30">${formatList(scaledIngredientLinesV30(recipe,selected).join("\n"))}</div>${!Array.isArray(recipe.structuredIngredients)||!recipe.structuredIngredients.length?`<p class="serving-scale-note">Denne ingredienslisten er fritekst og vises uendret. Appen gjetter ikke mengder.</p>`:""}`;
+  }
+};
+
+function configurePlannedServingsV30(recipe,value){
+  const input=$("plannedServingsInput"),hint=$("plannedServingsHint"),base=baseServingsV30(recipe);
+  if(input){input.value=value||base||"";input.disabled=!base;input.placeholder=base?"":"Mangler grunnporsjoner";}
+  if(hint)hint.textContent=base?`Ingrediensene er skrevet for ${formatServingsV30(base)} porsjoner.`:"Oppskriften mangler grunnporsjoner. Den kan legges til, men handlelisten skaleres ikke.";
+}
+window.openAddToDay=function(id,day){
+  pendingAddRecipeId=id;plannedServingEditV30=null;
+  const recipe=recipeById(id);$("addToDayRecipeName").textContent=recipe?.name||"";
+  fillAddToDaySelect();
+  const selectedDay=day||activePickerDay;
+  if(selectedDay&&$("addToDaySelect"))$("addToDaySelect").value=selectedDay;
+  configurePlannedServingsV30(recipe,recipeServingSelectionV30.get(String(id)));
+  $("recipePickerDialog")?.close();$("pickerPreviewDialog")?.close();$("addToDayDialog").showModal();
+};
+window.addRecipeToDay=function(day,id){window.openAddToDay(id,day)};
+window.editPlannedServingsV30=function(day,index){
+  const item=plan[day]?.[index],recipe=recipeById(item?.recipeId);if(!item||!recipe)return;
+  pendingAddRecipeId=recipe.id;plannedServingEditV30={day,index};
+  $("addToDayRecipeName").textContent=recipe.name;fillAddToDaySelect();$("addToDaySelect").value=day;
+  configurePlannedServingsV30(recipe,plannedServingsV30(item,recipe));
+  $("confirmAddToDayBtn").textContent="Oppdater porsjoner";$("addToDayDialog").showModal();
+};
+confirmAddToDay=function(){
+  const day=$("addToDaySelect")?.value,recipe=recipeById(pendingAddRecipeId);if(!day||!recipe)return;
+  const base=baseServingsV30(recipe),selected=ServingScaling.parsePositiveServings($("plannedServingsInput")?.value);
+  if(base&&!selected)return alert("Velg et positivt antall porsjoner.");
+  const item=plannedItemV30(recipe,selected);
+  if(plannedServingEditV30){
+    const previous=plan[plannedServingEditV30.day]?.[plannedServingEditV30.index];
+    if(!previous)return;
+    if(plannedServingEditV30.day!==day)plan[plannedServingEditV30.day].splice(plannedServingEditV30.index,1);
+    else plan[day][plannedServingEditV30.index]=item;
+    if(plannedServingEditV30.day!==day)plan[day].push(item);
+  }else{
+    plan[day]=plan[day]||[];plan[day].push(item);bumpUsage(recipe.id);markCookedV28(recipe.id,true,day);
+  }
+  plannedServingEditV30=null;$("confirmAddToDayBtn").textContent="Legg til";
+  savePlan();createDayRows();renderRecipeResults();$("addToDayDialog").close();$("recipeDialog")?.close();showView("viewPlan");
+};
+
+renderDayItems=function(card,day){
+  const box=card.querySelector(".day-items"),items=plan[day]||[];
+  if(!items.length){box.innerHTML=`<div class="empty-state">Ingen retter lagt til.</div>`;return}
+  box.innerHTML=items.map((item,index)=>{
+    if(item.type==="text")return`<div class="plan-item text-plan-item"><div><div class="plan-item-title">✍️ ${escapeHtml(item.text)}</div><div class="plan-item-meta">Manuell rett – legg varer manuelt i handlelisten</div></div><div class="plan-actions"><button class="mini-action" onclick="addManualDishToShopping('${escapeAttr(item.text)}')">+ varer</button><button class="remove-btn" onclick="removePlanItem('${escapeAttr(day)}',${index})">×</button></div></div>`;
+    const recipe=recipeById(item.recipeId);if(!recipe)return`<div class="plan-item missing-plan-item"><span>Oppskrift ikke funnet</span><button class="remove-btn" onclick="removePlanItem('${day}',${index})">×</button></div>`;
+    const servings=plannedServingsV30(item,recipe);
+    return`<div class="plan-item ${hasRecipe(recipe)?"recipe-plan-item":"missing-plan-item"}"><div><div class="plan-item-title">${escapeHtml(emojiForRecipe(recipe)+" "+recipe.name)}</div><div class="plan-item-meta">${escapeHtml(recipe.category||"Ukjent")}${servings?` · ${formatServingsV30(servings)} porsjoner`:" · mangler porsjonsgrunnlag"}</div></div><div class="plan-serving-actions">${hasRecipe(recipe)?`<button class="mini-action" onclick="openRecipeDetails('${escapeAttr(recipe.id)}')">Se</button>`:`<button class="mini-action" onclick="openImport('${escapeAttr(recipe.id)}')">Legg inn</button>`}<button class="mini-action" onclick="editPlannedServingsV30('${escapeAttr(day)}',${index})">Endre porsjoner</button><button class="remove-btn" onclick="removePlanItem('${escapeAttr(day)}',${index})">×</button></div></div>`;
+  }).join("");
+};
+renderWeekOverview=function(){
+  const box=$("weekOverview");if(!box)return;
+  box.innerHTML=selectedDays().map(day=>{const items=plan[day.key]||[];
+    const chips=items.length?items.map(item=>{if(item.type==="text")return`<span class="week-chip manual">✍️ ${escapeHtml(item.text)}</span>`;const recipe=recipeById(item.recipeId);if(!recipe)return`<span class="week-chip missing">Mangler</span>`;const servings=plannedServingsV30(item,recipe);return`<button class="week-chip${hasRecipe(recipe)?"":" missing"}" onclick="openRecipeDetails('${escapeAttr(recipe.id)}')">${emojiForRecipe(recipe)} ${escapeHtml(recipe.name)}${servings?` · ${formatServingsV30(servings)} p`:""}</button>`}).join(""):`<span class="hint">Ingen retter</span>`;
+    return`<div class="week-overview-row"><div class="week-overview-day">${day.label}</div><div class="week-overview-items">${chips}</div></div>`}).join("");
+};
+
+generateShoppingList=function(){
+  const raw=[],missing=[];
+  for(const day of selectedDays())for(const planItem of(plan[day.key]||[])){
+    if(planItem.type!=="recipe")continue;const recipe=recipeById(planItem.recipeId);
+    if(!recipe||!hasRecipe(recipe)){if(recipe)missing.push(recipe.name);continue}
+    for(const line of scaledIngredientLinesV30(recipe,plannedServingsV30(planItem,recipe)))raw.push({id:shoppingIdV25(),text:line,category:categorize(line),recipe:recipe.name,done:false,deleted:false,updatedAt:nowIsoV25()});
+  }
+  const timestamp=nowIsoV25(),tombstones=ensureShoppingMetadataV25(shoppingItems).map(item=>isVisibleShoppingItemV25(item)?{...item,deleted:true,updatedAt:timestamp}:item);
+  const generated=mergeShoppingItems(raw).map(item=>({...item,id:item.id||shoppingIdV25(),deleted:false,updatedAt:timestamp}));
+  shoppingItems=[...tombstones,...generated];renderShoppingList(shoppingItems);savePlan();showView("viewShopping");
+  if(missing.length)alert(`${missing.length} oppskrift(er) mangler data og ble ikke lagt til i handlelisten.`);
+};
+
+function enrichPlanServingMetadataV30(){
+  for(const day of selectedDays())plan[day.key]=(plan[day.key]||[]).map(item=>{
+    if(item.type!=="recipe")return item;
+    const recipe=recipeById(item.recipeId);
+    return recipe?mergePreservingExistingData(item,plannedItemV30(recipe,plannedServingsV30(item,recipe))):item;
+  });
+}
+const randomWeekBeforeV30=randomWeek;
+randomWeek=function(){randomWeekBeforeV30();enrichPlanServingMetadataV30();savePlan();createDayRows()};
+const localSmartWeekBeforeV30=localSmartWeek;
+localSmartWeek=function(){localSmartWeekBeforeV30();enrichPlanServingMetadataV30();savePlan();createDayRows()};
+const smartWeekBeforeV30=smartWeek;
+smartWeek=async function(){await smartWeekBeforeV30();enrichPlanServingMetadataV30();savePlan();createDayRows()};
+
+const bindAllBeforeV30=bindAll;
+bindAll=function(){
+  bindAllBeforeV30();
+  document.querySelectorAll("[data-planned-servings]").forEach(button=>button.addEventListener("click",()=>{if($("plannedServingsInput"))$("plannedServingsInput").value=button.dataset.plannedServings}));
+  document.querySelectorAll("[data-planned-scale]").forEach(button=>button.addEventListener("click",()=>{const input=$("plannedServingsInput"),value=ServingScaling.parsePositiveServings(input?.value)||baseServingsV30(recipeById(pendingAddRecipeId));if(input&&value)input.value=value*Number(button.dataset.plannedScale)}));
+};
 
 init();

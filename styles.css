@@ -437,6 +437,33 @@ dialog::backdrop { background: rgba(29,35,29,.38); backdrop-filter: blur(5px); }
 .field-warning { display: block; margin-top: 6px; padding: 8px 10px; border-radius: 10px; color: #754b00; background: #fff3d6; font-size: 12px; line-height: 1.4; }
 .preview-uncertain input, .preview-uncertain select, .preview-uncertain textarea { border-color: #d99b2b; box-shadow: 0 0 0 2px rgba(217,155,43,.14); }
 .recipe-detail-section { margin-top: 16px; }
+.serving-picker {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface-soft, #f7f8f4);
+}
+.serving-stepper, .serving-quick-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.serving-stepper input { width: min(130px, 42vw); text-align: center; }
+.serving-quick-actions .ghost { min-width: 42px; padding-inline: 10px; }
+.serving-scale-note { color: var(--text-soft); font-size: 13px; }
+.serving-warning { color: #8a4c24; background: #fff3e8; border-radius: 14px; padding: 12px; }
+.plan-serving-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+@media (max-width: 520px) {
+  .serving-stepper { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; }
+  .serving-stepper input { width: 100%; }
+  .serving-quick-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .serving-quick-actions .ghost { min-width: 0; }
+}
 .source-link-inline { display: inline-block; margin-top: 14px; color: var(--primary); font-weight: 650; }
 
 #appBottomNav {
