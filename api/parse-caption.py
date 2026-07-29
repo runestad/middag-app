@@ -23,6 +23,18 @@ def finalize_parsed_recipe(parsed):
         and uncertainty.get("field")
         and uncertainty.get("reason")
     ]
+    nutrition = parsed.get("nutrition") if isinstance(parsed.get("nutrition"), dict) else {}
+    def positive_number(value):
+        try:
+            return round(max(0, float(value or 0)), 1)
+        except (TypeError, ValueError):
+            return 0
+
+    parsed["nutrition"] = {
+        key: positive_number(nutrition.get(key))
+        for key in ("protein", "calories", "fat", "carbohydrates", "fiber")
+    }
+    parsed["prepMinutes"] = int(positive_number(parsed.get("prepMinutes")))
     return parsed
 
 
@@ -43,6 +55,12 @@ class handler(BaseHTTPRequestHandler):
 Returner kun JSON. Behold alle oppgitte mengder og ingredienser; aldri gjett manglende data.
 Oversett navn, noter og fremgangsmåte til naturlig norsk. Bruk norske måleenheter (ss, ts, dl, ml, g, kg, stk).
 Hver ingrediens må ha én handlelistekategori fra: {category_list}.
+Kategoriser krydder etter ingrediensens funksjon, ikke om ordet også kan være en grønnsak.
+Salt, pepper, tørkede urter, krydderblandinger og ord som slutter på -pulver, -flak, -pepper,
+-krydder eller -masala skal normalt være Krydder. Eksempler er paprikapulver, chiliflak,
+spisskummen, oregano, timian, basilikum, kanel, muskat, karri og garam masala.
+Estimer næring per porsjon fra oppgitte mengder. Estimatet skal være konservativt og aldri
+presenteres som laboratoriemålt verdi.
 Marker usikkerhet på det konkrete feltet, ikke på hele oppskriften. Et ellers komplett resultat skal fortsatt fylles ut."""
             schema = """Format:
 {
@@ -55,6 +73,8 @@ Marker usikkerhet på det konkrete feltet, ikke på hele oppskriften. Et ellers 
   "instructions":["string"],
   "tags":["string"],
   "emoji":"string",
+  "prepMinutes":0,
+  "nutrition":{"protein":0,"calories":0,"fat":0,"carbohydrates":0,"fiber":0},
   "confidence":"high|medium|low",
   "uncertainties":[
     {"field":"title|category|servings|ingredients.N|instructions.N","reason":"kort norsk forklaring","sourceText":"relevant originaltekst"}

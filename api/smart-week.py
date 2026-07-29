@@ -14,9 +14,14 @@ class handler(BaseHTTPRequestHandler):
             recipes = payload.get("recipes") or []
             compact = [{
                 "id": r.get("id"), "name": r.get("name"), "category": r.get("category"),
-                "tags": r.get("tags") or [], "favorite": bool(r.get("favorite")), "usage": r.get("usage") or 0
+                "tags": r.get("tags") or [], "favorite": bool(r.get("favorite")), "usage": r.get("usage") or 0,
+                "pantryScore": r.get("pantryScore") or 0,
+                "missingIngredients": r.get("missingIngredients"),
+                "recentlyCooked": bool(r.get("recentlyCooked")),
             } for r in recipes[:260]]
-            system = """Du lager praktiske norske ukesmenyer. Velg kun recipeId-er fra listen. Returner KUN JSON."""
+            system = """Du lager praktiske norske ukesmenyer. Velg kun recipeId-er fra listen.
+Prioriter variasjon, høy pantryScore, få missingIngredients og oppskrifter som ikke er recentlyCooked.
+Unngå samme hovedprotein eller kategori flere dager på rad. Returner KUN JSON."""
             user = {"prompt": prompt, "days": days, "recipes": compact, "format": {"items": [{"day":"mandag","recipeIds":["id1"],"note":""}]}}
             body = {"model": os.environ.get("OPENAI_MODEL","gpt-4.1-mini"), "messages":[{"role":"system","content":system},{"role":"user","content":json.dumps(user, ensure_ascii=False)}], "temperature":0.5, "response_format":{"type":"json_object"}}
             req = urllib.request.Request("https://api.openai.com/v1/chat/completions", data=json.dumps(body).encode("utf-8"), headers={"Content-Type":"application/json","Authorization":f"Bearer {api_key}"}, method="POST")

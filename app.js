@@ -1443,10 +1443,12 @@ renderShoppingList = function(items){
   const done = visible.filter(item => item.done);
   const grouped = new Map(CATEGORIES.map(category => [category, []]));
   for (const item of active) {
-    const predictedCategory = categorize(item.text);
-    const category = predictedCategory !== "Annet"
-      ? predictedCategory
-      : (CATEGORIES.includes(item.category) ? item.category : "Annet");
+    const predictedCategory = item.manualCategory ? item.category : categorize(item.text);
+    const category = item.manualCategory
+      ? (CATEGORIES.includes(item.category) ? item.category : "Annet")
+      : predictedCategory !== "Annet"
+        ? predictedCategory
+        : (CATEGORIES.includes(item.category) ? item.category : "Annet");
     item.category = category;
     if (!grouped.has(category)) grouped.set(category, []);
     grouped.get(category).push(item);
@@ -1874,6 +1876,9 @@ saveParsedRecipe = async function() {
     aiParsed: !!window.lastAiParsedRecipe,
     aiConfidence: ai.confidence || "",
     aiUncertainties: ai.uncertainties || [],
+    prepMinutes: Number(ai.prepMinutes || base.prepMinutes || 0),
+    nutrition: ai.nutrition || base.nutrition || {},
+    imageMethod: ai.imageMethod || base.imageMethod || "",
     status: ingredients.length && instructionsText ? "Fullført" : "Må sjekkes manuelt",
     manualCheck: ingredients.length && instructionsText ? "Nei" : "Ja – mangler ingredienser eller fremgangsmåte.",
     updatedAt: new Date().toISOString()
@@ -2212,6 +2217,10 @@ async function autoFetchRecipeUrlV27(url, automatic=false) {
     if (!response.ok || !data.ok) throw new Error(data.error || "Kilden kunne ikke leses automatisk.");
     const result = data.result || {};
     importSourceMediaV27 = result.image || "";
+    if (!importSourceMediaV27 && result.video && typeof captureVideoFrameV28 === "function") {
+      importSourceMediaV27 = await captureVideoFrameV28(result.video).catch(() => "");
+      if (importSourceMediaV27) result.imageMethod = "first-video-frame";
+    }
     if (result.title && (!$("importName").value.trim() || $("importName").value === "Ny oppskrift")) $("importName").value = result.title;
     if (result.resolvedUrl) $("importLink").value = result.resolvedUrl;
     let sourceText = result.caption || "";
@@ -2228,7 +2237,9 @@ async function autoFetchRecipeUrlV27(url, automatic=false) {
       $("captionInput").value = sourceText;
       $("ocrStatus").textContent = `Kilden ble lest via ${result.method || "metadata"}. AI-analyse startet automatisk.`;
       setImportProgressV26("Metadata funnet – starter AI-analyse …", 70);
-      return await parseCaptionAI({automatic:true});
+      const parsed = await parseCaptionAI({automatic:true});
+      if (parsed) parsed.imageMethod = result.imageMethod || result.method || "";
+      return parsed;
     }
     setImportProgressV26("Kilden krever litt hjelp", 35);
     $("ocrStatus").innerHTML = `Caption var ikke tilgjengelig automatisk. Åpne kilden, lim inn caption eller velg skjermbilder. Resten går automatisk.`;
@@ -2390,5 +2401,330 @@ init = async function() {
     await loadRecoveryV27().catch(error => { $("recoverySummary").textContent = error.message; });
   }
 };
+
+/* ===== v28 daily UX, quality metadata and Pantry ===== */
+const RECIPE_FILTERS_V28 = [
+  ["glutenfree","Glutenfri"],["vegetarian","Vegetar"],["vegan","Vegansk"],
+  ["highProtein","Høyt protein"],["under500","Under 500 kcal"],["under30","Under 30 min"],
+  ["childFriendly","Barnevennlig"],["freezerFriendly","Frysevennlig"],
+  ["dinner","Middag"],["breakfast","Frokost"],["lunch","Lunsj"],["dessert","Dessert"],
+  ["canMakeNow","Kan lages nå"],["missingMax2","Mangler maks 2"],["avoidRecent14","Ikke laget siste 14 dager"]
+];
+let randomOrderV28 = new Map();
+let shoppingCategoryTargetV28 = null;
+
+function ensureMetaV28() {
+  appMeta = appMeta || {};
+  appMeta.recipeMeta = appMeta.recipeMeta || {};
+  appMeta.pantryItems = Array.isArray(appMeta.pantryItems) ? appMeta.pantryItems : [];
+  appMeta.ingredientRegistryOverrides = appMeta.ingredientRegistryOverrides || {};
+  appMeta.recipeFilters = Array.isArray(appMeta.recipeFilters) ? appMeta.recipeFilters : [];
+}
+function recipeMetaV28(id) { ensureMetaV28(); return appMeta.recipeMeta[String(id)] || {}; }
+function recipeNutritionV28(recipe) {
+  const value = recipe?.nutrition || recipe?.nutritionEstimate || {};
+  return {
+    protein:Number(value.protein||0), calories:Number(value.calories||0), fat:Number(value.fat||0),
+    carbohydrates:Number(value.carbohydrates||value.carbs||0), fiber:Number(value.fiber||0)
+  };
+}
+function recipeMinutesV28(recipe) { return Number(recipe?.prepMinutes || recipe?.totalMinutes || recipe?.cookTimeMinutes || 0); }
+function recipeLastCookedV28(recipe) { return recipeMetaV28(recipe.id).lastCooked || recipe.lastCooked || appMeta.lastUsed?.[recipe.id] || ""; }
+function setLastCookedV28(id, dateValue=new Date().toISOString()) {
+  ensureMetaV28();
+  appMeta.recipeMeta[String(id)] = {...recipeMetaV28(id), lastCooked:dateValue};
+}
+function markCookedV28(id, silent=false, dateValue=new Date().toISOString()) {
+  setLastCookedV28(id,dateValue);
+  savePlan();
+  renderRecipeResults();
+  if (!silent) alert("Lagret som laget i dag.");
+}
+window.markCookedV28 = markCookedV28;
+
+function imageForRecipeV28(recipe) {
+  const image = recipe?.image || recipe?.thumbnail || "";
+  return image ? `<img src="${escapeAttr(image)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('image-failed');this.remove()">` : `<span>${emojiForRecipe(recipe)}</span>`;
+}
+function captureVideoFrameV28(url) {
+  return new Promise(resolve => {
+    const video=document.createElement("video"),timer=setTimeout(()=>resolve(""),2500);
+    video.crossOrigin="anonymous";video.muted=true;video.playsInline=true;video.preload="metadata";
+    video.onloadeddata=()=>{try{video.currentTime=Math.min(.2,video.duration||.2)}catch(error){clearTimeout(timer);resolve("")}};
+    video.onseeked=()=>{try{const canvas=document.createElement("canvas");canvas.width=Math.min(video.videoWidth||640,960);canvas.height=Math.round(canvas.width*(video.videoHeight||360)/(video.videoWidth||640));canvas.getContext("2d").drawImage(video,0,0,canvas.width,canvas.height);clearTimeout(timer);resolve(canvas.toDataURL("image/jpeg",.78))}catch(error){clearTimeout(timer);resolve("")}};
+    video.onerror=()=>{clearTimeout(timer);resolve("")};video.src=url;
+  });
+}
+function ingredientObjectsV28(recipe) {
+  if (Array.isArray(recipe?.structuredIngredients) && recipe.structuredIngredients.length) return recipe.structuredIngredients;
+  return String(recipe?.ingredientsText || "").split(/\n+/).map(line => {
+    const category = line.match(/\[([^\]]+)\]\s*$/)?.[1] || categorize(line);
+    const clean = line.replace(/\s*\[[^\]]+\]\s*$/, "").trim();
+    const match = clean.match(/^([\d.,/½¼¾]+|etter smak)?\s*(kg|g|mg|l|dl|ml|ss|ts|stk|boks|pk|pakke|fedd|stilk)?\s*(.*)$/i);
+    return {amount:match?.[1]||"",unit:match?.[2]||"",item:(match?.[3]||clean).trim(),shoppingCategory:category,original:line};
+  }).filter(item => item.item);
+}
+function pantryKeyV28(value) { return normalizeIngredientName(String(value||"")).replace(/\b(fedd|stilker?|boks|pakke)\b/g,"").replace(/\s+/g," ").trim(); }
+function pantryAnalysisV28(recipe) {
+  ensureMetaV28();
+  const available = new Set(appMeta.pantryItems.map(item => pantryKeyV28(item.name)));
+  const ingredients = ingredientObjectsV28(recipe);
+  const present=[], missing=[];
+  for (const ingredient of ingredients) {
+    const key = pantryKeyV28(ingredient.item);
+    const match = [...available].some(value => value===key || (value.length>3 && (value.includes(key)||key.includes(value))));
+    (match ? present : missing).push(ingredient);
+  }
+  return {present,missing,total:ingredients.length,score:ingredients.length ? present.length/ingredients.length : 0};
+}
+function pantryStatusV28(recipe, detailed=false) {
+  const result=pantryAnalysisV28(recipe);
+  if (!result.total) return detailed ? "" : `<span class="pantry-status neutral">Pantry-status ukjent</span>`;
+  const state=result.missing.length===0?"ready":result.missing.length<=2?"close":"missing";
+  const label=result.missing.length===0?"Kan lages med det du har hjemme":`Mangler ${result.missing.length} ingrediens${result.missing.length===1?"":"er"}`;
+  if (!detailed) return `<span class="pantry-status ${state}">${state==="ready"?"🟢":state==="close"?"🟡":"🔴"} ${label}</span>`;
+  return `<details class="pantry-detail"><summary>${state==="ready"?"🟢":state==="close"?"🟡":"🔴"} ${label}</summary>
+    <div>${result.present.map(item=>`<p>✓ ${escapeHtml(item.item)}</p>`).join("")}${result.missing.map(item=>`<p>✗ ${escapeHtml(item.item)}</p>`).join("")}</div></details>`;
+}
+
+function recipeFlagsV28(recipe) {
+  const text=normalize(`${recipe.category||""} ${(recipe.tags||[]).join(" ")} ${recipe.name||""}`);
+  const nutrition=recipeNutritionV28(recipe), minutes=recipeMinutesV28(recipe), pantry=pantryAnalysisV28(recipe);
+  return {
+    glutenfree:text.includes("glutenfri"), vegetarian:text.includes("vegetar"),
+    vegan:text.includes("vegansk"), highProtein:nutrition.protein>=25,
+    under500:nutrition.calories>0&&nutrition.calories<500, under30:minutes>0&&minutes<=30,
+    childFriendly:text.includes("barnevennlig"), freezerFriendly:text.includes("frysevennlig")||text.includes("frys"),
+    dinner:!/(frokost|lunsj|dessert)/.test(text)||text.includes("middag"), breakfast:text.includes("frokost"),
+    lunch:text.includes("lunsj"), dessert:text.includes("dessert"), canMakeNow:pantry.total>0&&!pantry.missing.length,
+    missingMax2:pantry.total>0&&pantry.missing.length<=2,
+    avoidRecent14:!recipeLastCookedV28(recipe)||Date.now()-new Date(recipeLastCookedV28(recipe)).getTime()>14*86400000
+  };
+}
+function activeFiltersV28(scope) {
+  const box=$(scope==="picker"?"pickerFilterChips":"recipeFilterChips");
+  return [...(box?.querySelectorAll("button.active")||[])].map(button=>button.dataset.filter);
+}
+function recipeMatchesV28(recipe, scope="recipes") {
+  const search=normalize($(scope==="picker"?"pickerSearch":"recipeSearch")?.value||"");
+  const category=$(scope==="picker"?"pickerCategoryFilter":"recipeCategoryFilter")?.value||"";
+  if (search&&!searchableText(recipe).includes(search)) return false;
+  if (category&&recipe.category!==category) return false;
+  const flags=recipeFlagsV28(recipe);
+  return activeFiltersV28(scope).every(filter=>flags[filter]);
+}
+function sortRecipesV28(items, sort) {
+  const list=[...items], date=value=>new Date(value||0).getTime()||0;
+  if(sort==="random") return list.sort((a,b)=>(randomOrderV28.get(String(a.id))||0)-(randomOrderV28.get(String(b.id))||0));
+  if(sort==="newest") return list.sort((a,b)=>date(b.createdAt||b.created_at)-date(a.createdAt||a.created_at));
+  if(sort==="oldest") return list.sort((a,b)=>date(a.createdAt||a.created_at)-date(b.createdAt||b.created_at));
+  if(sort==="protein") return list.sort((a,b)=>recipeNutritionV28(b).protein-recipeNutritionV28(a).protein);
+  if(sort==="glutenfree") return list.sort((a,b)=>Number(recipeFlagsV28(b).glutenfree)-Number(recipeFlagsV28(a).glutenfree));
+  if(sort==="vegetarian") return list.sort((a,b)=>Number(recipeFlagsV28(b).vegetarian)-Number(recipeFlagsV28(a).vegetarian));
+  if(sort==="shortest") return list.sort((a,b)=>(recipeMinutesV28(a)||9999)-(recipeMinutesV28(b)||9999));
+  if(sort==="longest") return list.sort((a,b)=>recipeMinutesV28(b)-recipeMinutesV28(a));
+  if(sort==="lastCooked") return list.sort((a,b)=>date(recipeLastCookedV28(b))-date(recipeLastCookedV28(a)));
+  if(sort==="favorites") return list.sort((a,b)=>Number(isFavorite(b.id))-Number(isFavorite(a.id))||a.name.localeCompare(b.name,"no"));
+  return list.sort((a,b)=>a.name.localeCompare(b.name,"no"));
+}
+function recipeCardHtmlV28(recipe, scope="recipes") {
+  const n=recipeNutritionV28(recipe), minutes=recipeMinutesV28(recipe);
+  const action=scope==="picker"?`openPickerPreview('${escapeAttr(recipe.id)}')`:`openRecipeDetails('${escapeAttr(recipe.id)}')`;
+  return `<article class="recipe-card rich ${statusClassV23(recipe)}" onclick="${action}">
+    <div class="recipe-thumb">${imageForRecipeV28(recipe)}</div><div class="recipe-card-copy">
+      <div class="recipe-topline"><strong>${escapeHtml(recipe.name)}</strong>${scope==="recipes"?`<button class="favorite-btn" onclick="event.stopPropagation();toggleFavorite('${escapeAttr(recipe.id)}')">${isFavorite(recipe.id)?"★":"☆"}</button>`:""}</div>
+      <div class="recipe-meta">${escapeHtml(recipe.category||"Ukjent")} · ${statusTextV23(recipe)}${minutes?` · ${minutes} min`:""}${n.protein?` · ${n.protein} g protein`:""}</div>
+      ${pantryStatusV28(recipe)}
+      <div class="recipe-tags">${enrichTags(recipe).slice(0,4).map(tag=>`<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
+    </div><button type="button" class="ghost compact-action" onclick="event.stopPropagation();${action}">${scope==="picker"?"Se":"Åpne"}</button></article>`;
+}
+function renderRecipeResultsV28(scope="recipes") {
+  const sort=$(scope==="picker"?"pickerSort":"recipeSort")?.value||"az";
+  const items=sortRecipesV28(recipes.filter(recipe=>recipeMatchesV28(recipe,scope)),sort).slice(0,300);
+  const box=$(scope==="picker"?"pickerResults":"recipeResults");
+  if(box) box.innerHTML=items.map(recipe=>recipeCardHtmlV28(recipe,scope)).join("")||`<div class="empty-state">Ingen oppskrifter passer filtrene.</div>`;
+}
+renderRecipeResults=()=>renderRecipeResultsV28("recipes");
+renderPickerResults=()=>renderRecipeResultsV28("picker");
+
+function nutritionHtmlV28(recipe) {
+  const n=recipeNutritionV28(recipe);
+  if(!Object.values(n).some(Boolean)) return "";
+  return `<section class="nutrition-panel"><h3>Omtrentlig næring per porsjon</h3><div class="nutrition-grid">
+    ${[["Protein",n.protein,"g"],["Kalorier",n.calories,"kcal"],["Fett",n.fat,"g"],["Karbohydrater",n.carbohydrates,"g"],["Fiber",n.fiber,"g"]].map(([label,value,unit])=>`<div><strong>${value||"–"} ${unit}</strong><span>${label}</span></div>`).join("")}
+  </div><p class="hint">AI-estimat basert på ingrediensene.</p></section>`;
+}
+window.openRecipeDetails=function(id){
+  const recipe=recipeById(id); if(!recipe)return;
+  const missingCentral=!recipeHasIngredientsV23(recipe)||!String(recipe.instructions||"").trim();
+  $("recipeDialogTitle").textContent=`${emojiForRecipe(recipe)} ${recipe.name}`;
+  $("recipeDialogBody").innerHTML=`${recipe.image?`<div class="recipe-hero-image"><img src="${escapeAttr(recipe.image)}" alt=""></div>`:""}
+    ${missingCentral&&recipe.link?`<section class="recovery-inline-card"><strong>⚠ Denne oppskriften mangler data.</strong><p>Bruk originalkilden og eksisterende Recovery-pipeline. Ingenting lagres uten forhåndsvisning.</p><button type="button" class="primary" onclick="recoverRecipeFromUrlV28('${escapeAttr(recipe.id)}')">Recover from URL</button></section>`:""}
+    <p class="recipe-meta">${escapeHtml(recipe.category||"Ukjent")} · ${escapeHtml(recipe.source||"")} · brukt ${usageCount(recipe.id)}×</p>
+    ${pantryStatusV28(recipe,true)}
+    <div class="inline-actions"><button type="button" class="primary" onclick="openAddToDay('${escapeAttr(recipe.id)}')">+ Legg til i ukesmeny</button>
+    <button type="button" class="ghost" onclick="markCookedV28('${escapeAttr(recipe.id)}')">Marker som laget</button>
+    <button type="button" class="ghost" onclick="addMissingIngredientsV28('${escapeAttr(recipe.id)}')">Legg kun til manglende ingredienser</button>
+    <button type="button" class="ghost" onclick="openImport('${escapeAttr(recipe.id)}');$('recipeDialog').close()">Rediger</button></div>
+    ${nutritionHtmlV28(recipe)}
+    <div class="recipe-detail-section"><h3>Ingredienser</h3>${formatList(ingredientsToText(recipe))}</div>
+    <div class="recipe-detail-section"><h3>Fremgangsmåte</h3>${formatSteps(instructionsToText(recipe))}</div>`;
+  $("recipeDialog").showModal();
+};
+window.recoverRecipeFromUrlV28=async function(id){
+  const recipe=recipeById(id); if(!recipe?.link)return;
+  $("recipeDialog")?.close(); openImport(id); $("importLink").value=recipe.link;
+  await autoFetchRecipeUrlV27(recipe.link,true);
+};
+
+function populateRecipeControlsV28() {
+  const categories=[...new Set(recipes.map(recipe=>recipe.category).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"no"));
+  for(const id of ["recipeCategoryFilter","pickerCategoryFilter"]){
+    const select=$(id); if(!select)continue;
+    const selected=select.value; select.innerHTML=`<option value="">Alle kategorier</option>`+categories.map(category=>`<option>${escapeHtml(category)}</option>`).join(""); select.value=selected;
+  }
+  for(const [scope,id] of [["recipes","recipeFilterChips"],["picker","pickerFilterChips"]]){
+    const box=$(id); if(!box)continue;
+    box.innerHTML=RECIPE_FILTERS_V28.map(([key,label])=>`<button type="button" class="filter-chip" data-filter="${key}">${label}</button>`).join("");
+    box.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>{button.classList.toggle("active");renderRecipeResultsV28(scope)}));
+  }
+}
+function variedSuggestionsV28(count=5) {
+  const candidates=recipes.filter(recipe=>recipeMatchesV28(recipe,"recipes")&&recipeHasIngredientsV23(recipe));
+  const ranked=candidates.map(recipe=>({recipe,pantry:pantryAnalysisV28(recipe),recent:recipeFlagsV28(recipe).avoidRecent14?0:1,random:Math.random()}))
+    .sort((a,b)=>b.pantry.score-a.pantry.score||a.recent-b.recent||a.random-b.random);
+  const selected=[],categories=new Set();
+  for(const item of ranked){if(selected.length>=count)break;if(!categories.has(item.recipe.category)||ranked.length-selected.length<=count-selected.length){selected.push(item.recipe);categories.add(item.recipe.category)}}
+  return selected;
+}
+function showSuggestionsV28(count=5){
+  const suggestions=variedSuggestionsV28(count),box=$("recipeSuggestions"); if(!box)return;
+  box.innerHTML=suggestions.map(recipe=>recipeCardHtmlV28(recipe)).join("")||`<div class="empty-state">Ingen oppskrifter passer filtrene.</div>`;
+}
+
+function renderPantryV28(){
+  ensureMetaV28(); const query=normalize($("pantrySearch")?.value||"");
+  const items=appMeta.pantryItems.filter(item=>!query||normalize(item.name).includes(query));
+  if($("pantryCount")) $("pantryCount").textContent=`${appMeta.pantryItems.length} ${appMeta.pantryItems.length===1?"vare":"varer"}`;
+  if($("pantryList")) $("pantryList").innerHTML=items.map(item=>`<article class="pantry-row">
+    <div><strong>${escapeHtml(item.name)}</strong><p>${escapeHtml([item.quantity,item.unit].filter(Boolean).join(" ")||"Mengde ikke oppgitt")} · ${item.zone==="fridge"?"Kjøleskap":item.zone==="freezer"?"Fryser":"Tørrlager"}${item.always?" · alltid tilgjengelig":""}</p></div>
+    <div class="inline-actions"><button class="ghost" onclick="editPantryV28('${escapeAttr(item.id)}')">Endre</button><button class="ghost danger-subtle" onclick="removePantryV28('${escapeAttr(item.id)}')">Slett</button></div></article>`).join("")||`<div class="empty-state">Pantry er tomt. Legg inn det dere har hjemme.</div>`;
+}
+window.removePantryV28=function(id){ensureMetaV28();appMeta.pantryItems=appMeta.pantryItems.filter(item=>item.id!==id);savePlan();renderPantryV28();renderRecipeResults()};
+window.editPantryV28=function(id){const item=appMeta.pantryItems.find(entry=>entry.id===id);if(!item)return;$("pantryName").value=item.name;$("pantryQuantity").value=item.quantity||"";$("pantryUnit").value=item.unit||"";$("pantryZone").value=item.zone||"pantry";$("pantryAlways").checked=!!item.always;appMeta.pantryItems=appMeta.pantryItems.filter(entry=>entry.id!==id);renderPantryV28()};
+function addMissingIngredientsV28(id){
+  const recipe=recipeById(id),missing=pantryAnalysisV28(recipe).missing;
+  if(!missing.length)return alert("Dere har allerede alle registrerte ingredienser hjemme.");
+  for(const ingredient of missing)addShoppingItemV25(formatAiIngredient(ingredient),ingredient.shoppingCategory||categorize(ingredient.item));
+  alert(`${missing.length} ${missing.length===1?"manglende ingrediens er":"manglende ingredienser er"} lagt til.`);
+}
+window.addMissingIngredientsV28=addMissingIngredientsV28;
+
+const categorizeBeforeV28=categorize;
+categorize=function(line){
+  ensureMetaV28(); const key=pantryKeyV28(line),override=appMeta.ingredientRegistryOverrides[key];
+  if(override&&CATEGORIES.includes(override))return override;
+  const text=normalize(line);
+  if(/\b(salt|pepper|oregano|timian|basilikum|spisskummen|kanel|muskat|karri|kardemomme|kajenne|laurbær)\b/.test(text)||/\b(pulver|flak|krydder|masala)\b/.test(text))return"Krydder";
+  return categorizeBeforeV28(line);
+};
+shoppingRowHtmlV25=function(item){
+  const source=item.recipe&&item.recipe!=="Egen vare"?item.recipe:"";
+  return `<div class="shopping-row${item.done?" done":""}" data-shopping-id="${escapeAttr(item.id)}">
+    <input class="shopping-check" type="checkbox" ${item.done?"checked":""} onchange="toggleShoppingDoneV25('${escapeAttr(item.id)}',this.checked)">
+    <div class="shopping-item-main"><button type="button" class="shopping-item-text" onclick="editShoppingItemV25('${escapeAttr(item.id)}')">${escapeHtml(item.text)}</button>${source?`<span class="shopping-source">Fra ${escapeHtml(source)}</span>`:""}</div>
+    <button type="button" class="shopping-more" onclick="toggleShoppingActionsV25('${escapeAttr(item.id)}',this)">•••</button>
+    <div class="shopping-actions"><button type="button" class="shopping-delete category-action" onclick="openShoppingCategoryV28('${escapeAttr(item.id)}')">Endre kategori</button><button type="button" class="shopping-delete" onclick="removeShoppingItemV25('${escapeAttr(item.id)}')">Slett vare</button></div></div>`;
+};
+const renderShoppingListBeforeV28=renderShoppingList;
+renderShoppingList=function(items){
+  for(const item of items||[])if(item.manualCategory&&CATEGORIES.includes(item.category))item.__manualCategory=item.category;
+  renderShoppingListBeforeV28(items);
+  for(const item of shoppingItems||[])if(item.__manualCategory){item.category=item.__manualCategory;delete item.__manualCategory}
+};
+window.openShoppingCategoryV28=function(id){
+  const item=shoppingItems.find(entry=>entry.id===id);if(!item)return;shoppingCategoryTargetV28=id;
+  $("shoppingCategoryItemName").textContent=item.text;$("shoppingCategorySelect").innerHTML=CATEGORIES.map(cat=>`<option>${cat}</option>`).join("");$("shoppingCategorySelect").value=item.category||"Annet";
+  $("registryUpdateChoice").hidden=categorizeBeforeV28(item.text)==="Annet";$("shoppingCategoryDialog").showModal();
+};
+
+function structuredPreviewV28(){
+  const box=$("structuredIngredientPreview"),ingredients=window.lastAiParsedRecipe?.ingredients||previewIngredientsV26();
+  const uncertainties=window.lastAiParsedRecipe?.uncertainties||[];
+  if(!box)return;box.innerHTML=ingredients.map((ingredient,index)=>{const warning=uncertainties.find(item=>item.field===`ingredients.${index}`);
+    return `<div class="structured-ingredient-row${warning?" uncertain":""}" data-index="${index}">
+    <input data-field="amount" value="${escapeAttr(ingredient.amount||"")}" aria-label="Mengde">
+    <input data-field="unit" value="${escapeAttr(ingredient.unit||"")}" aria-label="Enhet">
+    <input data-field="item" value="${escapeAttr(ingredient.item||"")}" aria-label="Ingrediens">
+    <select data-field="shoppingCategory">${CATEGORIES.map(category=>`<option${category===(ingredient.shoppingCategory||categorize(ingredient.item))?" selected":""}>${category}</option>`).join("")}</select>
+    ${warning?`<p class="ingredient-warning">Kontroller: ${escapeHtml(warning.reason)}</p>`:""}</div>`}).join("")||`<p class="hint">Ingrediensene vises her etter analyse.</p>`;
+}
+function syncStructuredPreviewV28(){
+  const rows=[...($("structuredIngredientPreview")?.querySelectorAll(".structured-ingredient-row")||[])];
+  if(!rows.length)return;
+  const previous=window.lastAiParsedRecipe?.ingredients||[];
+  const ingredients=rows.map((row,index)=>({...previous[index],...Object.fromEntries([...row.querySelectorAll("[data-field]")].map(input=>[input.dataset.field,input.value.trim()]))}));
+  window.lastAiParsedRecipe=window.lastAiParsedRecipe||{};window.lastAiParsedRecipe.ingredients=ingredients;
+  window.lastAiParsedRecipe.__displayIngredients=ingredients.map(formatAiIngredient).join("\n");$("parsedIngredients").value=window.lastAiParsedRecipe.__displayIngredients;
+}
+const parseCaptionAIBeforeV28=parseCaptionAI;
+parseCaptionAI=async function(options={}){const result=await parseCaptionAIBeforeV28(options);if(result)structuredPreviewV28();return result};
+const saveParsedRecipeBeforeV28=saveParsedRecipe;
+saveParsedRecipe=async function(){
+  syncStructuredPreviewV28();
+  const ai=window.lastAiParsedRecipe||{};
+  if(!ai.nutrition&&previewIngredientsV26().length){
+    $("aiStatus").textContent="Estimerer næringsinnhold …";
+    try{const response=await fetch("/api/nutrition",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ingredients:previewIngredientsV26(),servings:$("importServings").value})});const result=await response.json();if(result.ok)ai.nutrition=result.nutrition}catch(error){console.warn("Næringsestimat kunne ikke beregnes",error)}
+  }
+  return saveParsedRecipeBeforeV28();
+};
+
+const addRecipeToDayBeforeV28=window.addRecipeToDay;
+window.addRecipeToDay=function(day,id){const before=(plan[day]||[]).length;addRecipeToDayBeforeV28(day,id);if((plan[day]||[]).length>before)markCookedV28(id,true,day)};
+const confirmAddToDayBeforeV28=confirmAddToDay;
+confirmAddToDay=function(){const id=pendingAddRecipeId,day=$("addToDaySelect")?.value;confirmAddToDayBeforeV28();if(id&&day)markCookedV28(id,true,day)};
+randomWeek=function(){
+  const days=selectedDays(),pool=variedSuggestionsV28(Math.max(days.length,5));
+  if(!pool.length)return alert("Ingen oppskrifter passer de valgte filtrene.");
+  days.forEach((day,index)=>{const recipe=pool[index%pool.length];plan[day.key]=recipe?[{type:"recipe",recipeId:recipe.id}]:[];if(recipe){bumpUsage(recipe.id);setLastCookedV28(recipe.id,day.key)}});
+  savePlan();createDayRows();renderRecipeResults();
+};
+localSmartWeek=function(){
+  const days=selectedDays(),suggestions=variedSuggestionsV28(Math.max(days.length,5));
+  if(!suggestions.length)return alert("Ingen oppskrifter passer de valgte filtrene.");
+  days.forEach((day,index)=>{const recipe=suggestions[index%suggestions.length];plan[day.key]=recipe?[{type:"recipe",recipeId:recipe.id}]:[];if(recipe){bumpUsage(recipe.id);setLastCookedV28(recipe.id,day.key)}});
+  savePlan();createDayRows();renderRecipeResults();
+};
+smartWeek=async function(){
+  const days=selectedDays(),prompt=$("smartPrompt")?.value?.trim()||"";
+  if($("smartStatus"))$("smartStatus").textContent="Lager et variert forslag med Pantry i bakhodet …";
+  try{
+    const payloadRecipes=recipes.filter(recipe=>recipeHasIngredientsV23(recipe)&&recipeMatchesV28(recipe,"recipes")).map(recipe=>{
+      const pantry=pantryAnalysisV28(recipe),flags=recipeFlagsV28(recipe);
+      return {id:recipe.id,name:recipe.name,category:recipe.category,tags:enrichTags(recipe),favorite:isFavorite(recipe.id),usage:usageCount(recipe.id),pantryScore:pantry.score,missingIngredients:pantry.missing.length,recentlyCooked:!flags.avoidRecent14};
+    }).sort((a,b)=>b.pantryScore-a.pantryScore||a.missingIngredients-b.missingIngredients).slice(0,180);
+    const response=await fetch("/api/smart-week",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt:`${prompt}\nPrioriter variasjon, minst mulig innkjøp og oppskrifter som ikke nylig er laget. Unngå samme hovedprotein eller kategori flere dager på rad.`,days:days.map(day=>({key:day.key,label:day.label,weekday:day.weekday})),recipes:payloadRecipes})});
+    const result=await response.json();if(!response.ok||!result.ok)throw new Error(result.error||"AI-forslaget feilet");
+    days.forEach(day=>plan[day.key]=[]);
+    for(const row of result.plan?.items||[]){const match=days.find(day=>day.key===row.day||day.weekday===normalize(row.day));if(!match)continue;const ids=(row.recipeIds||row.recipe_ids||[]).filter(id=>recipeById(id));plan[match.key]=ids.map(id=>{bumpUsage(id);setLastCookedV28(id,match.key);return{type:"recipe",recipeId:id}})}
+    savePlan();createDayRows();renderRecipeResults();$("smartStatus").textContent="Forslaget er klart. Du kan justere det fritt.";
+  }catch(error){console.warn(error);$("smartStatus").textContent="AI-forslaget feilet – bruker smart lokal variasjon.";localSmartWeek()}
+};
+
+const bindAllBeforeV28=bindAll;
+bindAll=function(){
+  bindAllBeforeV28();ensureMetaV28();populateRecipeControlsV28();renderPantryV28();
+  for(const id of ["recipeCategoryFilter","pickerCategoryFilter","pickerSort"])$(id)?.addEventListener("change",()=>renderRecipeResultsV28(id.startsWith("picker")?"picker":"recipes"));
+  $("recipeSuggestionsBtn")?.addEventListener("click",()=>showSuggestionsV28(5));
+  $("surpriseRecipeBtn")?.addEventListener("click",()=>showSuggestionsV28(1));
+  $("pantrySearch")?.addEventListener("input",renderPantryV28);
+  $("pantryForm")?.addEventListener("submit",event=>{event.preventDefault();ensureMetaV28();const name=$("pantryName").value.trim();if(!name)return;appMeta.pantryItems.push({id:`pantry-${Date.now()}`,name,quantity:$("pantryQuantity").value.trim(),unit:$("pantryUnit").value,zone:$("pantryZone").value,always:$("pantryAlways").checked});event.currentTarget.reset();savePlan();renderPantryV28();renderRecipeResults()});
+  $("structuredIngredientPreview")?.addEventListener("input",syncStructuredPreviewV28);
+  $("structuredIngredientPreview")?.addEventListener("change",syncStructuredPreviewV28);
+  $("confirmShoppingCategoryBtn")?.addEventListener("click",()=>{const item=shoppingItems.find(entry=>entry.id===shoppingCategoryTargetV28);if(!item)return;const category=$("shoppingCategorySelect").value;item.category=category;item.manualCategory=true;item.updatedAt=nowIsoV25();const scope=document.querySelector('input[name="registryScope"]:checked')?.value;if(scope==="registry"){if(!confirm(`Oppdater Ingredient Registry slik at «${item.text}» alltid får kategorien ${category}?`))return;appMeta.ingredientRegistryOverrides[pantryKeyV28(item.text)]=category}savePlan();renderShoppingList(shoppingItems);$("shoppingCategoryDialog").close()});
+};
+const initBeforeV28=init;
+init=async function(){await initBeforeV28();ensureMetaV28();randomOrderV28=new Map(recipes.map(recipe=>[String(recipe.id),Math.random()]));renderRecipeResults();renderPantryV28()};
 
 init();

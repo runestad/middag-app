@@ -39,6 +39,13 @@ def load_catalog():
 
 CATALOG, ALIASES, CATEGORIES = load_catalog()
 
+SPICE_WORDS = {
+    "salt", "pepper", "paprikapulver", "oregano", "timian", "basilikum",
+    "chiliflak", "chilipulver", "spisskummen", "kanel", "muskat",
+    "garam masala", "karri", "kardemomme", "kajennepepper", "laurbærblad",
+}
+SPICE_SUFFIXES = ("pulver", "flak", "pepper", "krydder", "masala")
+
 
 def normalize_ingredient_name(value):
     original = str(value or "").strip()
@@ -59,6 +66,9 @@ def normalize_ingredient_name(value):
 
 def ingredient_category(name, fallback="Annet"):
     canonical = normalize_ingredient_name(name)
+    key = _key(canonical)
+    if key in SPICE_WORDS or any(key.endswith(suffix) for suffix in SPICE_SUFFIXES):
+        return "Krydder"
     return CATEGORIES.get(canonical, fallback if fallback in CATALOG["categories"] else "Annet")
 
 

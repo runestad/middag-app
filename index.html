@@ -5,12 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Matplan</title>
   <meta name="description" content="Ukesmeny, oppskrifter, handleliste og fryseroversikt." />
-  <link rel="manifest" href="manifest.webmanifest?v=27" />
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png?v=27" />
-  <link rel="icon" type="image/jpeg" href="favicon.jpeg?v=27" />
-  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=27" />
+  <link rel="manifest" href="manifest.webmanifest?v=28" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png?v=28" />
+  <link rel="icon" type="image/jpeg" href="favicon.jpeg?v=28" />
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=28" />
   <meta name="theme-color" content="#f7f3ec" />
-  <link rel="stylesheet" href="styles.css?v=27" />
+  <link rel="stylesheet" href="styles.css?v=28" />
 </head>
 <body>
   <header class="app-header">
@@ -104,6 +104,20 @@
     </section>
 
     <section id="viewRecipes" class="view">
+      <section class="card inspiration-card">
+        <div class="section-title">
+          <div>
+            <p class="eyebrow">Smart inspirasjon</p>
+            <h2>Hva skal vi spise?</h2>
+            <p class="hint">Varierte forslag basert på filtre, Pantry og hva dere nylig har laget.</p>
+          </div>
+          <div class="inspiration-actions">
+            <button id="recipeSuggestionsBtn" class="primary" type="button">🎲 Få forslag</button>
+            <button id="surpriseRecipeBtn" class="ghost" type="button">Overrask meg</button>
+          </div>
+        </div>
+        <div id="recipeSuggestions" class="recipe-suggestions" aria-live="polite"></div>
+      </section>
       <section class="card">
         <div class="section-title">
           <h2>Oppskrifter</h2>
@@ -111,18 +125,59 @@
         </div>
         <div class="recipe-toolbar">
           <input id="recipeSearch" placeholder="Søk etter rett, kategori, tag eller kilde …" />
+          <select id="recipeCategoryFilter" aria-label="Oppskriftskategori">
+            <option value="">Alle kategorier</option>
+          </select>
           <select id="recipeSort">
             <option value="az">Alfabetisk A–Å</option>
-            <option value="za">Alfabetisk Å–A</option>
-            <option value="category">Kategori</option>
-            <option value="used">Mest brukt</option>
-            <option value="recent">Nylig lagt til</option>
-            <option value="missing">Mangler oppskrift</option>
+            <option value="random">Tilfeldig</option>
+            <option value="newest">Nyeste</option>
+            <option value="oldest">Eldste</option>
+            <option value="protein">Proteinrik først</option>
+            <option value="glutenfree">Glutenfri først</option>
+            <option value="vegetarian">Vegetar først</option>
+            <option value="shortest">Kortest tilberedning</option>
+            <option value="longest">Lengst tilberedning</option>
+            <option value="lastCooked">Sist laget</option>
             <option value="favorites">Favoritter</option>
-            <option value="tags">Tags</option>
           </select>
         </div>
+        <div id="recipeFilterChips" class="filter-chips" aria-label="Oppskriftsfiltre"></div>
         <div id="recipeResults" class="recipe-results"></div>
+      </section>
+    </section>
+
+    <section id="viewPantry" class="view pantry-view">
+      <section class="screen-intro">
+        <div class="section-title">
+          <div>
+            <h2>Pantry</h2>
+            <p class="hint">Det dere har hjemme – klart for smartere forslag og kortere handlelister.</p>
+          </div>
+        </div>
+      </section>
+      <section class="card pantry-composer-card">
+        <form id="pantryForm" class="pantry-composer" autocomplete="off">
+          <input id="pantryName" placeholder="Legg til ingrediens …" aria-label="Ingrediens" />
+          <input id="pantryQuantity" inputmode="decimal" placeholder="Mengde" aria-label="Mengde" />
+          <select id="pantryUnit" aria-label="Enhet">
+            <option value="">Ingen enhet</option><option>stk</option><option>g</option><option>kg</option>
+            <option>ml</option><option>dl</option><option>l</option><option>pk</option><option>boks</option>
+          </select>
+          <select id="pantryZone" aria-label="Oppbevaringssted">
+            <option value="pantry">Tørrlager</option><option value="fridge">Kjøleskap</option><option value="freezer">Fryser</option>
+          </select>
+          <label class="inline-check"><input id="pantryAlways" type="checkbox" /> Alltid tilgjengelig</label>
+          <button class="primary" type="submit">Legg til</button>
+        </form>
+        <input id="pantrySearch" class="pantry-search" placeholder="Søk i Pantry …" />
+      </section>
+      <section class="card">
+        <div class="section-title">
+          <h2>Det vi har hjemme</h2>
+          <span id="pantryCount" class="pill">0 varer</span>
+        </div>
+        <div id="pantryList" class="pantry-list"></div>
       </section>
     </section>
 
@@ -189,6 +244,7 @@
     <button type="button" class="nav-btn" data-view="viewShopping" aria-label="Handleliste"><span class="nav-icon" aria-hidden="true">✓</span><span>Handleliste</span></button>
     <button type="button" class="nav-btn" data-view="viewRecipes" aria-label="Oppskrifter"><span class="nav-icon" aria-hidden="true">▤</span><span>Oppskrifter</span></button>
     <button type="button" class="nav-btn" data-view="viewFreezer" aria-label="Fryser"><span class="nav-icon" aria-hidden="true">❄</span><span>Fryser</span></button>
+    <button type="button" class="nav-btn" data-view="viewPantry" aria-label="Pantry"><span class="nav-icon" aria-hidden="true">◫</span><span>Pantry</span></button>
     <button type="button" class="nav-btn" data-view="viewRecovery" aria-label="Recipe Recovery"><span class="nav-icon" aria-hidden="true">↺</span><span>Recovery</span></button>
   </nav>
 
@@ -267,6 +323,15 @@
           <span id="instructionsWarning" class="field-warning" hidden></span>
         </label>
       </div>
+      <section class="ingredient-preview-section">
+        <div class="section-title">
+          <div>
+            <h3>Ingredienser og kategorier</h3>
+            <p class="hint">Kontroller AI-forslaget. Alle felter kan redigeres før lagring.</p>
+          </div>
+        </div>
+        <div id="structuredIngredientPreview" class="structured-ingredient-preview"></div>
+      </section>
     </form>
   </dialog>
 
@@ -302,7 +367,34 @@
         <button value="cancel" class="ghost">Lukk</button>
       </div>
       <input id="pickerSearch" placeholder="Søk etter oppskrift …" />
+      <div class="picker-toolbar">
+        <select id="pickerCategoryFilter" aria-label="Kategori"><option value="">Alle kategorier</option></select>
+        <select id="pickerSort" aria-label="Sortering">
+          <option value="az">Alfabetisk</option><option value="random">Tilfeldig</option>
+          <option value="favorites">Favoritter</option><option value="protein">Proteinrik først</option>
+          <option value="shortest">Kortest tilberedning</option><option value="lastCooked">Sist laget</option>
+        </select>
+      </div>
+      <div id="pickerFilterChips" class="filter-chips compact"></div>
       <div id="pickerResults" class="recipe-results picker-results"></div>
+    </form>
+  </dialog>
+
+  <dialog id="shoppingCategoryDialog">
+    <form method="dialog" class="dialog-form small-dialog">
+      <div class="section-title">
+        <h2>Endre kategori</h2>
+        <button value="cancel" class="ghost">Lukk</button>
+      </div>
+      <p id="shoppingCategoryItemName" class="hint"></p>
+      <label>Kategori<select id="shoppingCategorySelect"></select></label>
+      <fieldset id="registryUpdateChoice" class="registry-choice" hidden>
+        <legend>Hvor skal endringen brukes?</legend>
+        <label><input type="radio" name="registryScope" value="item" checked /> Bare denne varen</label>
+        <label><input type="radio" name="registryScope" value="registry" /> Oppdater Ingredient Registry</label>
+      </fieldset>
+      <p class="safety-note">Registry-endringer lagres bare etter eksplisitt bekreftelse.</p>
+      <button id="confirmShoppingCategoryBtn" type="button" class="primary">Lagre kategori</button>
     </form>
   </dialog>
 
@@ -350,6 +442,6 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script src="app.js?v=27"></script>
+  <script src="app.js?v=28"></script>
 </body>
 </html>

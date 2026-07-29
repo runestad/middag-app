@@ -67,6 +67,52 @@ def text_content(value):
     return re.sub(r"\s+", " ", unescape(value)).strip()
 
 
+def absolute_image_url(value, base_url):
+    candidate = unescape(str(value or "").strip())
+    if not candidate or candidate.startswith("data:"):
+        return ""
+    resolved = urllib.parse.urljoin(base_url, candidate)
+    parsed = urllib.parse.urlparse(resolved)
+    return resolved if parsed.scheme in ("http", "https") else ""
+
+
+def image_candidates(html, recipe, base_url):
+    candidates = []
+
+    def add(value, method):
+        values = value if isinstance(value, list) else [value]
+        for entry in values:
+            if isinstance(entry, dict):
+                entry = entry.get("url") or entry.get("contentUrl") or entry.get("thumbnailUrl")
+            url = absolute_image_url(entry, base_url)
+            if url and not any(item["url"] == url for item in candidates):
+                candidates.append({"url": url, "method": method})
+
+    add(meta_value(html, "og:image"), "opengraph-image")
+    add(meta_value(html, "twitter:image"), "metadata-thumbnail")
+    add(meta_value(html, "twitter:image:src"), "metadata-thumbnail")
+    add(recipe.get("image"), "metadata-thumbnail")
+    image_src = re.search(r'<link[^>]+rel=["\']image_src["\'][^>]+href=["\']([^"\']+)', html, re.I)
+    if image_src:
+        add(image_src.group(1), "metadata-thumbnail")
+    for match in re.finditer(r'<img[^>]+(?:src|data-src)=["\']([^"\']+)', html, re.I):
+        url = match.group(1)
+        if not re.search(r"(avatar|logo|icon|sprite|pixel|tracking)", url, re.I):
+            add(url, "first-image")
+            break
+    poster = re.search(r'<video[^>]+poster=["\']([^"\']+)', html, re.I)
+    if poster:
+        add(poster.group(1), "video-thumbnail")
+    return candidates
+
+
+def first_video_url(html, base_url):
+    match = re.search(r'<video[^>]+src=["\']([^"\']+)', html, re.I)
+    if not match:
+        match = re.search(r'<source[^>]+src=["\']([^"\']+)[^>]+type=["\']video/', html, re.I)
+    return absolute_image_url(match.group(1), base_url) if match else ""
+
+
 def json_ld_recipes(html):
     found = []
     for raw in re.findall(r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>([\s\S]*?)</script>', html, re.I):
@@ -135,11 +181,9 @@ def extract(url):
     title_match = re.search(r"<title[^>]*>([\s\S]*?)</title>", html, re.I)
     title = recipe.get("name") or meta_value(html, "og:title") or (text_content(title_match.group(1)) if title_match else "")
     description = recipe.get("description") or meta_value(html, "og:description") or meta_value(html, "description")
-    image = recipe.get("image") or meta_value(html, "og:image")
-    if isinstance(image, list):
-        image = image[0] if image else ""
-    if isinstance(image, dict):
-        image = image.get("url") or ""
+    images = image_candidates(html, recipe, resolved)
+    image = images[0]["url"] if images else ""
+    video = first_video_url(html, resolved)
     structured = recipe_text(recipe)
     source_type = "Instagram" if "instagram.com" in host else "TikTok" if "tiktok.com" in host else "Web"
     return {
@@ -147,6 +191,9 @@ def extract(url):
         "title": text_content(str(title)),
         "caption": structured or text_content(str(description)),
         "image": image or "",
+        "imageCandidates": images,
+        "imageMethod": images[0]["method"] if images else "",
+        "video": video,
         "sourceType": source_type,
         "method": "json-ld" if structured else "metadata",
         "hasStructuredRecipe": bool(structured),
