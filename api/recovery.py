@@ -16,6 +16,7 @@ from ._common import (
     supabase_request,
 )
 from .ingredient_normalization import normalize_structured_ingredients
+from .data_merge import merge_preserving_existing_data
 
 
 MANIFEST_PATH = Path(__file__).resolve().parents[1] / "recovery-manifest.json"
@@ -167,8 +168,7 @@ def apply_preview(preview, actor="user"):
     history.setdefault("entries", []).insert(0, entry)
     put_state(HISTORY_KEY, history)
 
-    updated = dict(current)
-    updated.update(patch)
+    updated = merge_preserving_existing_data(current, patch)
     updated["updatedAt"] = now_iso()
     row = recipe_to_row(updated)
     query = urllib.parse.urlencode({"id": f"eq.{preview['recipeId']}", "app_id": f"eq.{APP_ID}"})

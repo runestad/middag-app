@@ -5,6 +5,7 @@ import urllib.request
 import urllib.error
 import urllib.parse
 import ssl
+from .data_merge import has_meaningful_data_value
 
 APP_ID = os.environ.get("APP_ID", "oyvind-melanie")
 
@@ -77,13 +78,10 @@ def recipe_to_row(recipe):
 
 
 def row_to_recipe(row):
-    data = row.get("data") or {}
-    data.setdefault("id", row.get("id"))
-    data.setdefault("name", row.get("name"))
-    data.setdefault("category", row.get("category"))
-    data.setdefault("source", row.get("source"))
-    data.setdefault("link", row.get("link"))
-    data.setdefault("status", row.get("status"))
+    data = dict(row.get("data") or {})
+    for field in ("id", "name", "category", "source", "link", "status"):
+        if not has_meaningful_data_value(data.get(field)) and has_meaningful_data_value(row.get(field)):
+            data[field] = row[field]
     return data
 
 

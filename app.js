@@ -12,7 +12,7 @@ function hasRecipe(r){return Boolean((r?.ingredientsText&&r.ingredientsText.trim
 function getTags(r){const tags=new Set();if(Array.isArray(r.tags))r.tags.forEach(t=>tags.add(String(t).toLowerCase()));if(r.category)tags.add(String(r.category).toLowerCase());const text=normalize(`${r.name} ${r.category} ${r.ingredientsText||""} ${r.instructions||""}`);const rules=[["suppe",["suppe","soup","broth"]],["vegetar",["vegetar","veggie","tofu","linse","kikerter","aubergine"]],["kylling",["kylling","chicken"]],["pasta",["pasta","spaghetti","orzo","tagliatelle","fettuccine"]],["salat",["salat","salad"]],["taco",["taco","wrap","fajita"]],["airfryer",["airfryer","air fryer"]],["fisk",["fisk","shrimp","reker","scampi","ørret","laks"]],["glutenfritt",["glutenfri","gluten free"]],["rask",["15 minute","20 minute","rask","enkel"]],["asiatisk",["soy","soya","sesam","gochujang","thai","ramen","noodle","nudler"]],["indisk",["indisk","curry","masala","butter chicken"]]];for(const[tag,words]of rules)if(words.some(w=>text.includes(normalize(w))))tags.add(tag);return[...tags].slice(0,10)}
 function enrichTags(r){const tags=new Set(getTags(r));const text=normalize(`${r.name} ${r.category} ${r.ingredientsText||""} ${r.instructions||""}`);if(text.includes("glutenfri"))tags.add("glutenfritt");return[...tags]}
 function emojiForRecipe(r){if(r.emoji)return r.emoji;const t=normalize(`${r.name} ${r.category} ${enrichTags(r).join(" ")}`);if(t.includes("suppe"))return"🍲";if(t.includes("salat"))return"🥗";if(t.includes("pasta")||t.includes("spaghetti"))return"🍝";if(t.includes("taco")||t.includes("wrap")||t.includes("fajita"))return"🌮";if(t.includes("pizza"))return"🍕";if(t.includes("kylling"))return"🍗";if(t.includes("fisk")||t.includes("shrimp")||t.includes("scampi"))return"🍤";if(t.includes("biff")||t.includes("kjøtt"))return"🥩";if(t.includes("ramen")||t.includes("nudler")||t.includes("noodle"))return"🍜";if(t.includes("curry")||t.includes("indisk"))return"🍛";if(t.includes("airfryer"))return"🔥";if(t.includes("vegetar"))return"🥦";return"🍽️"}
-function mergeCustomData(){recipes=recipes.map(r=>({...r,...(customRecipes[r.id]||{})}))}
+function mergeCustomData(){recipes=recipes.map(r=>mergePreservingExistingData(r,customRecipes[r.id]||{}))}
 async function init(){const rr=await fetch("/api/recipes").then(r=>r.json());recipes=rr.recipes||[];mergeCustomData();const pr=await fetch("/api/plan").then(r=>r.json()).catch(()=>({plan:{}}));plan=migratePlan(pr.plan?.items||pr.plan||{});shoppingItems=pr.plan?.shoppingItems||[];appMeta=pr.plan?.meta||appMeta;freezerItems=pr.plan?.freezerItems||defaultFreezerItems();lastRemoteUpdatedAt=pr.plan?.updatedAt||"";fillDaySelectorsV20();fillAddToDaySelect();$("recipeCount").textContent=`${recipes.length} oppskrifter`;bindAll();createDayRows();renderRecipeResults();renderShoppingList(shoppingItems);renderFreezer();startRealtimeSync()}
 function bindAll(){const binds={createDaysBtn:createDayRows,generateListBtn:generateShoppingList,resetShoppingBtn:resetShoppingList,resetPlanInlineBtn:resetPlan,recipeSearch:renderRecipeResults,recipeSort:renderRecipeResults,addRecipeBtn:openAddRecipe,parseCaptionBtn:parseCaption,saveParsedBtn:saveParsedRecipe,aiParseCaptionBtn:parseCaptionAI,randomWeekBtn:randomWeek,aiWeekBtn:smartWeek,confirmAddToDayBtn:confirmAddToDay,pickerSearch:renderPickerResults,cleanupRecipesBtn:cleanupVisibleRecipes,addFreezerItemBtn:addFreezerItem,freezerSuggestBtn:freezerSuggest};for(const[id,fn]of Object.entries(binds)){const el=$(id);if(!el)continue;el.addEventListener((id==="recipeSearch"||id==="pickerSearch")?"input":"click",fn)}if($("recipeSort"))$("recipeSort").addEventListener("change",renderRecipeResults);if($("readScreenshotsBtn"))$("readScreenshotsBtn").addEventListener("click",readScreenshotsWithOCR);if($("clearCaptionBtn"))$("clearCaptionBtn").addEventListener("click",()=>{$("captionInput").value="";window.lastAiParsedRecipe=null});document.querySelectorAll(".nav-btn").forEach(btn=>btn.addEventListener("click",()=>showView(btn.dataset.view)));
 ["startDate","endDate"].forEach(id=>{const el=$(id);if(el)el.addEventListener("change",()=>{updateDateLabels();createDayRows();})});
@@ -37,11 +37,11 @@ function openRecipePicker(day){activePickerDay=day;$("pickerSearch").value="";re
 function renderPickerResults(){const q=normalize($("pickerSearch").value);const f=recipes.filter(r=>!q||searchableText(r).includes(q)).sort((a,b)=>Number(hasRecipe(b))-Number(hasRecipe(a))||a.name.localeCompare(b.name,"no")).slice(0,300);$("pickerResults").innerHTML=f.map(r=>`<div class="recipe-card" onclick="addRecipeToDay('${activePickerDay}','${escapeAttr(r.id)}')"><div class="recipe-thumb recipe-emoji">${emojiForRecipe(r)}</div><div><strong>${escapeHtml(r.name)}</strong><div class="recipe-meta">${escapeHtml(r.category||"Ukjent")} · ${hasRecipe(r)?"✅":"🟡 mangler"}</div></div><button type="button" class="ghost">Legg til</button></div>`).join("")}
 window.addRecipeToDay=(day,id)=>{plan[day].push({type:"recipe",recipeId:id});bumpUsage(id);savePlan();createDayRows();renderRecipeResults();$("recipePickerDialog").close()}
 function openAddRecipe(){const id=`custom-${Date.now()}`;recipes.push({id,name:"Ny oppskrift",category:"Annet",source:"Manuell",link:"",ingredientsText:"",instructions:"",tags:[]});activeImportId=id;$("importTarget").textContent="Lagrer som ny oppskrift";$("importLinkWrap").innerHTML="Legg inn navn, lenke og caption/oppskriftstekst.";$("importName").value="";$("importLink").value="";$("importCategory").value="Annet";$("importServings").value="";$("captionInput").value="";$("parsedIngredients").value="";$("parsedInstructions").value="";window.lastAiParsedRecipe=null;$("importDialog").showModal()}
-function openImport(id){activeImportId=id;const r=recipeById(id);$("importTarget").textContent=`Lagrer på: ${r.name}`;$("importLinkWrap").innerHTML=r.link?`Kilde: <a href="${escapeAttr(r.link)}" target="_blank" rel="noopener">åpne originaloppskrift</a>`:"Ingen kilde registrert";$("importName").value=r.name||"";$("importLink").value=r.link||"";$("importCategory").value=r.category||"Annet";$("importServings").value=r.servings||"";$("captionInput").value="";$("parsedIngredients").value=ingredientsToText(r);$("parsedInstructions").value=instructionsToText(r);window.lastAiParsedRecipe=null;$("importDialog").showModal()}
-async function parseCaptionAI(){const caption=$("captionInput").value.trim(),status=$("aiStatus"),btn=$("aiParseCaptionBtn"),r=recipeById(activeImportId)||{};if(!caption)return alert("Lim inn caption/oppskriftstekst først.");try{btn.disabled=true;btn.textContent="AI parser …";status.textContent="Sender tekst til AI-parser …";const res=await fetch("/api/parse-caption",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({caption,recipeName:$("importName").value.trim()||r.name||"",sourceUrl:$("importLink").value.trim()||r.link||"",category:$("importCategory").value||r.category||""})});const data=await res.json();if(!data.ok)throw new Error(data.error||"AI-parser feilet");const p=data.parsed||{};$("importName").value=$("importName").value.trim()||p.title||r.name||"";$("importCategory").value=p.category||$("importCategory").value||"Annet";$("importServings").value=p.servings||$("importServings").value||"";$("parsedIngredients").value=(p.ingredients||[]).map(formatAiIngredient).join("\n");$("parsedInstructions").value=(p.instructions||[]).map((s,i)=>`${i+1}. ${s}`).join("\n");p.tags=enrichTags({...r,...p,name:p.title||$("importName").value});p.emoji=emojiForRecipe({...r,...p,name:p.title||$("importName").value});window.lastAiParsedRecipe=p;status.textContent=`AI-parsing ferdig. Tags: ${(p.tags||[]).join(", ")}`}catch(err){status.textContent="AI-parser feilet: "+(err?.message||err);alert("AI-parser feilet. Se statusfelt.")}finally{btn.disabled=false;btn.textContent="AI-parse caption"}}
+function openImport(id){activeImportId=id;const r=recipeById(id),sourceUrl=resolveRecipeSourceUrl(r);$("importTarget").textContent=`Lagrer på: ${r.name}`;$("importLinkWrap").innerHTML=sourceUrl?`Kilde: <a href="${escapeAttr(sourceUrl)}" target="_blank" rel="noopener">åpne originaloppskrift</a>`:"Ingen kilde registrert";$("importName").value=r.name||"";$("importLink").value=sourceUrl;$("importCategory").value=r.category||"Annet";$("importServings").value=r.servings||"";$("captionInput").value="";$("parsedIngredients").value=ingredientsToText(r);$("parsedInstructions").value=instructionsToText(r);window.lastAiParsedRecipe=null;$("importDialog").showModal()}
+async function parseCaptionAI(){const caption=$("captionInput").value.trim(),status=$("aiStatus"),btn=$("aiParseCaptionBtn"),r=recipeById(activeImportId)||{};if(!caption)return alert("Lim inn caption/oppskriftstekst først.");try{btn.disabled=true;btn.textContent="AI parser …";status.textContent="Sender tekst til AI-parser …";const res=await fetch("/api/parse-caption",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({caption,recipeName:$("importName").value.trim()||r.name||"",sourceUrl:$("importLink").value.trim()||resolveRecipeSourceUrl(r),category:$("importCategory").value||r.category||""})});const data=await res.json();if(!data.ok)throw new Error(data.error||"AI-parser feilet");const p=data.parsed||{};$("importName").value=$("importName").value.trim()||p.title||r.name||"";$("importCategory").value=p.category||$("importCategory").value||"Annet";$("importServings").value=p.servings||$("importServings").value||"";$("parsedIngredients").value=(p.ingredients||[]).map(formatAiIngredient).join("\n");$("parsedInstructions").value=(p.instructions||[]).map((s,i)=>`${i+1}. ${s}`).join("\n");const context=mergePreservingExistingData(r,{...p,name:p.title||$("importName").value});p.tags=enrichTags(context);p.emoji=emojiForRecipe(context);window.lastAiParsedRecipe=p;status.textContent=`AI-parsing ferdig. Tags: ${(p.tags||[]).join(", ")}`}catch(err){status.textContent="AI-parser feilet: "+(err?.message||err);alert("AI-parser feilet. Se statusfelt.")}finally{btn.disabled=false;btn.textContent="AI-parse caption"}}
 function formatAiIngredient(ing){if(typeof ing==="string")return ing;const amount=ing.amount||"",unit=ing.unit||"",item=ing.item||"",note=ing.note?` (${ing.note})`:"",cat=ing.shoppingCategory?` [${ing.shoppingCategory}]`:"";return`${amount} ${unit} ${item}${note}${cat}`.replace(/\s+/g," ").trim()}
 function parseCaption(){const text=$("captionInput").value.trim(),lines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean),ing=[],inst=[];let mode="";for(const line of lines){if(/ingredients|ingredienser/i.test(line)){mode="ing";continue}if(/instructions|method|fremgangsmåte|slik gjør/i.test(line)){mode="inst";continue}if(mode==="inst"||/^\d+[\.)]/.test(line))inst.push(line);else if(mode==="ing"||/^[-*•]?\s*[\d¼½¾]/.test(line))ing.push(convertIngredientLine(line.replace(/^[-*•]\s*/,"")))}$("parsedIngredients").value=ing.join("\n");$("parsedInstructions").value=inst.join("\n")}
-async function saveParsedRecipe(){if(!activeImportId)return alert("Ingen oppskrift valgt.");const name=$("importName").value.trim()||"Ny oppskrift",link=$("importLink").value.trim(),category=$("importCategory").value||"Annet",ai=window.lastAiParsedRecipe||{},base=recipeById(activeImportId)||{};const patch={name,link,category,source:link.includes("instagram")?"Instagram":link.includes("tiktok")?"TikTok":link?"Nettside":"Manuell",servings:$("importServings").value.trim(),ingredientsText:$("parsedIngredients").value.trim(),instructions:$("parsedInstructions").value.trim(),structuredIngredients:ai.ingredients||[],structuredInstructions:ai.instructions||[],tags:ai.tags||enrichTags({...base,name,category,ingredientsText:$("parsedIngredients").value,instructions:$("parsedInstructions").value}),emoji:ai.emoji||emojiForRecipe({...base,name,category}),aiParsed:!!window.lastAiParsedRecipe,aiConfidence:ai.confidence||"",status:"Fullført",manualCheck:"Nei",updatedAt:new Date().toISOString()};const idx=recipes.findIndex(r=>String(r.id)===String(activeImportId));if(idx>=0)recipes[idx]={...recipes[idx],...patch};else recipes.push({id:activeImportId,...patch});try{const response=await fetch("/api/save-recipe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:activeImportId,patch})});const saveResult=await response.json().catch(()=>({}));if(!response.ok||saveResult.ok===false)throw new Error(saveResult.error||"Lagring feilet");$("importDialog").close();createDayRows();renderRecipeResults();alert("Oppskriften er lagret permanent i Supabase ✅")}catch(err){customRecipes[activeImportId]={...(customRecipes[activeImportId]||{}),...patch};localStorage.setItem("middag_custom_recipes",JSON.stringify(customRecipes));alert("Oppskriften vises nå i denne nettleseren, men Supabase-lagring feilet: "+(err?.message||err))}}
+async function saveParsedRecipe(){if(!activeImportId)return alert("Ingen oppskrift valgt.");const base=recipeById(activeImportId)||{},name=$("importName").value.trim()||"Ny oppskrift",link=$("importLink").value.trim()||resolveRecipeSourceUrl(base),category=$("importCategory").value||"Annet",ai=window.lastAiParsedRecipe||{};const patch=meaningfulPatch({name,link,category,source:sourceTypeFromUrl(link)||base.source||"Manuell",servings:$("importServings").value.trim(),ingredientsText:$("parsedIngredients").value.trim(),instructions:$("parsedInstructions").value.trim(),structuredIngredients:ai.ingredients||[],structuredInstructions:ai.instructions||[],tags:ai.tags||enrichTags(mergePreservingExistingData(base,{name,category,ingredientsText:$("parsedIngredients").value,instructions:$("parsedInstructions").value})),emoji:ai.emoji||emojiForRecipe(mergePreservingExistingData(base,{name,category})),aiParsed:!!window.lastAiParsedRecipe,aiConfidence:ai.confidence||"",status:"Fullført",manualCheck:"Nei",updatedAt:new Date().toISOString()});const idx=recipes.findIndex(r=>String(r.id)===String(activeImportId));if(idx>=0)recipes[idx]=mergePreservingExistingData(recipes[idx],patch);else recipes.push({id:activeImportId,...patch});try{const response=await fetch("/api/save-recipe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:activeImportId,patch})});const saveResult=await response.json().catch(()=>({}));if(!response.ok||saveResult.ok===false)throw new Error(saveResult.error||"Lagring feilet");$("importDialog").close();createDayRows();renderRecipeResults();alert("Oppskriften er lagret permanent i Supabase ✅")}catch(err){customRecipes[activeImportId]=mergePreservingExistingData(customRecipes[activeImportId]||{},patch);localStorage.setItem("middag_custom_recipes",JSON.stringify(customRecipes));alert("Oppskriften vises nå i denne nettleseren, men Supabase-lagring feilet: "+(err?.message||err))}}
 function generateShoppingList(){const days=selectedDays(),raw=[];for(const day of days){for(const item of(plan[day]||[])){if(item.type==="text")continue;const r=recipeById(item.recipeId);if(!r||!hasRecipe(r))continue;for(const line of extractIngredientLines(r))raw.push({text:line,category:categorize(line),recipe:r.name,done:false})}}shoppingItems=mergeShoppingItems(raw);renderShoppingList(shoppingItems);savePlan();showView("viewShopping")}
 function mergeShoppingItems(items){const map=new Map(),pass=[];for(const it of items){const p=parseAmount(it.text);if(!p.name){pass.push(it);continue}const key=normalize(p.name+"|"+(p.unit||""));if(!map.has(key)){map.set(key,{...it,text:formatMergedItem(p),_p:p,_recipes:new Set([it.recipe])})}else{const cur=map.get(key);if(p.amount!=null&&cur._p.amount!=null&&p.unit===cur._p.unit){cur._p.amount+=p.amount;cur.text=formatMergedItem(cur._p)}else cur.text=cur.text+" + "+it.text;cur._recipes.add(it.recipe);cur.recipe=[...cur._recipes].join(", ");cur.merged=true;cur.category=bestCategory(cur.category,it.category)}}return[...map.values(),...pass].map(x=>{delete x._p;delete x._recipes;return x})}
 function parseAmount(text){let s=convertIngredientLine(String(text||"").replace(/\s*\[[^\]]+\]\s*$/,"").trim());const m=s.match(/^(\d+(?:[.,]\d+)?)\s*(g|kg|dl|l|ml|ss|ts|stk|pk|boks|fedd)?\s+(.+)$/i);if(!m)return{amount:null,unit:"",name:normalizeIngredientName(s),original:s};let amount=parseFloat(m[1].replace(",",".")),unit=(m[2]||"stk").toLowerCase(),name=normalizeIngredientName(m[3]);if(unit==="kg"){amount*=1000;unit="g"}if(unit==="l"){amount*=10;unit="dl"}return{amount,unit,name,original:s}}
@@ -69,7 +69,7 @@ function formatSteps(text){const lines=String(text||"").split(/\n/).map(x=>x.tri
 function extractIngredientLines(r){return ingredientsToText(r).split(/;|\n/).map(s=>convertIngredientLine(s.replace(/\s*\[[^\]]+\]\s*$/,"").trim())).filter(s=>s.length>1)}
 function categorize(line){const s=normalize(line);const spice=["salt","pepper","oregano","basilikum","basil","gochugaru","paprika","spisskummen","cumin","kanel","chili flakes","chiliflak","curry powder","karri","garam masala","laurbær","sesamfrø","sesame seeds","sukker","sugar","honning","honey"];if(spice.some(w=>s.includes(normalize(w))))return"Krydder";const dry=["soy sauce","soyasaus","soya","tamari","sesamolje","sesame oil","olivenolje","olive oil","olje","oil","riseddik","rice vinegar","vinegar","eddik","sriracha","hot sauce","fish sauce","fiskesaus","stock","kraft","broth","buljong","peanøttsmør","peanut butter","tomatpure","tomato paste"];if(dry.some(w=>s.includes(normalize(w))))return"Tørrvarer";const map=[["Kjøtt",["kylling","chicken","biff","beef","okse","kjøttdeig","svin","pork","kotelett","pølse","sausage","kalkun","bacon"]],["Meieri",["melk","milk","fløte","cream","rømme","ost","cheese","parmesan","feta","cottage cheese","yoghurt","smør","butter"]],["Frys",["frossen","frosne","frozen","edamame"]],["Hermetikk/halvfabrikat",["boks","can ","canned","kokosmelk","coconut milk","kidney","kikerter","chickpeas","diced tomatoes","hakkede tomater","bønner","beans"]],["Tørrvarer",["pasta","nudler","noodles","ris","rice","orzo","bulgur","quinoa","mel","flour","breadcrumbs"]],["Glutenfritt",["glutenfri","gluten free"]],["Bakevarer",["brød","bread","pita","tortilla","burgerbrød","wrap"]],["Frukt og grønt",["agurk","cucumber","gulrot","carrot","løk","onion","hvitløk","garlic","ingefær","ginger","potet","potato","søtpotet","sweet potato","squash","zucchini","tomat","tomato","paprika","pepper","sopp","mushroom","brokkoli","broccoli","blomkål","cauliflower","kål","cabbage","spinat","spinach","salat","lettuce","lime","sitron","lemon","koriander","cilantro","persille","parsley","selleri","celery","avokado","avocado","aubergine","eggplant","chili","vårløk","spring onion"]]];for(const[cat,words]of map)if(words.some(w=>s.includes(normalize(w))))return cat;if(s.includes("tofu"))return"Kjølevarer";return"Annet"}
 function convertIngredientLine(line){let s=String(line||"").trim();s=s.replace(/(\d+(?:[.,]\d+)?)\s*cups?\b/gi,(_,n)=>`${String(Math.round(parseFloat(n.replace(",","."))*24)/10).replace(".",",")} dl`);s=s.replace(/(\d+(?:[.,]\d+)?)\s*(tbsp|tablespoons?)\b/gi,"$1 ss");s=s.replace(/(\d+(?:[.,]\d+)?)\s*(tsp|teaspoons?)\b/gi,"$1 ts");s=s.replace(/(\d+(?:[.,]\d+)?)\s*(oz|ounces?)\b/gi,(_,n)=>`${Math.round(parseFloat(n.replace(",","."))*28.35)} g`);return s}
-async function cleanupVisibleRecipes(){if(!confirm("Rydde tags, emoji og norske mål for oppskriftene?"))return;const btn=$("cleanupRecipesBtn");if(btn){btn.disabled=true;btn.textContent="Rydder …"}let updated=0;for(const r of recipes){const patch={tags:enrichTags(r),emoji:emojiForRecipe(r),ingredientsText:ingredientsToText(r).split(/\n/).map(convertIngredientLine).join("\n"),updatedAt:new Date().toISOString()};try{const response=await fetch("/api/save-recipe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:r.id,patch})});const data=await response.json().catch(()=>({}));if(response.ok&&data.ok!==false){Object.assign(r,patch);updated++}}catch(e){console.warn("rydd feilet",r.name,e)}}renderRecipeResults();createDayRows();if(btn){btn.disabled=false;btn.textContent="Rydd tags/mål"}alert(`Ryddet ${updated} oppskrifter. Kategorisering av handleliste er forbedret.`)}
+async function cleanupVisibleRecipes(){if(!confirm("Rydde tags, emoji og norske mål for oppskriftene?"))return;const btn=$("cleanupRecipesBtn");if(btn){btn.disabled=true;btn.textContent="Rydder …"}let updated=0;for(const r of recipes){const patch=meaningfulPatch({tags:enrichTags(r),emoji:emojiForRecipe(r),ingredientsText:ingredientsToText(r).split(/\n/).map(convertIngredientLine).join("\n"),updatedAt:new Date().toISOString()});try{const response=await fetch("/api/save-recipe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:r.id,patch})});const data=await response.json().catch(()=>({}));if(response.ok&&data.ok!==false){Object.assign(r,mergePreservingExistingData(r,patch));updated++}}catch(e){console.warn("rydd feilet",r.name,e)}}renderRecipeResults();createDayRows();if(btn){btn.disabled=false;btn.textContent="Rydd tags/mål"}alert(`Ryddet ${updated} oppskrifter. Kategorisering av handleliste er forbedret.`)}
 async function readScreenshotsWithOCR(){const input=$("screenshotInput"),files=Array.from(input?.files||[]),status=$("ocrStatus");if(!files.length)return alert("Velg ett eller flere skjermbilder først.");if(!window.Tesseract)return alert("OCR-biblioteket ble ikke lastet.");status.textContent=`Leser ${files.length} bilde(r) …`;const chunks=[];for(let i=0;i<files.length;i++){status.textContent=`OCR bilde ${i+1}/${files.length}`;const result=await Tesseract.recognize(files[i],"eng");if(result?.data?.text)chunks.push(result.data.text.trim())}$("captionInput").value=[$("captionInput").value.trim(),chunks.join("\n\n")].filter(Boolean).join("\n\n");status.textContent="Ferdig. Se over teksten og trykk AI-parse caption."}
 function escapeHtml(s){return String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]))}
 function escapeAttr(s){return escapeHtml(s).replace(/'/g,"&#39;")}
@@ -1070,16 +1070,16 @@ cleanupVisibleRecipes=async function(){
   const btn=$("cleanupRecipesBtn");if(btn){btn.disabled=true;btn.textContent="Rydder/oversetter …"}
   let updated=0;
   for(const r of recipes){
-    const patch={
+    const patch=meaningfulPatch({
       tags:enrichTags(r),
       emoji:emojiForRecipe(r),
       ingredientsText:ingredientsToText(r).split(/\n/).map(normalizeIngredientLineForDisplay).join("\n"),
       updatedAt:new Date().toISOString()
-    };
+    });
     try{
       const response=await fetch("/api/save-recipe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:r.id,patch})});
       const data=await response.json().catch(()=>({}));
-      if(response.ok&&data.ok!==false){Object.assign(r,patch);updated++}
+      if(response.ok&&data.ok!==false){Object.assign(r,mergePreservingExistingData(r,patch));updated++}
     }catch(e){console.warn("rydd feilet",r.name,e)}
   }
   renderRecipeResults();createDayRows();
@@ -1791,7 +1791,7 @@ parseCaptionAI = async function(options={}) {
     status.textContent = "Analyserer tekst og normaliserer ingredienser …";
     const response = await fetch("/api/parse-caption", {
       method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({caption, recipeName: $("importName").value.trim() || recipe.name || "", sourceUrl: $("importLink").value.trim() || recipe.link || "", category: $("importCategory").value || recipe.category || ""})
+      body: JSON.stringify({caption, recipeName: $("importName").value.trim() || recipe.name || "", sourceUrl: $("importLink").value.trim() || resolveRecipeSourceUrl(recipe), category: $("importCategory").value || recipe.category || ""})
     });
     const data = await response.json();
     if (!response.ok || !data.ok) throw new Error(data.error || "AI-analysen feilet");
@@ -1803,8 +1803,9 @@ parseCaptionAI = async function(options={}) {
     $("parsedIngredients").value = ingredientText;
     $("parsedInstructions").value = (parsed.instructions || []).map((step, index) => `${index + 1}. ${step}`).join("\n");
     parsed.__displayIngredients = ingredientText;
-    parsed.tags = enrichTags({...recipe, ...parsed, name: parsed.title || $("importName").value});
-    parsed.emoji = emojiForRecipe({...recipe, ...parsed, name: parsed.title || $("importName").value});
+    const parsedContext = mergePreservingExistingData(recipe, {...parsed, name: parsed.title || $("importName").value});
+    parsed.tags = enrichTags(parsedContext);
+    parsed.emoji = emojiForRecipe(parsedContext);
     window.lastAiParsedRecipe = parsed;
     showImportUncertaintiesV26(parsed.uncertainties || []);
     setImportProgressV26("Ferdig – se over og rediger før lagring", 100);
@@ -1859,11 +1860,13 @@ saveParsedRecipe = async function() {
   const ai = window.lastAiParsedRecipe || {}, base = recipeById(activeImportId) || {};
   const ingredients = previewIngredientsV26();
   const instructionsText = $("parsedInstructions").value.trim();
-  const patch = {
+  const enteredUrl = $("importLink").value.trim();
+  const sourceUrl = enteredUrl || resolveRecipeSourceUrl(base);
+  const candidatePatch = {
     name: $("importName").value.trim() || "Ny oppskrift",
-    link: $("importLink").value.trim(),
+    link: sourceUrl,
     category: $("importCategory").value || "Annet",
-    source: $("importLink").value.includes("instagram") ? "Instagram" : $("importLink").value.includes("tiktok") ? "TikTok" : $("importLink").value ? "Nettside" : "Manuell",
+    source: sourceTypeFromUrl(sourceUrl) || base.source || "Manuell",
     caption: $("captionInput").value.trim() || base.caption || "",
     image: importSourceMediaV27 || base.image || "",
     servings: $("importServings").value.trim(),
@@ -1883,12 +1886,13 @@ saveParsedRecipe = async function() {
     manualCheck: ingredients.length && instructionsText ? "Nei" : "Ja – mangler ingredienser eller fremgangsmåte.",
     updatedAt: new Date().toISOString()
   };
+  const patch = meaningfulPatch(candidatePatch);
   try {
     const response = await fetch("/api/save-recipe", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({id: activeImportId, patch})});
     const result = await response.json().catch(() => ({}));
     if (!response.ok || result.ok === false) throw new Error(result.error || "Lagring feilet");
     const index = recipes.findIndex(recipe => String(recipe.id) === String(activeImportId));
-    if (index >= 0) recipes[index] = {...recipes[index], ...patch}; else recipes.push({id: activeImportId, ...patch});
+    if (index >= 0) recipes[index] = mergePreservingExistingData(recipes[index], patch); else recipes.push({id: activeImportId, ...patch});
     $("importDialog").close(); createDayRows(); renderRecipeResults();
     alert("Oppskriften er lagret ✅");
   } catch (error) {
@@ -2198,11 +2202,18 @@ window.startRecoveryBatchV27 = function() {
 window.startRecoveryImportV27 = async function() {
   const item = urlQueueV27()[recoveryUrlIndexV27];
   if (!item) return;
+  const recipe = recipeById(item.id) || {};
+  const sourceUrl = resolveRecipeSourceUrl(mergePreservingExistingData(item, recipe));
+  if (!sourceUrl) {
+    alert("Denne oppskriften har ingen lagret kilde-URL og kan derfor ikke gjenopprettes automatisk.");
+    return;
+  }
   recoveryImportContextV27 = {id:String(item.id), queue:"url"};
   openImport(item.id);
+  $("importLink").value = sourceUrl;
   setImportProgressV26("Henter metadata fra originalkilden …", 8);
   $("ocrStatus").textContent = "Prøver automatisk metadata, caption og tilgjengelige bilder.";
-  await autoFetchRecipeUrlV27(item.link, true);
+  await autoFetchRecipeUrlV27(sourceUrl, true);
 };
 
 async function autoFetchRecipeUrlV27(url, automatic=false) {
@@ -2222,7 +2233,8 @@ async function autoFetchRecipeUrlV27(url, automatic=false) {
       if (importSourceMediaV27) result.imageMethod = "first-video-frame";
     }
     if (result.title && (!$("importName").value.trim() || $("importName").value === "Ny oppskrift")) $("importName").value = result.title;
-    if (result.resolvedUrl) $("importLink").value = result.resolvedUrl;
+    const resolvedUrl = String(result.resolvedUrl || "").trim();
+    if (resolvedUrl) $("importLink").value = resolvedUrl;
     let sourceText = result.caption || "";
     if (!sourceText && result.image && window.Tesseract) {
       try {
@@ -2266,9 +2278,15 @@ function renderSimpleRecoveryQueueV27(type) {
     </article>`).join("") || `<div class="empty-state">Køen er tom.</div>`;
 }
 window.recoveryImportByIdV27 = async function(id, link) {
+  const sourceUrl = resolveRecipeSourceUrl(mergePreservingExistingData(recipeById(id), {link}));
+  if (!sourceUrl) {
+    alert("Denne oppskriften har ingen lagret kilde-URL og kan derfor ikke gjenopprettes automatisk.");
+    return;
+  }
   recoveryImportContextV27 = {id:String(id), queue:"manual"};
   openImport(id);
-  await autoFetchRecipeUrlV27(link, true);
+  $("importLink").value = sourceUrl;
+  await autoFetchRecipeUrlV27(sourceUrl, true);
 };
 
 async function showRecoveryHistoryV27() {
@@ -2559,7 +2577,7 @@ window.openRecipeDetails=function(id){
   const missingCentral=!recipeHasIngredientsV23(recipe)||!String(recipe.instructions||"").trim();
   $("recipeDialogTitle").textContent=`${emojiForRecipe(recipe)} ${recipe.name}`;
   $("recipeDialogBody").innerHTML=`${recipe.image?`<div class="recipe-hero-image"><img src="${escapeAttr(recipe.image)}" alt=""></div>`:""}
-    ${missingCentral&&recipe.link?`<section class="recovery-inline-card"><strong>⚠ Denne oppskriften mangler data.</strong><p>Bruk originalkilden og eksisterende Recovery-pipeline. Ingenting lagres uten forhåndsvisning.</p><button type="button" class="primary" onclick="recoverRecipeFromUrlV28('${escapeAttr(recipe.id)}')">Recover from URL</button></section>`:""}
+    ${missingCentral&&resolveRecipeSourceUrl(recipe)?`<section class="recovery-inline-card"><strong>⚠ Denne oppskriften mangler data.</strong><p>Bruk originalkilden og eksisterende Recovery-pipeline. Ingenting lagres uten forhåndsvisning.</p><button type="button" class="primary" onclick="recoverRecipeFromUrlV28('${escapeAttr(recipe.id)}')">Recover from URL</button></section>`:""}
     <p class="recipe-meta">${escapeHtml(recipe.category||"Ukjent")} · ${escapeHtml(recipe.source||"")} · brukt ${usageCount(recipe.id)}×</p>
     ${pantryStatusV28(recipe,true)}
     <div class="inline-actions"><button type="button" class="primary" onclick="openAddToDay('${escapeAttr(recipe.id)}')">+ Legg til i ukesmeny</button>
@@ -2572,9 +2590,10 @@ window.openRecipeDetails=function(id){
   $("recipeDialog").showModal();
 };
 window.recoverRecipeFromUrlV28=async function(id){
-  const recipe=recipeById(id); if(!recipe?.link)return;
-  $("recipeDialog")?.close(); openImport(id); $("importLink").value=recipe.link;
-  await autoFetchRecipeUrlV27(recipe.link,true);
+  const recipe=recipeById(id),sourceUrl=resolveRecipeSourceUrl(recipe);
+  if(!sourceUrl)return alert("Denne oppskriften har ingen lagret kilde-URL og kan derfor ikke gjenopprettes automatisk.");
+  $("recipeDialog")?.close(); openImport(id); $("importLink").value=sourceUrl;
+  await autoFetchRecipeUrlV27(sourceUrl,true);
 };
 
 function populateRecipeControlsV28() {
@@ -2610,8 +2629,9 @@ function renderPantryV28(){
     <div><strong>${escapeHtml(item.name)}</strong><p>${escapeHtml([item.quantity,item.unit].filter(Boolean).join(" ")||"Mengde ikke oppgitt")} · ${item.zone==="fridge"?"Kjøleskap":item.zone==="freezer"?"Fryser":"Tørrlager"}${item.always?" · alltid tilgjengelig":""}</p></div>
     <div class="inline-actions"><button class="ghost" onclick="editPantryV28('${escapeAttr(item.id)}')">Endre</button><button class="ghost danger-subtle" onclick="removePantryV28('${escapeAttr(item.id)}')">Slett</button></div></article>`).join("")||`<div class="empty-state">Pantry er tomt. Legg inn det dere har hjemme.</div>`;
 }
+let pantryEditingIdV29=null;
 window.removePantryV28=function(id){ensureMetaV28();appMeta.pantryItems=appMeta.pantryItems.filter(item=>item.id!==id);savePlan();renderPantryV28();renderRecipeResults()};
-window.editPantryV28=function(id){const item=appMeta.pantryItems.find(entry=>entry.id===id);if(!item)return;$("pantryName").value=item.name;$("pantryQuantity").value=item.quantity||"";$("pantryUnit").value=item.unit||"";$("pantryZone").value=item.zone||"pantry";$("pantryAlways").checked=!!item.always;appMeta.pantryItems=appMeta.pantryItems.filter(entry=>entry.id!==id);renderPantryV28()};
+window.editPantryV28=function(id){const item=appMeta.pantryItems.find(entry=>entry.id===id);if(!item)return;pantryEditingIdV29=id;$("pantryName").value=item.name;$("pantryQuantity").value=item.quantity||"";$("pantryUnit").value=item.unit||"";$("pantryZone").value=item.zone||"pantry";$("pantryAlways").checked=!!item.always};
 function addMissingIngredientsV28(id){
   const recipe=recipeById(id),missing=pantryAnalysisV28(recipe).missing;
   if(!missing.length)return alert("Dere har allerede alle registrerte ingredienser hjemme.");
@@ -2663,7 +2683,7 @@ function syncStructuredPreviewV28(){
   const rows=[...($("structuredIngredientPreview")?.querySelectorAll(".structured-ingredient-row")||[])];
   if(!rows.length)return;
   const previous=window.lastAiParsedRecipe?.ingredients||[];
-  const ingredients=rows.map((row,index)=>({...previous[index],...Object.fromEntries([...row.querySelectorAll("[data-field]")].map(input=>[input.dataset.field,input.value.trim()]))}));
+  const ingredients=rows.map((row,index)=>mergePreservingExistingData(previous[index],Object.fromEntries([...row.querySelectorAll("[data-field]")].map(input=>[input.dataset.field,input.value.trim()]))));
   window.lastAiParsedRecipe=window.lastAiParsedRecipe||{};window.lastAiParsedRecipe.ingredients=ingredients;
   window.lastAiParsedRecipe.__displayIngredients=ingredients.map(formatAiIngredient).join("\n");$("parsedIngredients").value=window.lastAiParsedRecipe.__displayIngredients;
 }
@@ -2719,7 +2739,7 @@ bindAll=function(){
   $("recipeSuggestionsBtn")?.addEventListener("click",()=>showSuggestionsV28(5));
   $("surpriseRecipeBtn")?.addEventListener("click",()=>showSuggestionsV28(1));
   $("pantrySearch")?.addEventListener("input",renderPantryV28);
-  $("pantryForm")?.addEventListener("submit",event=>{event.preventDefault();ensureMetaV28();const name=$("pantryName").value.trim();if(!name)return;appMeta.pantryItems.push({id:`pantry-${Date.now()}`,name,quantity:$("pantryQuantity").value.trim(),unit:$("pantryUnit").value,zone:$("pantryZone").value,always:$("pantryAlways").checked});event.currentTarget.reset();savePlan();renderPantryV28();renderRecipeResults()});
+  $("pantryForm")?.addEventListener("submit",event=>{event.preventDefault();ensureMetaV28();const name=$("pantryName").value.trim();if(!name)return;const candidate={id:pantryEditingIdV29||`pantry-${Date.now()}`,name,quantity:$("pantryQuantity").value.trim(),unit:$("pantryUnit").value,zone:$("pantryZone").value,always:$("pantryAlways").checked};const index=appMeta.pantryItems.findIndex(item=>item.id===pantryEditingIdV29);if(index>=0)appMeta.pantryItems[index]=mergePreservingExistingData(appMeta.pantryItems[index],candidate);else appMeta.pantryItems.push(candidate);pantryEditingIdV29=null;event.currentTarget.reset();savePlan();renderPantryV28();renderRecipeResults()});
   $("structuredIngredientPreview")?.addEventListener("input",syncStructuredPreviewV28);
   $("structuredIngredientPreview")?.addEventListener("change",syncStructuredPreviewV28);
   $("confirmShoppingCategoryBtn")?.addEventListener("click",()=>{const item=shoppingItems.find(entry=>entry.id===shoppingCategoryTargetV28);if(!item)return;const category=$("shoppingCategorySelect").value;item.category=category;item.manualCategory=true;item.updatedAt=nowIsoV25();const scope=document.querySelector('input[name="registryScope"]:checked')?.value;if(scope==="registry"){if(!confirm(`Oppdater Ingredient Registry slik at «${item.text}» alltid får kategorien ${category}?`))return;appMeta.ingredientRegistryOverrides[pantryKeyV28(item.text)]=category}savePlan();renderShoppingList(shoppingItems);$("shoppingCategoryDialog").close()});

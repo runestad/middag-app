@@ -62,7 +62,8 @@ class RecoverySystemTests(unittest.TestCase):
     def test_url_queue_reuses_existing_import_dialog(self):
         javascript = (ROOT / "app.js").read_text(encoding="utf-8")
         start = javascript.index("window.startRecoveryImportV27")
-        snippet = javascript[start:start + 700]
+        end = javascript.index("\n};", start) + 3
+        snippet = javascript[start:end]
         self.assertIn("openImport(item.id)", snippet)
         self.assertIn("autoFetchRecipeUrlV27", snippet)
 

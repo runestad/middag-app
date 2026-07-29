@@ -2,6 +2,7 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler
 
 from ._common import APP_ID, read_body, recipe_to_row, row_to_recipe, send_json, supabase_request
+from .data_merge import merge_preserving_existing_data
 from .ingredient_normalization import normalize_structured_ingredients
 
 
@@ -22,7 +23,7 @@ class handler(BaseHTTPRequestHandler):
             query = urllib.parse.urlencode({"id": f"eq.{recipe_id}", "app_id": f"eq.{APP_ID}", "select": "*"})
             rows = supabase_request("GET", "recipes", query=query) or []
             current = row_to_recipe(rows[0]) if rows else {"id": recipe_id}
-            current.update(patch)
+            current = merge_preserving_existing_data(current, patch)
             row = recipe_to_row(current)
             if rows:
                 update_query = urllib.parse.urlencode({"id": f"eq.{recipe_id}", "app_id": f"eq.{APP_ID}"})
