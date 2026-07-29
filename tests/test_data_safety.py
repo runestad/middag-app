@@ -1,13 +1,19 @@
 import json
+import importlib.util
 import pathlib
 import subprocess
 import unittest
+from unittest.mock import patch
 
 from api.data_merge import has_meaningful_data_value, merge_preserving_existing_data
 from api._common import row_to_recipe
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+FETCH_PATH = ROOT / "api" / "fetch-recipe.py"
+FETCH_SPEC = importlib.util.spec_from_file_location("api.fetch_recipe_safety", FETCH_PATH)
+FETCH_MODULE = importlib.util.module_from_spec(FETCH_SPEC)
+FETCH_SPEC.loader.exec_module(FETCH_MODULE)
 
 
 class ServerMergeSafetyTests(unittest.TestCase):
@@ -137,6 +143,96 @@ class BrowserMergeSafetyTests(unittest.TestCase):
             "servings": 0,
         })
 
+    def test_generic_tiktok_redirect_never_replaces_original_source(self):
+        result = self.run_javascript(
+            """[
+              safety.selectImportResolvedUrl(
+                'https://vm.tiktok.com/ZM-original/',
+                'https://www.tiktok.com/?_r=1'
+              ),
+              safety.selectImportResolvedUrl(
+                'https://vm.tiktok.com/ZM-original/',
+                'https://www.tiktok.com/@cook/video/751234567890'
+              ),
+              safety.selectImportResolvedUrl(
+                'https://www.instagram.com/reel/ABC/',
+                'https://www.instagram.com/?next=/reel/ABC/'
+              ),
+              safety.selectImportResolvedUrl(
+                'https://example.com/old',
+                'https://example.com/canonical'
+              )
+            ]"""
+        )
+        self.assertEqual(result, [
+            "https://vm.tiktok.com/ZM-original/",
+            "https://www.tiktok.com/@cook/video/751234567890",
+            "https://www.instagram.com/reel/ABC/",
+            "https://example.com/canonical",
+        ])
+
+    def test_cancelled_recovery_leaves_recipe_byte_for_byte_identical(self):
+        result = self.run_javascript(
+            """(() => {
+              const recipe={
+                id:'42',
+                name:'TikTok recipe',
+                link:'https://vm.tiktok.com/ZM-original/',
+                source:'TikTok',
+                metadata:{author:'Cook',nested:{value:1}},
+                structuredIngredients:[{item:'egg',amount:'2'}]
+              };
+              const before=JSON.stringify(recipe);
+              const recovery=safety.prepareRecoverySource(recipe);
+              recovery.recipe.link=safety.selectImportResolvedUrl(
+                recovery.sourceUrl,
+                'https://www.tiktok.com/?_r=1'
+              );
+              return {
+                unchanged:before===JSON.stringify(recipe),
+                sameReference:recovery.recipe===recipe,
+                sourceUrl:recovery.recipe.link
+              };
+            })()"""
+        )
+        self.assertEqual(result, {
+            "unchanged": True,
+            "sameReference": False,
+            "sourceUrl": "https://vm.tiktok.com/ZM-original/",
+        })
+
+
+class FetchRecipeSourceSafetyTests(unittest.TestCase):
+    def test_tiktok_oembed_redirect_is_not_exposed_as_recipe_source(self):
+        original = "https://vm.tiktok.com/ZM-original/"
+        payload = json.dumps({
+            "title": "Test recipe",
+            "thumbnail_url": "https://images.example/test.jpg",
+        })
+        with patch.object(
+            FETCH_MODULE,
+            "fetch_text",
+            return_value=(payload, "application/json", "https://www.tiktok.com/?_r=1"),
+        ):
+            result = FETCH_MODULE.tiktok_oembed(original)
+        self.assertEqual(result["resolvedUrl"], original)
+
+    def test_social_redirect_requires_content_path(self):
+        self.assertEqual(
+            FETCH_MODULE.safe_resolved_source_url(
+                "https://vm.tiktok.com/ZM-original/",
+                "https://www.tiktok.com/?_r=1",
+            ),
+            "https://vm.tiktok.com/ZM-original/",
+        )
+        self.assertEqual(
+            FETCH_MODULE.safe_resolved_source_url(
+                "https://www.instagram.com/reel/ABC/",
+                "https://www.instagram.com/",
+            ),
+            "https://www.instagram.com/reel/ABC/",
+        )
+
 
 class RecoveryRegressionContractTests(unittest.TestCase):
     def test_recovery_open_uses_immutable_resolved_source_without_writing(self):
@@ -144,7 +240,7 @@ class RecoveryRegressionContractTests(unittest.TestCase):
         start = javascript.index("window.recoverRecipeFromUrlV28")
         end = javascript.index("\n};", start) + 3
         snippet = javascript[start:end]
-        self.assertIn("resolveRecipeSourceUrl(recipe)", snippet)
+        self.assertIn("prepareRecoverySource(recipeById(id))", snippet)
         self.assertIn("autoFetchRecipeUrlV27(sourceUrl,true)", snippet)
         self.assertNotIn("/api/save-recipe", snippet)
         self.assertNotIn("/api/recovery", snippet)

@@ -151,12 +151,40 @@ def recipe_text(recipe):
     return "\n\n".join(sections)
 
 
+def safe_resolved_source_url(original_url, candidate_url):
+    original = str(original_url or "").strip()
+    candidate = str(candidate_url or "").strip()
+    if not candidate:
+        return original
+    try:
+        original_parsed = urllib.parse.urlparse(original)
+        candidate_parsed = urllib.parse.urlparse(candidate)
+    except ValueError:
+        return original
+    if candidate_parsed.scheme not in ("http", "https") or not candidate_parsed.hostname:
+        return original
+
+    original_host = (original_parsed.hostname or "").lower()
+    candidate_host = (candidate_parsed.hostname or "").lower()
+    if "tiktok.com" in original_host:
+        path = candidate_parsed.path.rstrip("/")
+        if "tiktok.com" not in candidate_host or not path:
+            return original
+    if "instagram.com" in original_host:
+        path = candidate_parsed.path.lower()
+        if "instagram.com" not in candidate_host or not re.match(r"^/(reel|reels|p)/", path):
+            return original
+    return candidate
+
+
 def tiktok_oembed(url):
     endpoint = "https://www.tiktok.com/oembed?" + urllib.parse.urlencode({"url": url})
-    raw, _, resolved = fetch_text(endpoint)
+    raw, _, _ = fetch_text(endpoint)
     payload = json.loads(raw)
     return {
-        "resolvedUrl": resolved,
+        # The fetch target is TikTok's oEmbed service, not the recipe source.
+        # Its redirect may be the generic https://www.tiktok.com/?_r=1 page.
+        "resolvedUrl": url,
         "title": payload.get("title") or "",
         "caption": payload.get("title") or "",
         "image": payload.get("thumbnail_url") or "",
@@ -175,7 +203,7 @@ def extract(url):
 
     html, content_type, resolved = fetch_text(url)
     if "json" in content_type:
-        return {"resolvedUrl": resolved, "caption": html, "sourceType": "Web", "method": "json"}
+        return {"resolvedUrl": safe_resolved_source_url(url, resolved), "caption": html, "sourceType": "Web", "method": "json"}
     recipes = json_ld_recipes(html)
     recipe = recipes[0] if recipes else {}
     title_match = re.search(r"<title[^>]*>([\s\S]*?)</title>", html, re.I)
@@ -187,7 +215,7 @@ def extract(url):
     structured = recipe_text(recipe)
     source_type = "Instagram" if "instagram.com" in host else "TikTok" if "tiktok.com" in host else "Web"
     return {
-        "resolvedUrl": resolved,
+        "resolvedUrl": safe_resolved_source_url(url, resolved),
         "title": text_content(str(title)),
         "caption": structured or text_content(str(description)),
         "image": image or "",

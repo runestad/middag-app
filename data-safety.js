@@ -66,12 +66,58 @@
     return /^https?:\/\//.test(value) ? "Nettside" : "";
   }
 
+  function cloneRecipeForRecovery(recipe) {
+    if (!isPlainObject(recipe)) return {};
+    if (typeof structuredClone === "function") return structuredClone(recipe);
+    return JSON.parse(JSON.stringify(recipe));
+  }
+
+  function selectImportResolvedUrl(originalUrl, candidateUrl) {
+    const original = String(originalUrl || "").trim();
+    const candidate = String(candidateUrl || "").trim();
+    if (!candidate) return original;
+    let originalParsed;
+    let candidateParsed;
+    try {
+      originalParsed = new URL(original);
+      candidateParsed = new URL(candidate);
+    } catch (_) {
+      return original;
+    }
+    if (!["http:", "https:"].includes(candidateParsed.protocol)) return original;
+
+    const originalType = sourceTypeFromUrl(original);
+    const candidateType = sourceTypeFromUrl(candidate);
+    if (originalType === "TikTok") {
+      const path = candidateParsed.pathname.replace(/\/+$/, "");
+      if (candidateType !== "TikTok" || !path || path === "/") return original;
+    }
+    if (originalType === "Instagram") {
+      const path = candidateParsed.pathname.toLowerCase();
+      if (candidateType !== "Instagram" || !/^\/(reel|reels|p)\//.test(path)) return original;
+    }
+    return candidate;
+  }
+
+  function prepareRecoverySource(recipe) {
+    const recoveryRecipe = cloneRecipeForRecovery(recipe);
+    const sourceUrl = resolveRecipeSourceUrl(recoveryRecipe);
+    return {
+      recipe: recoveryRecipe,
+      sourceUrl,
+      sourceType: sourceTypeFromUrl(sourceUrl),
+    };
+  }
+
   const api = {
     hasMeaningfulDataValue,
     mergePreservingExistingData,
     meaningfulPatch,
     resolveRecipeSourceUrl,
     sourceTypeFromUrl,
+    cloneRecipeForRecovery,
+    selectImportResolvedUrl,
+    prepareRecoverySource,
   };
   Object.assign(root, api);
   if (typeof module !== "undefined" && module.exports) module.exports = api;

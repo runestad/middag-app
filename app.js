@@ -2202,8 +2202,9 @@ window.startRecoveryBatchV27 = function() {
 window.startRecoveryImportV27 = async function() {
   const item = urlQueueV27()[recoveryUrlIndexV27];
   if (!item) return;
-  const recipe = recipeById(item.id) || {};
-  const sourceUrl = resolveRecipeSourceUrl(mergePreservingExistingData(item, recipe));
+  const recipe = mergePreservingExistingData(item, recipeById(item.id) || {});
+  const recovery = prepareRecoverySource(recipe);
+  const sourceUrl = recovery.sourceUrl;
   if (!sourceUrl) {
     alert("Denne oppskriften har ingen lagret kilde-URL og kan derfor ikke gjenopprettes automatisk.");
     return;
@@ -2233,8 +2234,8 @@ async function autoFetchRecipeUrlV27(url, automatic=false) {
       if (importSourceMediaV27) result.imageMethod = "first-video-frame";
     }
     if (result.title && (!$("importName").value.trim() || $("importName").value === "Ny oppskrift")) $("importName").value = result.title;
-    const resolvedUrl = String(result.resolvedUrl || "").trim();
-    if (resolvedUrl) $("importLink").value = resolvedUrl;
+    const currentUrl = $("importLink").value.trim() || clean;
+    $("importLink").value = selectImportResolvedUrl(currentUrl, result.resolvedUrl);
     let sourceText = result.caption || "";
     if (!sourceText && result.image && window.Tesseract) {
       try {
@@ -2278,7 +2279,8 @@ function renderSimpleRecoveryQueueV27(type) {
     </article>`).join("") || `<div class="empty-state">Køen er tom.</div>`;
 }
 window.recoveryImportByIdV27 = async function(id, link) {
-  const sourceUrl = resolveRecipeSourceUrl(mergePreservingExistingData(recipeById(id), {link}));
+  const recovery = prepareRecoverySource(mergePreservingExistingData(recipeById(id), {link}));
+  const sourceUrl = recovery.sourceUrl;
   if (!sourceUrl) {
     alert("Denne oppskriften har ingen lagret kilde-URL og kan derfor ikke gjenopprettes automatisk.");
     return;
@@ -2590,7 +2592,7 @@ window.openRecipeDetails=function(id){
   $("recipeDialog").showModal();
 };
 window.recoverRecipeFromUrlV28=async function(id){
-  const recipe=recipeById(id),sourceUrl=resolveRecipeSourceUrl(recipe);
+  const recovery=prepareRecoverySource(recipeById(id)),sourceUrl=recovery.sourceUrl;
   if(!sourceUrl)return alert("Denne oppskriften har ingen lagret kilde-URL og kan derfor ikke gjenopprettes automatisk.");
   $("recipeDialog")?.close(); openImport(id); $("importLink").value=sourceUrl;
   await autoFetchRecipeUrlV27(sourceUrl,true);
