@@ -36,7 +36,7 @@ function addFreeTextToDay(day,text){const t=String(text||"").trim();if(!t)return
 function openRecipePicker(day){activePickerDay=day;$("pickerSearch").value="";renderPickerResults();$("recipePickerDialog").showModal()}
 function renderPickerResults(){const q=normalize($("pickerSearch").value);const f=recipes.filter(r=>!q||searchableText(r).includes(q)).sort((a,b)=>Number(hasRecipe(b))-Number(hasRecipe(a))||a.name.localeCompare(b.name,"no")).slice(0,300);$("pickerResults").innerHTML=f.map(r=>`<div class="recipe-card" onclick="addRecipeToDay('${activePickerDay}','${escapeAttr(r.id)}')"><div class="recipe-thumb recipe-emoji">${emojiForRecipe(r)}</div><div><strong>${escapeHtml(r.name)}</strong><div class="recipe-meta">${escapeHtml(r.category||"Ukjent")} · ${hasRecipe(r)?"✅":"🟡 mangler"}</div></div><button type="button" class="ghost">Legg til</button></div>`).join("")}
 window.addRecipeToDay=(day,id)=>{plan[day].push({type:"recipe",recipeId:id});bumpUsage(id);savePlan();createDayRows();renderRecipeResults();$("recipePickerDialog").close()}
-function openAddRecipe(){const id=`custom-${Date.now()}`;recipes.push({id,name:"Ny oppskrift",category:"Annet",source:"Manuell",link:"",ingredientsText:"",instructions:"",tags:[]});activeImportId=id;$("importTarget").textContent="Lagrer som ny oppskrift";$("importLinkWrap").innerHTML="Legg inn navn, lenke og caption/oppskriftstekst.";$("importName").value="";$("importLink").value="";$("importCategory").value="Annet";$("importServings").value="";$("captionInput").value="";$("parsedIngredients").value="";$("parsedInstructions").value="";window.lastAiParsedRecipe=null;$("importDialog").showModal()}
+function openAddRecipe(){$("addRecipeDialog").showModal()}
 function openImport(id){activeImportId=id;const r=recipeById(id),sourceUrl=resolveRecipeSourceUrl(r);$("importTarget").textContent=`Lagrer på: ${r.name}`;$("importLinkWrap").innerHTML=sourceUrl?`Kilde: <a href="${escapeAttr(sourceUrl)}" target="_blank" rel="noopener">åpne originaloppskrift</a>`:"Ingen kilde registrert";$("importName").value=r.name||"";$("importLink").value=sourceUrl;$("importCategory").value=r.category||"Annet";$("importServings").value=r.servings||"";$("captionInput").value="";$("parsedIngredients").value=ingredientsToText(r);$("parsedInstructions").value=instructionsToText(r);window.lastAiParsedRecipe=null;$("importDialog").showModal()}
 async function parseCaptionAI(){const caption=$("captionInput").value.trim(),status=$("aiStatus"),btn=$("aiParseCaptionBtn"),r=recipeById(activeImportId)||{};if(!caption)return alert("Lim inn caption/oppskriftstekst først.");try{btn.disabled=true;btn.textContent="AI parser …";status.textContent="Sender tekst til AI-parser …";const res=await fetch("/api/parse-caption",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({caption,recipeName:$("importName").value.trim()||r.name||"",sourceUrl:$("importLink").value.trim()||resolveRecipeSourceUrl(r),category:$("importCategory").value||r.category||""})});const data=await res.json();if(!data.ok)throw new Error(data.error||"AI-parser feilet");const p=data.parsed||{};$("importName").value=$("importName").value.trim()||p.title||r.name||"";$("importCategory").value=p.category||$("importCategory").value||"Annet";$("importServings").value=p.servings||$("importServings").value||"";$("parsedIngredients").value=(p.ingredients||[]).map(formatAiIngredient).join("\n");$("parsedInstructions").value=(p.instructions||[]).map((s,i)=>`${i+1}. ${s}`).join("\n");const context=mergePreservingExistingData(r,{...p,name:p.title||$("importName").value});p.tags=enrichTags(context);p.emoji=emojiForRecipe(context);window.lastAiParsedRecipe=p;status.textContent=`AI-parsing ferdig. Tags: ${(p.tags||[]).join(", ")}`}catch(err){status.textContent="AI-parser feilet: "+(err?.message||err);alert("AI-parser feilet. Se statusfelt.")}finally{btn.disabled=false;btn.textContent="AI-parse caption"}}
 function formatAiIngredient(ing){if(typeof ing==="string")return ing;const amount=ing.amount||"",unit=ing.unit||"",item=ing.item||"",note=ing.note?` (${ing.note})`:"",cat=ing.shoppingCategory?` [${ing.shoppingCategory}]`:"";return`${amount} ${unit} ${item}${note}${cat}`.replace(/\s+/g," ").trim()}
@@ -60,7 +60,7 @@ function confirmAddToDay(){const day=$("addToDaySelect").value;if(!day||!pending
 function randomWeek(){const days=selectedDays(),usable=recipes.slice().sort((a,b)=>Number(hasRecipe(b))-Number(hasRecipe(a)));for(const day of days){const r=usable[Math.floor(Math.random()*usable.length)];plan[day]=r?[{type:"recipe",recipeId:r.id}]:[];if(r)bumpUsage(r.id)}savePlan();createDayRows();renderRecipeResults()}
 async function smartWeek(){const prompt=$("smartPrompt").value.trim(),days=selectedDays();$("smartStatus").textContent="Lager AI-forslag …";try{const payloadRecipes=recipes.map(r=>({id:r.id,name:r.name,category:r.category,tags:enrichTags(r),favorite:isFavorite(r.id),usage:usageCount(r.id),hasRecipe:hasRecipe(r)}));const res=await fetch("/api/smart-week",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({prompt,days,recipes:payloadRecipes})});const data=await res.json();if(!data.ok)throw new Error(data.error||"AI-ukemeny feilet");const items=data.plan?.items||[];for(const day of days)plan[day]=[];for(const row of items){const day=String(row.day||"").toLowerCase();if(!DAYS.includes(day))continue;const ids=row.recipeIds||row.recipe_ids||[];plan[day]=ids.filter(id=>recipeById(id)).map(id=>{bumpUsage(id);return{type:"recipe",recipeId:id}});if(row.note&&!plan[day].length)plan[day]=[{type:"text",text:row.note}]}$("smartStatus").textContent="AI-forslag laget. Du kan justere manuelt.";savePlan();createDayRows();renderRecipeResults()}catch(e){$("smartStatus").textContent="AI feilet, bruker lokal smart velger.";localSmartWeek()}}
 function localSmartWeek(){const p=normalize($("smartPrompt").value),days=selectedDays();let pool=recipes.slice();if(p.includes("vegetar"))pool=pool.filter(r=>enrichTags(r).includes("vegetar")||normalize(r.category).includes("vegetar"));if(p.includes("suppe"))pool=pool.filter(r=>enrichTags(r).includes("suppe"));if(p.includes("kylling"))pool=pool.filter(r=>enrichTags(r).includes("kylling"));if(p.includes("rask"))pool=pool.filter(r=>enrichTags(r).includes("rask"));if(pool.length<days.length)pool=recipes.slice();for(const day of days){const r=pool[Math.floor(Math.random()*pool.length)];plan[day]=r?[{type:"recipe",recipeId:r.id}]:[];if(r)bumpUsage(r.id)}savePlan();createDayRows();renderRecipeResults()}
-function usageCount(id){return Number(appMeta.usageCounts?.[id]||0)}function bumpUsage(id){if(!id)return;appMeta.usageCounts=appMeta.usageCounts||{};appMeta.lastUsed=appMeta.lastUsed||{};appMeta.usageCounts[id]=Number(appMeta.usageCounts[id]||0)+1;appMeta.lastUsed[id]=new Date().toISOString()}function isFavorite(id){return(appMeta.favorites||[]).includes(id)}function toggleFavorite(id){appMeta.favorites=appMeta.favorites||[];if(isFavorite(id))appMeta.favorites=appMeta.favorites.filter(x=>x!==id);else appMeta.favorites.push(id);savePlan();renderRecipeResults();if($("recipeDialog")?.open)openRecipeDetails(id)}window.toggleFavorite=toggleFavorite
+function usageCount(id){return Number(appMeta.usageCounts?.[id]||0)}function bumpUsage(id){if(!id)return;appMeta.usageCounts=appMeta.usageCounts||{};appMeta.lastUsed=appMeta.lastUsed||{};appMeta.usageCounts[id]=Number(appMeta.usageCounts[id]||0)+1;appMeta.lastUsed[id]=new Date().toISOString()}function favoriteId(id){return String(id)}function isFavorite(id){const target=favoriteId(id);return(appMeta.favorites||[]).some(value=>favoriteId(value)===target)}function toggleFavorite(id){const target=favoriteId(id);appMeta.favorites=appMeta.favorites||[];if(isFavorite(target))appMeta.favorites=appMeta.favorites.filter(value=>favoriteId(value)!==target);else appMeta.favorites.push(target);savePlan();renderRecipeResults();renderPickerResults();if($("recipeDialog")?.open)openRecipeDetails(target);if($("pickerPreviewDialog")?.open&&typeof openPickerPreview==="function")openPickerPreview(target)}window.toggleFavorite=toggleFavorite
 function searchableText(r){return normalize(`${r.name} ${r.category} ${r.source} ${r.status} ${enrichTags(r).join(" ")} ${r.ingredientsText||""}`)}
 function ingredientsToText(r){if(r.ingredientsText)return r.ingredientsText;if(Array.isArray(r.structuredIngredients)&&r.structuredIngredients.length)return r.structuredIngredients.map(formatAiIngredient).join("\n");return""}
 function instructionsToText(r){if(r.instructions)return Array.isArray(r.instructions)?r.instructions.join("\n"):String(r.instructions);if(Array.isArray(r.structuredInstructions))return r.structuredInstructions.map((x,i)=>`${i+1}. ${x}`).join("\n");return""}
@@ -688,6 +688,7 @@ window.openPickerPreview = function(recipeId){
   if (body) {
     body.innerHTML = `
       <p class="recipe-meta">${escapeHtml(r.category || "Ukjent")} · ${hasRecipe(r) ? "Oppskrift funnet" : "Mangler oppskrift"}</p>
+      <div class="inline-actions"><button type="button" class="favorite-btn" onclick="toggleFavorite('${escapeAttr(r.id)}')">${isFavorite(r.id)?"★ Favoritt":"☆ Favoritt"}</button></div>
       <div class="recipe-tags">${enrichTags(r).slice(0,8).map(t => `<span class="tag">${escapeHtml(t)}</span>`).join("")}</div>
       <div class="recipe-detail-section">
         <h3>Ingredienser</h3>
@@ -697,7 +698,7 @@ window.openPickerPreview = function(recipeId){
         <h3>Fremgangsmåte</h3>
         <div class="picker-preview-instructions">${formatSteps(instructionsToText(r))}</div>
       </div>
-      ${r.link ? `<a class="source-link-inline" href="${escapeAttr(r.link)}" target="_blank" rel="noopener">Åpne kilde</a>` : ""}
+      ${originalRecipeSourceUrlV31(r) ? `<a class="source-link-inline" href="${escapeAttr(originalRecipeSourceUrlV31(r))}" target="_blank" rel="noopener noreferrer">Åpne kilde</a>` : ""}
     `;
   }
 
@@ -709,7 +710,7 @@ window.openPickerPreview = function(recipeId){
     };
   }
 
-  $("pickerPreviewDialog").showModal();
+  if(!$("pickerPreviewDialog").open)$("pickerPreviewDialog").showModal();
 };
 
 confirmAddToDay = function(){
@@ -1357,7 +1358,16 @@ function flashShoppingItemV25(id){
   if (!row) return;
   row.classList.remove("shopping-duplicate");
   requestAnimationFrame(() => row.classList.add("shopping-duplicate"));
-  row.scrollIntoView({block: "nearest", behavior: "smooth"});
+}
+function renderShoppingWithoutViewportJumpV31(){
+  const scrollTop=window.scrollY;
+  const input=$("shoppingQuickInput");
+  const restoreFocus=document.activeElement===input;
+  renderShoppingList(shoppingItems);
+  requestAnimationFrame(()=>{
+    window.scrollTo({top:scrollTop,left:window.scrollX,behavior:"instant"});
+    if(restoreFocus&&document.activeElement!==input)input?.focus({preventScroll:true});
+  });
 }
 function addShoppingItemV25(text, preferredCategory = ""){
   let cleaned = normalizeIngredientLineForDisplay(String(text || "").trim());
@@ -1370,7 +1380,7 @@ function addShoppingItemV25(text, preferredCategory = ""){
       duplicate.done = false;
       duplicate.updatedAt = nowIsoV25();
       savePlan();
-      renderShoppingList(shoppingItems);
+      renderShoppingWithoutViewportJumpV31();
     }
     flashShoppingItemV25(duplicate.id);
     setShoppingStatusV25("Varen finnes allerede i listen");
@@ -1386,7 +1396,7 @@ function addShoppingItemV25(text, preferredCategory = ""){
     updatedAt: nowIsoV25()
   };
   shoppingItems = [...ensureShoppingMetadataV25(shoppingItems), item];
-  renderShoppingList(shoppingItems);
+  renderShoppingWithoutViewportJumpV31();
   savePlan();
   requestAnimationFrame(() => flashShoppingItemV25(item.id));
   return true;
@@ -2553,7 +2563,7 @@ function recipeCardHtmlV28(recipe, scope="recipes") {
   const action=scope==="picker"?`openPickerPreview('${escapeAttr(recipe.id)}')`:`openRecipeDetails('${escapeAttr(recipe.id)}')`;
   return `<article class="recipe-card rich ${statusClassV23(recipe)}" onclick="${action}">
     <div class="recipe-thumb">${imageForRecipeV28(recipe)}</div><div class="recipe-card-copy">
-      <div class="recipe-topline"><strong>${escapeHtml(recipe.name)}</strong>${scope==="recipes"?`<button class="favorite-btn" onclick="event.stopPropagation();toggleFavorite('${escapeAttr(recipe.id)}')">${isFavorite(recipe.id)?"★":"☆"}</button>`:""}</div>
+      <div class="recipe-topline"><strong>${escapeHtml(recipe.name)}</strong><button type="button" class="favorite-btn" aria-label="${isFavorite(recipe.id)?"Fjern fra favoritter":"Legg til i favoritter"}" onclick="event.stopPropagation();toggleFavorite('${escapeAttr(recipe.id)}')">${isFavorite(recipe.id)?"★":"☆"}</button></div>
       <div class="recipe-meta">${escapeHtml(recipe.category||"Ukjent")} · ${statusTextV23(recipe)}${minutes?` · ${minutes} min`:""}${n.protein?` · ${n.protein} g protein`:""}</div>
       ${pantryStatusV28(recipe)}
       <div class="recipe-tags">${enrichTags(recipe).slice(0,4).map(tag=>`<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
@@ -2577,20 +2587,23 @@ function nutritionHtmlV28(recipe) {
 }
 window.openRecipeDetails=function(id){
   const recipe=recipeById(id); if(!recipe)return;
+  const sourceUrl=originalRecipeSourceUrlV31(recipe);
   const missingCentral=!recipeHasIngredientsV23(recipe)||!String(recipe.instructions||"").trim();
   $("recipeDialogTitle").textContent=`${emojiForRecipe(recipe)} ${recipe.name}`;
   $("recipeDialogBody").innerHTML=`${recipe.image?`<div class="recipe-hero-image"><img src="${escapeAttr(recipe.image)}" alt=""></div>`:""}
     ${missingCentral&&resolveRecipeSourceUrl(recipe)?`<section class="recovery-inline-card"><strong>⚠ Denne oppskriften mangler data.</strong><p>Bruk originalkilden og eksisterende Recovery-pipeline. Ingenting lagres uten forhåndsvisning.</p><button type="button" class="primary" onclick="recoverRecipeFromUrlV28('${escapeAttr(recipe.id)}')">Recover from URL</button></section>`:""}
     <p class="recipe-meta">${escapeHtml(recipe.category||"Ukjent")} · ${escapeHtml(recipe.source||"")} · brukt ${usageCount(recipe.id)}×</p>
     ${pantryStatusV28(recipe,true)}
-    <div class="inline-actions"><button type="button" class="primary" onclick="openAddToDay('${escapeAttr(recipe.id)}')">+ Legg til i ukesmeny</button>
+    <div class="inline-actions"><button type="button" class="favorite-btn" onclick="toggleFavorite('${escapeAttr(recipe.id)}')">${isFavorite(recipe.id)?"★ Favoritt":"☆ Favoritt"}</button>
+    <button type="button" class="primary" onclick="openAddToDay('${escapeAttr(recipe.id)}')">+ Legg til i ukesmeny</button>
     <button type="button" class="ghost" onclick="markCookedV28('${escapeAttr(recipe.id)}')">Marker som laget</button>
     <button type="button" class="ghost" onclick="addMissingIngredientsV28('${escapeAttr(recipe.id)}')">Legg kun til manglende ingredienser</button>
-    <button type="button" class="ghost" onclick="openImport('${escapeAttr(recipe.id)}');$('recipeDialog').close()">Rediger</button></div>
+    <button type="button" class="ghost" onclick="openImport('${escapeAttr(recipe.id)}');$('recipeDialog').close()">Rediger</button>
+    ${sourceUrl?`<a class="source-link-inline" href="${escapeAttr(sourceUrl)}" target="_blank" rel="noopener noreferrer">Åpne kilde</a>`:""}</div>
     ${nutritionHtmlV28(recipe)}
     <div class="recipe-detail-section"><h3>Ingredienser</h3>${formatList(ingredientsToText(recipe))}</div>
     <div class="recipe-detail-section"><h3>Fremgangsmåte</h3>${formatSteps(instructionsToText(recipe))}</div>`;
-  $("recipeDialog").showModal();
+  if(!$("recipeDialog").open)$("recipeDialog").showModal();
 };
 window.recoverRecipeFromUrlV28=async function(id){
   const recovery=prepareRecoverySource(recipeById(id)),sourceUrl=recovery.sourceUrl;
@@ -2750,6 +2763,40 @@ bindAll=function(){
 const initBeforeV28=init;
 init=async function(){await initBeforeV28();ensureMetaV28();randomOrderV28=new Map(recipes.map(recipe=>[String(recipe.id),Math.random()]));renderRecipeResults();renderPantryV28()};
 
+/* ===== v31: stabil dialog, favoritter og direkte import ===== */
+function originalRecipeSourceUrlV31(recipe){
+  const row=recipe&&typeof recipe==="object"?recipe:{};
+  const data=row.data&&typeof row.data==="object"?row.data:{};
+  const values=[row.link,row.sourceUrl,row.sourceURL,row.source_url,row.sourceLink,row.source_link,data.link,data.sourceUrl,data.sourceURL,data.source_url,data.sourceLink,data.source_link];
+  return values.find(value=>typeof value==="string"&&value.trim())||"";
+}
+function resetNewRecipeImportV31(){
+  activeImportId=`custom-${Date.now()}`;
+  $("importTarget").textContent="Ny oppskrift – lagres først når du trykker Lagre";
+  $("importLinkWrap").textContent="Ingen oppskrift er opprettet ennå.";
+  $("importName").value="";$("importLink").value="";$("importCategory").value="Annet";$("importServings").value="";
+  $("captionInput").value="";$("parsedIngredients").value="";$("parsedInstructions").value="";
+  if($("screenshotInput"))$("screenshotInput").value="";
+  if($("ocrPreview"))$("ocrPreview").replaceChildren();
+  if($("structuredIngredientPreview"))$("structuredIngredientPreview").replaceChildren();
+  window.lastAiParsedRecipe=null;importSourceMediaV27="";
+}
+function beginNewRecipeImportV31(mode){
+  resetNewRecipeImportV31();
+  $("addRecipeDialog").close();
+  $("importDialog").showModal();
+  if(mode==="url"){
+    $("importLinkWrap").textContent="Lim inn lenken. Eksisterende importmotor henter og analyserer innholdet automatisk.";
+    setTimeout(()=>$("importLink")?.focus({preventScroll:true}),0);
+  }else if(mode==="images"){
+    $("importLinkWrap").textContent="Velg ett eller flere bilder. OCR og AI-analyse starter automatisk.";
+    setTimeout(()=>$("screenshotInput")?.click(),0);
+  }else{
+    $("importLinkWrap").textContent="Fyll inn oppskriften manuelt og lagre når du er ferdig.";
+    setTimeout(()=>$("importName")?.focus({preventScroll:true}),0);
+  }
+}
+
 /* ===== v30: porsjonsskalering ===== */
 const recipeServingSelectionV30=new Map();
 let plannedServingEditV30=null;
@@ -2785,7 +2832,7 @@ function servingControlsHtmlV30(recipe,selected){
     <strong>Velg porsjoner</strong>
     <div class="serving-stepper">
       <button type="button" class="ghost" onclick="adjustRecipeServingsV30('${escapeAttr(recipe.id)}',-1)">−</button>
-      <input id="recipeServingsV30" type="number" min="0.1" step="0.5" inputmode="decimal" value="${escapeAttr(value)}" onchange="setRecipeServingsV30('${escapeAttr(recipe.id)}',this.value)">
+      <input id="recipeServingsV30" type="text" inputmode="decimal" value="${escapeAttr(value)}" onchange="setRecipeServingsV30('${escapeAttr(recipe.id)}',this.value)">
       <button type="button" class="ghost" onclick="adjustRecipeServingsV30('${escapeAttr(recipe.id)}',1)">+</button>
     </div>
     <div class="serving-quick-actions">${[1,2,4,6,8].map(number=>`<button type="button" class="ghost" onclick="setRecipeServingsV30('${escapeAttr(recipe.id)}',${number})">${number}</button>`).join("")}
@@ -2924,6 +2971,8 @@ smartWeek=async function(){await smartWeekBeforeV30();enrichPlanServingMetadataV
 const bindAllBeforeV30=bindAll;
 bindAll=function(){
   bindAllBeforeV30();
+  document.querySelectorAll("[data-dialog-close]").forEach(button=>button.addEventListener("click",()=>button.closest("dialog")?.close()));
+  document.querySelectorAll("[data-add-recipe-mode]").forEach(button=>button.addEventListener("click",()=>beginNewRecipeImportV31(button.dataset.addRecipeMode)));
   document.querySelectorAll("[data-planned-servings]").forEach(button=>button.addEventListener("click",()=>{if($("plannedServingsInput"))$("plannedServingsInput").value=button.dataset.plannedServings}));
   document.querySelectorAll("[data-planned-scale]").forEach(button=>button.addEventListener("click",()=>{const input=$("plannedServingsInput"),value=ServingScaling.parsePositiveServings(input?.value)||baseServingsV30(recipeById(pendingAddRecipeId));if(input&&value)input.value=value*Number(button.dataset.plannedScale)}));
 };

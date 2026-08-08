@@ -10,7 +10,7 @@
   <link rel="icon" type="image/jpeg" href="favicon.jpeg?v=28" />
   <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=28" />
   <meta name="theme-color" content="#f7f3ec" />
-  <link rel="stylesheet" href="styles.css?v=28" />
+  <link rel="stylesheet" href="styles.css?v=33" />
 </head>
 <body>
   <header class="app-header">
@@ -252,7 +252,7 @@
     <form method="dialog" class="dialog-form">
       <div class="section-title">
         <h2>Importer / legg til oppskrift</h2>
-        <button value="cancel" class="ghost">Lukk</button>
+        <button type="button" class="ghost" data-dialog-close>Lukk</button>
       </div>
 
       <p id="importTarget" class="hint"></p>
@@ -283,7 +283,7 @@
       </label>
 
       <label>Grunnporsjoner
-        <input id="importServings" type="number" min="0.1" step="0.5" placeholder="f.eks. 2 eller 4" />
+        <input id="importServings" type="text" inputmode="decimal" placeholder="f.eks. 2 eller 4" />
       </label>
 
       <label>Lim inn Instagram/TikTok-caption
@@ -335,12 +335,27 @@
     </form>
   </dialog>
 
+  <dialog id="addRecipeDialog">
+    <form method="dialog" class="dialog-form small-dialog">
+      <div class="section-title">
+        <h2>Legg til oppskrift</h2>
+        <button type="button" class="ghost" data-dialog-close>Lukk</button>
+      </div>
+      <p class="hint">Velg hvordan du vil starte. Oppskriften opprettes først når du trykker Lagre.</p>
+      <div class="add-recipe-choices">
+        <button type="button" class="primary" data-add-recipe-mode="url">Hent oppskrift fra lenke</button>
+        <button type="button" class="ghost" data-add-recipe-mode="images">Hent oppskrift fra bilder</button>
+        <button type="button" class="ghost" data-add-recipe-mode="manual">Legg inn manuelt</button>
+      </div>
+    </form>
+  </dialog>
+
 
   <dialog id="recipeDialog">
     <form method="dialog" class="dialog-form">
       <div class="section-title">
         <h2 id="recipeDialogTitle">Oppskrift</h2>
-        <button value="cancel" class="ghost">Lukk</button>
+        <button type="button" class="ghost" data-dialog-close>Lukk</button>
       </div>
       <div id="recipeDialogBody"></div>
     </form>
@@ -350,14 +365,14 @@
     <form method="dialog" class="dialog-form small-dialog">
       <div class="section-title">
         <h2>Legg til i ukesmeny</h2>
-        <button value="cancel" class="ghost">Lukk</button>
+        <button type="button" class="ghost" data-dialog-close>Lukk</button>
       </div>
       <p id="addToDayRecipeName" class="hint"></p>
       <label>Velg dag
         <select id="addToDaySelect"></select>
       </label>
       <label>Antall porsjoner
-        <input id="plannedServingsInput" type="number" min="0.1" step="0.5" inputmode="decimal" />
+        <input id="plannedServingsInput" type="text" inputmode="decimal" />
       </label>
       <div class="serving-quick-actions" aria-label="Hurtigvalg for porsjoner">
         <button type="button" class="ghost" data-planned-servings="1">1</button>
@@ -377,7 +392,7 @@
     <form method="dialog" class="dialog-form">
       <div class="section-title">
         <h2>Velg oppskrift</h2>
-        <button value="cancel" class="ghost">Lukk</button>
+        <button type="button" class="ghost" data-dialog-close>Lukk</button>
       </div>
       <input id="pickerSearch" placeholder="Søk etter oppskrift …" />
       <div class="picker-toolbar">
@@ -397,7 +412,7 @@
     <form method="dialog" class="dialog-form small-dialog">
       <div class="section-title">
         <h2>Endre kategori</h2>
-        <button value="cancel" class="ghost">Lukk</button>
+        <button type="button" class="ghost" data-dialog-close>Lukk</button>
       </div>
       <p id="shoppingCategoryItemName" class="hint"></p>
       <label>Kategori<select id="shoppingCategorySelect"></select></label>
@@ -416,7 +431,7 @@
     <form method="dialog" class="dialog-form">
       <div class="section-title">
         <h2 id="pickerPreviewTitle">Oppskrift</h2>
-        <button value="cancel" class="ghost">Lukk</button>
+        <button type="button" class="ghost" data-dialog-close>Lukk</button>
       </div>
       <div id="pickerPreviewBody"></div>
       <div class="inline-actions">
@@ -432,12 +447,12 @@
           <p class="eyebrow">Sikker forhåndsvisning</p>
           <h2 id="recoveryConfirmTitle">Bekreft gjenoppretting</h2>
         </div>
-        <button value="cancel" class="ghost">Lukk</button>
+        <button type="button" class="ghost" data-dialog-close>Lukk</button>
       </div>
       <div id="recoveryConfirmBody"></div>
       <p class="safety-note">Ingen data lagres før du trykker «Confirm Restore».</p>
       <div class="dialog-actions">
-        <button value="cancel" class="ghost">Avbryt</button>
+        <button type="button" class="ghost" data-dialog-close>Avbryt</button>
         <button type="button" id="recoveryConfirmBtn" class="primary">Confirm Restore</button>
       </div>
     </form>
@@ -447,7 +462,7 @@
     <form method="dialog" class="dialog-form">
       <div class="section-title">
         <h2 id="recoveryDiffTitle">Endringsdetaljer</h2>
-        <button value="cancel" class="ghost">Lukk</button>
+        <button type="button" class="ghost" data-dialog-close>Lukk</button>
       </div>
       <div id="recoveryDiffBody"></div>
       <div id="recoveryRollbackActions" class="dialog-actions"></div>
@@ -457,6 +472,6 @@
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="data-safety.js?v=29"></script>
   <script src="serving-scaling.js?v=30"></script>
-  <script src="app.js?v=30"></script>
+  <script src="app.js?v=32"></script>
 </body>
 </html>
