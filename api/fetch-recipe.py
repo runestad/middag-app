@@ -4,10 +4,12 @@ import re
 import socket
 import urllib.parse
 import urllib.request
+import traceback
 from html import unescape
 from http.server import BaseHTTPRequestHandler
 
 from ._common import get_ssl_context, read_body, send_json
+from .recipe_import import assess_import_quality, choose_resolved_url, structured_recipe
 
 
 MAX_BYTES = 2_000_000
@@ -152,29 +154,7 @@ def recipe_text(recipe):
 
 
 def safe_resolved_source_url(original_url, candidate_url):
-    original = str(original_url or "").strip()
-    candidate = str(candidate_url or "").strip()
-    if not candidate:
-        return original
-    try:
-        original_parsed = urllib.parse.urlparse(original)
-        candidate_parsed = urllib.parse.urlparse(candidate)
-    except ValueError:
-        return original
-    if candidate_parsed.scheme not in ("http", "https") or not candidate_parsed.hostname:
-        return original
-
-    original_host = (original_parsed.hostname or "").lower()
-    candidate_host = (candidate_parsed.hostname or "").lower()
-    if "tiktok.com" in original_host:
-        path = candidate_parsed.path.rstrip("/")
-        if "tiktok.com" not in candidate_host or not path:
-            return original
-    if "instagram.com" in original_host:
-        path = candidate_parsed.path.lower()
-        if "instagram.com" not in candidate_host or not re.match(r"^/(reel|reels|p)/", path):
-            return original
-    return candidate
+    return choose_resolved_url(original_url, candidate_url)
 
 
 def tiktok_oembed(url):
@@ -214,7 +194,7 @@ def extract(url):
     video = first_video_url(html, resolved)
     structured = recipe_text(recipe)
     source_type = "Instagram" if "instagram.com" in host else "TikTok" if "tiktok.com" in host else "Web"
-    return {
+    result = {
         "resolvedUrl": safe_resolved_source_url(url, resolved),
         "title": text_content(str(title)),
         "caption": structured or text_content(str(description)),
@@ -226,6 +206,13 @@ def extract(url):
         "method": "json-ld" if structured else "metadata",
         "hasStructuredRecipe": bool(structured),
     }
+    if recipe:
+        result.update(structured_recipe(recipe, url, resolved, urllib.parse.urlparse(resolved).hostname or host, image))
+        result["title"] = title
+        result["caption"] = structured or result.get("caption", "")
+    else:
+        result["importQuality"] = assess_import_quality(result)
+    return result
 
 
 class handler(BaseHTTPRequestHandler):
@@ -234,11 +221,12 @@ class handler(BaseHTTPRequestHandler):
             payload = read_body(self)
             url = validate_public_url(payload.get("url"))
             result = extract(url)
-            result["needsManualSource"] = not bool(result.get("caption"))
+            result["needsManualSource"] = result.get("importQuality", {}).get("status") in ("INCOMPLETE", "BROKEN_SOURCE", "IMPORT_FAILED")
             return send_json(self, {"ok": True, "result": result})
         except Exception as exc:
+            traceback.print_exc()
             return send_json(self, {
                 "ok": False,
-                "error": f"{type(exc).__name__}: {exc}",
+                "error": "Vi klarte ikke å hente oppskriften fra denne lenken.",
                 "needsManualSource": True,
             }, 422)

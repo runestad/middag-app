@@ -1893,13 +1893,19 @@ saveParsedRecipe = async function() {
     prepMinutes: Number(ai.prepMinutes || base.prepMinutes || 0),
     nutrition: ai.nutrition || base.nutrition || {},
     imageMethod: ai.imageMethod || base.imageMethod || "",
+    sourceTitle: ai.sourceMetadata?.sourceTitle || base.sourceTitle || "",
+    sourceDomain: ai.sourceMetadata?.sourceDomain || base.sourceDomain || "",
+    resolvedSourceUrl: ai.sourceMetadata?.resolvedSourceUrl || base.resolvedSourceUrl || "",
+    sourceLastChecked: ai.sourceMetadata?.sourceLastChecked || base.sourceLastChecked || "",
+    importQuality: ai.importQuality || ai.sourceMetadata?.importQuality || base.importQuality || {},
     status: ingredients.length && instructionsText ? "Fullført" : "Må sjekkes manuelt",
     manualCheck: ingredients.length && instructionsText ? "Nei" : "Ja – mangler ingredienser eller fremgangsmåte.",
     updatedAt: new Date().toISOString()
   };
   const patch = meaningfulPatch(candidatePatch);
   try {
-    const response = await fetch("/api/save-recipe", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({id: activeImportId, patch})});
+    const explicitNameEdit = Boolean(base.id && !recoveryImportContextV27 && candidatePatch.name !== base.name);
+    const response = await fetch("/api/save-recipe", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({id: activeImportId, patch, explicitNameEdit})});
     const result = await response.json().catch(() => ({}));
     if (!response.ok || result.ok === false) throw new Error(result.error || "Lagring feilet");
     const index = recipes.findIndex(recipe => String(recipe.id) === String(activeImportId));
@@ -1984,7 +1990,7 @@ function renderRecoveryDashboardV27() {
   const cards = [
     {type:"high", icon:"✓", title:"High Confidence", count:counts.high, text:"Historisk kopi funnet", action:"Review"},
     {type:"medium", icon:"?", title:"Medium Confidence", count:counts.medium, text:"Krever manuell vurdering", action:"Review"},
-    {type:"url", icon:"↗", title:"URL Reimport", count:counts.url, text:"Instagram · TikTok · Web", action:"Start Recovery"},
+    {type:"url", icon:"↗", title:"Sjekk kilde på nytt", count:counts.url, text:"Instagram · TikTok · nettsider", action:"Start kildesjekk"},
     {type:"manual", icon:"⋯", title:"Manual Queue", count:counts.manual, text:"Ingen kjent kilde", action:"Open"}
   ];
   $("recoveryDashboard").innerHTML = cards.map(card => `
@@ -2591,7 +2597,7 @@ window.openRecipeDetails=function(id){
   const missingCentral=!recipeHasIngredientsV23(recipe)||!String(recipe.instructions||"").trim();
   $("recipeDialogTitle").textContent=`${emojiForRecipe(recipe)} ${recipe.name}`;
   $("recipeDialogBody").innerHTML=`${recipe.image?`<div class="recipe-hero-image"><img src="${escapeAttr(recipe.image)}" alt=""></div>`:""}
-    ${missingCentral&&resolveRecipeSourceUrl(recipe)?`<section class="recovery-inline-card"><strong>⚠ Denne oppskriften mangler data.</strong><p>Bruk originalkilden og eksisterende Recovery-pipeline. Ingenting lagres uten forhåndsvisning.</p><button type="button" class="primary" onclick="recoverRecipeFromUrlV28('${escapeAttr(recipe.id)}')">Recover from URL</button></section>`:""}
+    ${missingCentral&&resolveRecipeSourceUrl(recipe)?`<section class="recovery-inline-card"><strong>Oppskriften kan være ufullstendig</strong><p>Du kan prøve å hente manglende innhold fra kilden. Ingenting lagres før du har sett over resultatet.</p><button type="button" class="primary" onclick="recoverRecipeFromUrlV28('${escapeAttr(recipe.id)}')">Prøv å hente på nytt</button></section>`:""}
     <p class="recipe-meta">${escapeHtml(recipe.category||"Ukjent")} · ${escapeHtml(recipe.source||"")} · brukt ${usageCount(recipe.id)}×</p>
     ${pantryStatusV28(recipe,true)}
     <div class="inline-actions"><button type="button" class="favorite-btn" onclick="toggleFavorite('${escapeAttr(recipe.id)}')">${isFavorite(recipe.id)?"★ Favoritt":"☆ Favoritt"}</button>
@@ -2782,7 +2788,11 @@ function resetNewRecipeImportV31(){
   window.lastAiParsedRecipe=null;importSourceMediaV27="";
 }
 function beginNewRecipeImportV31(mode){
+  const starterName=$("newRecipeName")?.value.trim()||"";
+  const starterUrl=$("newRecipeUrl")?.value.trim()||"";
   resetNewRecipeImportV31();
+  if(starterName)$("importName").value=starterName;
+  if(starterUrl)$("importLink").value=starterUrl;
   $("addRecipeDialog").close();
   $("importDialog").showModal();
   if(mode==="url"){
@@ -2976,5 +2986,56 @@ bindAll=function(){
   document.querySelectorAll("[data-planned-servings]").forEach(button=>button.addEventListener("click",()=>{if($("plannedServingsInput"))$("plannedServingsInput").value=button.dataset.plannedServings}));
   document.querySelectorAll("[data-planned-scale]").forEach(button=>button.addEventListener("click",()=>{const input=$("plannedServingsInput"),value=ServingScaling.parsePositiveServings(input?.value)||baseServingsV30(recipeById(pendingAddRecipeId));if(input&&value)input.value=value*Number(button.dataset.plannedScale)}));
 };
+
+/* ===== v34: production import entry, quality feedback and rapid Pantry setup ===== */
+const PANTRY_STARTER_V34=[
+  ["salt","Krydder","lite","",true],["pepper","Krydder","lite","",true],["olivenolje","Oljer",1,"flaske",true],
+  ["nøytral olje","Oljer",1,"flaske",true],["hvetemel","Tørrvarer",1,"pk",false],["sukker","Tørrvarer",1,"pk",false],
+  ["ris","Tørrvarer",1,"pk",false],["pasta","Tørrvarer",1,"pk",false],["soyasaus","Sauser",1,"flaske",true],
+  ["eddik","Sauser",1,"flaske",true],["buljongterninger","Tørrvarer",1,"pk",true],["paprikapulver","Krydder","lite","",true],
+  ["spisskummen","Krydder","lite","",true],["oregano","Krydder","lite","",true],["hvitløk","Frukt og grønt",1,"stk",false],
+  ["løk","Frukt og grønt",2,"stk",false],["hakkede tomater","Hermetikk",2,"boks",false],["tomatpuré","Hermetikk",1,"stk",false],
+  ["bønner","Hermetikk",2,"boks",false],["brødsmuler","Tørrvarer",1,"pk",false],["smør","Kjøleskap",1,"pk",false],["egg","Kjøleskap",6,"stk",false]
+].map((row,index)=>({id:`starter-${index}`,name:row[0],category:row[1],quantity:row[2],unit:row[3],always:row[4]}));
+let pantrySetupIndexV34=0,pantrySetupAddingV34=false;
+
+function normalizedImportUrlV34(value){
+  try{const url=new URL(String(value||"").trim());for(const key of [...url.searchParams.keys()])if(key.startsWith("utm_")||["fbclid","gclid","igsh","igshid","si"].includes(key))url.searchParams.delete(key);url.hash="";return url.toString().replace(/\/$/,"")}catch(error){return""}
+}
+function duplicateRecipeForUrlV34(value){const target=normalizedImportUrlV34(value);return target&&recipes.find(recipe=>normalizedImportUrlV34(originalRecipeSourceUrlV31(recipe))===target)}
+function refreshDuplicateWarningV34(){const warning=$("duplicateRecipeWarning"),match=duplicateRecipeForUrlV34($("newRecipeUrl")?.value);if(!warning)return;warning.hidden=!match;warning.textContent=match?`Denne lenken brukes allerede av «${match.name}». Du kan likevel importere en egen variant.`:""}
+async function startFocusedImportV34(){
+  const name=$("newRecipeName")?.value.trim(),url=$("newRecipeUrl")?.value.trim();
+  if(!name){$("newRecipeName")?.focus();return}
+  if(!normalizedImportUrlV34(url)){$("newRecipeUrl")?.focus();return}
+  resetNewRecipeImportV31();$("importName").value=name;$("importLink").value=url;$("addRecipeDialog").close();$("importDialog").showModal();
+  $("saveParsedBtn").disabled=true;$("ocrStatus").textContent="Henter oppskriften …";
+  try{
+    const response=await fetch("/api/fetch-recipe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url})});
+    const data=await response.json();if(!response.ok||!data.ok)throw new Error(data.error||"Kilden kunne ikke leses.");
+    const result=data.result||{};$("importName").value=name;
+    $("importLink").value=selectImportResolvedUrl(url,result.resolvedSourceUrl||result.resolvedUrl);
+    if(result.servings)$("importServings").value=result.servings;
+    if(result.ingredientsText)$("parsedIngredients").value=result.ingredientsText;
+    if(result.instructions)$("parsedInstructions").value=result.instructions;
+    importSourceMediaV27=result.image||"";
+    window.lastAiParsedRecipe={...(window.lastAiParsedRecipe||{}),ingredients:result.ingredientLines?.map(line=>({original:line,item:line,shoppingCategory:categorize(line)}))||[],instructions:result.instructionSteps||[],importQuality:result.importQuality,sourceMetadata:result};
+    structuredPreviewV28();const status=result.importQuality?.status;
+    $("ocrStatus").textContent=status==="COMPLETE"?"Oppskriften er hentet. Se over og lagre.":status==="PROBABLY_COMPLETE"?"Oppskriften er hentet. Se ekstra nøye over før du lagrer.":"Vi fant bare deler av oppskriften. Rett innholdet eller legg inn resten manuelt før du lagrer.";
+  }catch(error){$("ocrStatus").textContent="Vi klarte ikke å hente oppskriften fra denne lenken. Prøv igjen, eller lag oppskriften manuelt.";console.warn("Importfeil",error)}finally{$("saveParsedBtn").disabled=false}
+}
+
+function pantrySetupItemV34(){return PANTRY_STARTER_V34[pantrySetupIndexV34]}
+function renderPantrySetupV34(){const item=pantrySetupItemV34();if(!item){$("pantrySetupDialog")?.close();return}const total=PANTRY_STARTER_V34.length;$("pantrySetupProgress").textContent=`${pantrySetupIndexV34+1} av ${total}`;$("pantrySetupBar").value=(pantrySetupIndexV34/total)*100;$("pantrySetupCategory").textContent=item.category;$("pantrySetupQuestion").textContent=`Har du ${item.name} hjemme?`;$("pantrySetupAmount").value=item.quantity;$("pantrySetupUnit").textContent=item.unit||"mengde";$("pantrySetupQuantity").hidden=!pantrySetupAddingV34;$("pantrySetupAnswers").hidden=pantrySetupAddingV34;$("pantrySetupBack").disabled=pantrySetupIndexV34===0}
+function openPantrySetupV34(){ensureMetaV28();pantrySetupIndexV34=Math.min(Number(appMeta.pantrySetupIndex||0),PANTRY_STARTER_V34.length-1);pantrySetupAddingV34=false;renderPantrySetupV34();$("pantrySetupDialog").showModal()}
+function advancePantrySetupV34(){pantrySetupIndexV34=Math.min(PANTRY_STARTER_V34.length,pantrySetupIndexV34+1);appMeta.pantrySetupIndex=pantrySetupIndexV34;pantrySetupAddingV34=false;savePlan();renderPantrySetupV34()}
+function savePantrySetupYesV34(){const item=pantrySetupItemV34();if(!item)return;const key=pantryKeyV28(item.name),existing=appMeta.pantryItems.find(row=>pantryKeyV28(row.name)===key);const row={id:existing?.id||`pantry-${Date.now()}`,name:item.name,quantity:$("pantrySetupAmount").value.trim(),unit:item.unit,zone:item.category==="Kjøleskap"?"fridge":"pantry",always:item.always,category:item.category};if(existing)Object.assign(existing,row);else appMeta.pantryItems.push(row);renderPantryV28();renderRecipeResults();advancePantrySetupV34()}
+
+const renderPantryBeforeV34=renderPantryV28;
+renderPantryV28=function(){renderPantryBeforeV34();if(!appMeta.pantryItems.length&&$("pantryList"))$("pantryList").innerHTML=`<div class="empty-state"><strong>Pantryet ditt er tomt</strong><p>Sett det opp på et par minutter.</p><button type="button" class="primary" onclick="openPantrySetupV34()">Sett opp pantry</button></div>`};
+window.openPantrySetupV34=openPantrySetupV34;
+
+const bindAllBeforeV34=bindAll;
+bindAll=function(){bindAllBeforeV34();$("startUrlImportBtn")?.addEventListener("click",startFocusedImportV34);$("newRecipeUrl")?.addEventListener("input",refreshDuplicateWarningV34);$("newRecipeUrl")?.addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();startFocusedImportV34()}});$("startPantrySetupBtn")?.addEventListener("click",openPantrySetupV34);$("pantrySetupNo")?.addEventListener("click",advancePantrySetupV34);$("pantrySetupSkip")?.addEventListener("click",advancePantrySetupV34);$("pantrySetupYes")?.addEventListener("click",()=>{pantrySetupAddingV34=true;renderPantrySetupV34()});$("pantrySetupSaveYes")?.addEventListener("click",savePantrySetupYesV34);$("pantrySetupBack")?.addEventListener("click",()=>{pantrySetupIndexV34=Math.max(0,pantrySetupIndexV34-1);pantrySetupAddingV34=false;renderPantrySetupV34()});$("pantrySetupFinish")?.addEventListener("click",()=>$("pantrySetupDialog")?.close());$("pantrySetupMinus")?.addEventListener("click",()=>{$("pantrySetupAmount").value=Math.max(0,(Number($("pantrySetupAmount").value)||1)-1)});$("pantrySetupPlus")?.addEventListener("click",()=>{$("pantrySetupAmount").value=(Number($("pantrySetupAmount").value)||0)+1})};
 
 init();

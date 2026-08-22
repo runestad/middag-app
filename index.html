@@ -121,7 +121,7 @@
       <section class="card">
         <div class="section-title">
           <h2>Oppskrifter</h2>
-          <button id="addRecipeBtn" class="primary">Legg til oppskrift</button>
+          <button id="addRecipeBtn" class="primary">Lag oppskrift</button>
         </div>
         <div class="recipe-toolbar">
           <input id="recipeSearch" placeholder="Søk etter rett, kategori, tag eller kilde …" />
@@ -154,6 +154,7 @@
             <h2>Pantry</h2>
             <p class="hint">Det dere har hjemme – klart for smartere forslag og kortere handlelister.</p>
           </div>
+          <button id="startPantrySetupBtn" class="primary" type="button">Sett opp pantry</button>
         </div>
       </section>
       <section class="card pantry-composer-card">
@@ -207,8 +208,8 @@
       <section class="screen-intro recovery-heading">
         <div class="section-title">
           <div>
-            <h2>Recipe Recovery</h2>
-            <p id="recoverySummary" class="hint">Henter trygg gjenopprettingskø …</p>
+            <h2>Kildehelse</h2>
+            <p id="recoverySummary" class="hint">Sjekker oppskrifter som kan trenge hjelp …</p>
           </div>
           <button id="recoveryHistoryBtn" class="ghost" type="button">Historikk</button>
         </div>
@@ -229,7 +230,7 @@
         <div class="section-title">
           <div>
             <p class="eyebrow">Audit-logg</p>
-            <h2>Recovery History</h2>
+            <h2>Endringshistorikk</h2>
           </div>
           <button id="recoveryCloseHistoryBtn" class="ghost" type="button">Til oversikten</button>
         </div>
@@ -245,7 +246,7 @@
     <button type="button" class="nav-btn" data-view="viewRecipes" aria-label="Oppskrifter"><span class="nav-icon" aria-hidden="true">▤</span><span>Oppskrifter</span></button>
     <button type="button" class="nav-btn" data-view="viewFreezer" aria-label="Fryser"><span class="nav-icon" aria-hidden="true">❄</span><span>Fryser</span></button>
     <button type="button" class="nav-btn" data-view="viewPantry" aria-label="Pantry"><span class="nav-icon" aria-hidden="true">◫</span><span>Pantry</span></button>
-    <button type="button" class="nav-btn" data-view="viewRecovery" aria-label="Recipe Recovery"><span class="nav-icon" aria-hidden="true">↺</span><span>Recovery</span></button>
+    <button type="button" class="nav-btn" data-view="viewRecovery" aria-label="Kildehelse"><span class="nav-icon" aria-hidden="true">↺</span><span>Kildehelse</span></button>
   </nav>
 
   <dialog id="importDialog">
@@ -311,7 +312,7 @@
         <button type="button" id="saveParsedBtn" class="primary">Lagre i oppskrift</button>
       </div>
 
-      <p id="aiStatus" class="hint ai-status-box">AI-parser bruker OpenAI API hvis .env er satt opp. Lokal parser kan brukes som fallback.</p>
+      <p id="aiStatus" class="hint ai-status-box">Automatisk analyse hjelper deg å strukturere oppskriften. Kontroller alltid resultatet før lagring.</p>
 
       <div class="parsed-grid">
         <label id="ingredientsPreviewField">Ingredienser
@@ -338,14 +339,45 @@
   <dialog id="addRecipeDialog">
     <form method="dialog" class="dialog-form small-dialog">
       <div class="section-title">
-        <h2>Legg til oppskrift</h2>
+        <h2>Lag oppskrift</h2>
         <button type="button" class="ghost" data-dialog-close>Lukk</button>
       </div>
-      <p class="hint">Velg hvordan du vil starte. Oppskriften opprettes først når du trykker Lagre.</p>
+      <p class="hint">Gi oppskriften ditt eget navn og lim inn lenken. Ingenting lagres før du har sett over resultatet.</p>
+      <label for="newRecipeName">Navn på oppskrift</label>
+      <input id="newRecipeName" autocomplete="off" placeholder="For eksempel Fredagspasta" />
+      <label for="newRecipeUrl">Lenke til oppskrift</label>
+      <input id="newRecipeUrl" type="url" inputmode="url" autocomplete="url" placeholder="https://…" />
+      <p id="duplicateRecipeWarning" class="field-warning" role="status" aria-live="polite" hidden></p>
       <div class="add-recipe-choices">
-        <button type="button" class="primary" data-add-recipe-mode="url">Hent oppskrift fra lenke</button>
+        <button type="button" class="primary" id="startUrlImportBtn" data-add-recipe-mode="url">Importer</button>
         <button type="button" class="ghost" data-add-recipe-mode="images">Hent oppskrift fra bilder</button>
-        <button type="button" class="ghost" data-add-recipe-mode="manual">Legg inn manuelt</button>
+        <button type="button" class="ghost" data-add-recipe-mode="manual">Lag manuelt</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="pantrySetupDialog">
+    <form method="dialog" class="dialog-form small-dialog pantry-setup">
+      <div class="section-title">
+        <div><p id="pantrySetupProgress" class="eyebrow">1 av 1</p><h2>Sett opp pantry</h2></div>
+        <button type="button" class="ghost" data-dialog-close>Avslutt</button>
+      </div>
+      <progress id="pantrySetupBar" max="100" value="0"></progress>
+      <p id="pantrySetupCategory" class="hint"></p>
+      <h3 id="pantrySetupQuestion">Har du dette hjemme?</h3>
+      <div id="pantrySetupQuantity" class="pantry-setup-quantity" hidden>
+        <label for="pantrySetupAmount">Hvor mye?</label>
+        <div class="quantity-stepper"><button id="pantrySetupMinus" type="button" class="ghost" aria-label="Reduser">−</button><input id="pantrySetupAmount" inputmode="decimal" value="1"><button id="pantrySetupPlus" type="button" class="ghost" aria-label="Øk">+</button><span id="pantrySetupUnit">stk</span></div>
+        <button id="pantrySetupSaveYes" type="button" class="primary">Legg til og fortsett</button>
+      </div>
+      <div id="pantrySetupAnswers" class="pantry-setup-answers">
+        <button id="pantrySetupNo" type="button" class="ghost">Nei</button>
+        <button id="pantrySetupYes" type="button" class="primary">Ja</button>
+      </div>
+      <div class="dialog-actions pantry-setup-nav">
+        <button id="pantrySetupBack" type="button" class="text-button">Tilbake</button>
+        <button id="pantrySetupSkip" type="button" class="text-button">Hopp over</button>
+        <button id="pantrySetupFinish" type="button" class="text-button">Ferdig</button>
       </div>
     </form>
   </dialog>
