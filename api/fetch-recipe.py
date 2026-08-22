@@ -208,6 +208,14 @@ def tiktok_oembed(url):
 def extract(url):
     host = urllib.parse.urlparse(url).hostname or ""
     if "tiktok.com" in host:
+        if host.startswith("vm."):
+            try:
+                _, _, resolved_short = fetch_text(url)
+                result = tiktok_oembed(resolved_short)
+                result.update({"resolvedUrl": safe_resolved_source_url(url, resolved_short), "sourceType": "TikTok", "method": "oembed-resolved-shortlink"})
+                return result
+            except Exception:
+                pass
         try:
             return {**tiktok_oembed(url), "sourceType": "TikTok", "method": "oembed"}
         except Exception:

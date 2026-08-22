@@ -52,6 +52,18 @@ class ProductionHardeningTests(unittest.TestCase):
     def test_redirect_handler_supports_308(self):
         self.assertTrue(callable(FETCH.PublicRedirectHandler.http_error_308))
 
+    def test_tiktok_shortlink_is_resolved_before_oembed(self):
+        original_fetch, original_oembed = FETCH.fetch_text, FETCH.tiktok_oembed
+        calls = []
+        try:
+            FETCH.fetch_text = lambda url: ("", "text/html", "https://www.tiktok.com/@cook/video/123")
+            FETCH.tiktok_oembed = lambda url: calls.append(url) or {"caption": "Full recipe"}
+            result = FETCH.extract("https://vm.tiktok.com/ABC/")
+        finally:
+            FETCH.fetch_text, FETCH.tiktok_oembed = original_fetch, original_oembed
+        self.assertEqual(calls, ["https://www.tiktok.com/@cook/video/123"])
+        self.assertEqual(result["method"], "oembed-resolved-shortlink")
+
     def test_ui_has_focused_import_and_resumable_pantry(self):
         html = (ROOT / "index.html").read_text(encoding="utf-8")
         javascript = (ROOT / "app.js").read_text(encoding="utf-8")
