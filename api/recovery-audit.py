@@ -11,12 +11,11 @@ import json
 import urllib.parse
 from http.server import BaseHTTPRequestHandler
 
-from ._common import APP_ID, read_body, recipe_to_row, row_to_recipe, send_json, supabase_request
+from ._common import APP_ID, row_to_recipe, send_json, supabase_request
 from .recipe_health import classify_source, stored_completeness
 from .recipe_import import safe_recipe_merge
 
 
-APPROVED_PLAN_DIGEST = "9e2115cbb489aec99178ae2bfd62660cabb8cb01b8e4e733379b0062b79976ed"
 RECOVERY_FIELDS = {"ingredientsText", "structuredIngredients", "instructions", "structuredInstructions",
                    "servings", "image", "recoveryProvenance"}
 
@@ -150,8 +149,6 @@ def workbench_html(items):
 <textarea id=\"manualCaption\" placeholder=\"Optional externally fetched public caption\"></textarea>
 <button id=\"start\">Build dry-run plan</button> <strong id=\"progress\">Ready</strong><pre id=\"summary\"></pre>
 <textarea id=\"plan\" readonly></textarea><script id=\"work-items\" type=\"application/json\">__PAYLOAD__</script>
-<h2>Approved apply</h2><input id=\"approvalDigest\" placeholder=\"Approved plan SHA-256\"><textarea id=\"approvedPlan\" placeholder=\"Approved JSON plan\"></textarea>
-<button id=\"applyApproved\">Apply approved plan</button><pre id=\"applyStatus\"></pre>
 <script>
 const items=JSON.parse(document.querySelector('#work-items').textContent), plan=[];
 const lines=v=>Array.isArray(v)?v.map(x=>typeof x==='object'?(x.text||x.item||x.original||x.name||''):String(x)).filter(x=>x.trim()):String(v||'').split(/\\n/).map(x=>x.trim()).filter(Boolean);
@@ -161,37 +158,15 @@ function patchFromParsed(item,parsed,source){if(parsed.confidence==='low')return
 async function processItem(item){if(!item.url)return{...item,recipe:undefined,group:'D',reason:'Ingen kilde lagret',patch:null};try{const supplied=document.querySelector('#manualCaption').value.trim(),fetched=supplied&&items.length===1?{ok:true,result:{caption:supplied}}:await fetch('/api/fetch-recipe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:item.url})}).then(r=>r.json());if(!fetched.ok)throw new Error(fetched.error||'Kilden kunne ikke hentes');const source=fetched.result||{},direct={ingredients:(source.structuredIngredients||source.ingredientLines||lines(source.ingredientsText)),instructions:(source.structuredInstructions||source.instructionSteps||lines(source.instructions)),servings:source.servings,confidence:source.importQuality?.status};let parsed=direct,method='source-extractor',parseError='';if(!valid(lines(direct.ingredients),lines(direct.instructions))&&source.caption&&source.caption.trim().length>=60){for(let attempt=0;attempt<3;attempt++){const response=await fetch('/api/parse-caption',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({caption:source.caption,recipeName:item.title,sourceUrl:item.url,category:item.recipe.category||''})});const result=await response.json();if(response.ok&&result.ok){parsed=result.parsed||{};method=supplied?'external-caption-parser':'social-caption-parser';parseError='';break}parseError=result.error||`Parser HTTP ${response.status}`;if(attempt<2)await new Promise(resolve=>setTimeout(resolve,(attempt+1)*1500))}}const patch=patchFromParsed(item,parsed,source);if(patch)return{...item,recipe:undefined,group:social(item.url)?'B':'A',method,patch};return{...item,recipe:undefined,group:social(item.url)?'B':'C',reason:parseError||(social(item.url)?'Kilden inneholder ikke nok oppskriftsinformasjon':'Kilden finnes, men uttrekket ga ikke komplett innhold'),diagnostics:{captionLength:(source.caption||'').length,parsedIngredients:lines(parsed.ingredients).length,parsedInstructions:lines(parsed.instructions).length,confidence:parsed.confidence||'',uncertainties:(parsed.uncertainties||[]).length},patch:null}}catch(error){return{...item,recipe:undefined,group:social(item.url)?'B':'C',reason:String(error.message||error),patch:null}}}
 async function worker(queue){while(queue.length){const result=await processItem(queue.shift());plan.push(result);document.querySelector('#progress').textContent=`${plan.length} / ${items.length}`}}
 document.querySelector('#start').onclick=async()=>{document.querySelector('#start').disabled=true;const queue=[...items];await Promise.all(Array.from({length:4},()=>worker(queue)));plan.sort((a,b)=>a.title.localeCompare(b.title));const counts=plan.reduce((a,x)=>(a[x.group]=(a[x.group]||0)+1,a),{}),recoverable=plan.filter(x=>x.patch).length;document.querySelector('#summary').textContent=JSON.stringify({total:plan.length,recoverable,remaining:plan.length-recoverable,groups:counts},null,2);document.querySelector('#plan').value=JSON.stringify(plan,null,2);document.querySelector('#progress').textContent='Complete'};
-document.querySelector('#applyApproved').onclick=async()=>{const digest=document.querySelector('#approvalDigest').value.trim(),rows=JSON.parse(document.querySelector('#approvedPlan').value);document.querySelector('#applyApproved').disabled=true;const results=[];for(const row of rows){const response=await fetch('/api/recovery-audit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'apply',planDigest:digest,id:row.id,expectedDigest:row.expectedDigest,patch:row.patch})});const result=await response.json();results.push({id:row.id,title:row.title,ok:response.ok&&result.ok,error:result.error||''});document.querySelector('#applyStatus').textContent=JSON.stringify({done:results.length,total:rows.length,success:results.filter(x=>x.ok).length,failed:results.filter(x=>!x.ok)},null,2);if(!response.ok||!result.ok)break}document.querySelector('#applyStatus').dataset.results=JSON.stringify(results)};
 </script></html>"""
     return template.replace("__PAYLOAD__", payload)
 
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
-        original = None
-        try:
-            payload = read_body(self)
-            if payload.get("action") != "apply" or payload.get("planDigest") != APPROVED_PLAN_DIGEST:
-                return send_json(self, {"ok": False, "error": "Planen er ikke eksplisitt godkjent."}, 403)
-            recipe_id = str(payload.get("id") or "")
-            query = urllib.parse.urlencode({"id": "eq." + recipe_id, "app_id": "eq." + APP_ID, "select": "*", "limit": "1"})
-            rows = supabase_request("GET", "recipes", query=query) or []
-            if len(rows) != 1:
-                raise ValueError("Recipe row was not found uniquely")
-            original = row_to_recipe(rows[0])
-            if digest(original) != payload.get("expectedDigest"):
-                raise ValueError("Recipe changed after the approved dry run")
-            updated = validate_recovery_patch(original, payload.get("patch"))
-            update_query = urllib.parse.urlencode({"id": "eq." + recipe_id, "app_id": "eq." + APP_ID})
-            supabase_request("PATCH", "recipes", payload=recipe_to_row(updated), query=update_query, prefer="return=minimal")
-            verify_rows = supabase_request("GET", "recipes", query=query) or []
-            saved = row_to_recipe(verify_rows[0]) if len(verify_rows) == 1 else {}
-            if saved.get("name") != original.get("name") or saved.get("link") != original.get("link") or any(saved.get(key) != value for key, value in payload["patch"].items()):
-                supabase_request("PATCH", "recipes", payload=recipe_to_row(original), query=update_query, prefer="return=minimal")
-                raise RuntimeError("Verification failed; original row restored")
-            send_json(self, {"ok": True, "id": recipe_id, "status": "applied_and_verified"})
-        except Exception as exc:
-            send_json(self, {"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 409)
+        # The one-time, explicitly approved production recovery has completed.
+        # Keep the audit/workbench available, but leave no reusable write path.
+        send_json(self, {"ok": False, "error": "Recovery apply is closed."}, 410)
 
     def do_GET(self):
         try:
