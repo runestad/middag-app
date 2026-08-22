@@ -87,9 +87,10 @@ class RecoverySystemTests(unittest.TestCase):
     def test_tiktok_shortlink_thumbnail_keeps_original_source(self):
         original = "https://vm.tiktok.com/ABC123/"
         canonical = "https://www.tiktok.com/@cook/video/123456"
-        with patch.object(FETCH_MODULE, "tiktok_oembed", side_effect=[RuntimeError("shortlink"), {"image": "https://cdn.example/exact.jpg", "resolvedUrl": canonical}]), \
+        with patch.object(FETCH_MODULE, "tiktok_oembed", return_value={"image": "https://cdn.example/exact.jpg", "resolvedUrl": canonical}) as oembed, \
              patch.object(FETCH_MODULE, "fetch_text", return_value=("<html></html>", "text/html", canonical)):
             result = FETCH_MODULE.extract(original)
+        oembed.assert_called_once_with(canonical)
         self.assertEqual(result["image"], "https://cdn.example/exact.jpg")
         self.assertEqual(result["resolvedUrl"], canonical)
         self.assertEqual(result["method"], "oembed-resolved-shortlink")
