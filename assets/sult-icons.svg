@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg"><defs>
+  <symbol id="calendar" viewBox="0 0 24 24"><path d="M6 3v3m12-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"/></symbol>
+  <symbol id="checklist" viewBox="0 0 24 24"><path d="m4 7 2 2 3-4m2 2h9M4 14l2 2 3-4m2 2h9"/></symbol>
+  <symbol id="book" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v17H6.5A2.5 2.5 0 0 0 4 22V5.5Zm16 0A2.5 2.5 0 0 0 17.5 3H13v17h4.5A2.5 2.5 0 0 1 20 22V5.5Z"/></symbol>
+  <symbol id="snow" viewBox="0 0 24 24"><path d="M12 2v20M4 7l16 10M4 17 20 7M8 4l4 3 4-3M8 20l4-3 4 3"/></symbol>
+  <symbol id="archive" viewBox="0 0 24 24"><path d="M4 7h16v14H4V7Zm-1-4h18v4H3V3Zm6 9h6"/></symbol>
+  <symbol id="refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5m10.5 0A8 8 0 0 0 6 6.5L4 9m16 6-2 2.5A8 8 0 0 1 4.5 12"/></symbol>
+  <symbol id="heart" viewBox="0 0 24 24"><path d="M20.8 5.8a5.5 5.5 0 0 0-7.8 0L12 6.9l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 22l8.8-8.4a5.5 5.5 0 0 0 0-7.8Z"/></symbol>
+</defs></svg>

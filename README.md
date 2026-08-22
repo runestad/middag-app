@@ -1,4 +1,4 @@
-Middag-app v23.
+SULT — Nordic meal planning app.
 - Marker oppskrifter uten ingredienser som “mangler ingredienser”
 - Status “Fullført” er ikke nok hvis ingrediensfelt er tomme
 - Advarsel før slike oppskrifter legges i ukeplan/handleliste

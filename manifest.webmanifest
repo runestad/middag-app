@@ -1,11 +1,11 @@
 {
-  "name": "Middag",
-  "short_name": "Middag",
-  "description": "Ukesmeny, oppskrifter, fryser og handleliste for Øyvind & Melanie",
+  "name": "SULT",
+  "short_name": "SULT",
+  "description": "God mat. Mindre styr. Ukesmeny, oppskrifter, handleliste og pantry.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#fff4cf",
-  "theme_color": "#407946",
+  "background_color": "#FAFAF7",
+  "theme_color": "#8A9A8A",
   "icons": [
     {
       "src": "/icons/icon-192.png",

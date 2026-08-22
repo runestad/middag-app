@@ -3,22 +3,26 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Matplan</title>
-  <meta name="description" content="Ukesmeny, oppskrifter, handleliste og fryseroversikt." />
-  <link rel="manifest" href="manifest.webmanifest?v=28" />
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png?v=28" />
-  <link rel="icon" type="image/jpeg" href="favicon.jpeg?v=28" />
-  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=28" />
-  <meta name="theme-color" content="#f7f3ec" />
-  <link rel="stylesheet" href="styles.css?v=33" />
+  <title>SULT</title>
+  <meta name="description" content="SULT gjør ukesmeny, oppskrifter, handleliste og pantry enklere." />
+  <meta name="application-name" content="SULT" />
+  <meta name="apple-mobile-web-app-title" content="SULT" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <link rel="manifest" href="manifest.webmanifest?v=39" />
+  <link rel="icon" type="image/svg+xml" href="assets/sult-symbol-sage.svg?v=39" />
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png?v=39" />
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=39" />
+  <meta name="theme-color" content="#FAFAF7" />
+  <link rel="stylesheet" href="styles.css?v=39" />
 </head>
 <body>
   <header class="app-header">
     <div class="brand">
-      <span class="brand-mark" aria-hidden="true">M</span>
+      <img class="brand-mark" src="assets/sult-symbol-sage.svg" alt="" width="42" height="42" />
       <div>
-        <h1>Matplan</h1>
-        <p>God middag, uten mer styr.</p>
+        <h1 aria-label="SULT">SULT</h1>
+        <p>God mat. Mindre styr.</p>
       </div>
     </div>
     <div class="header-actions"><span id="liveStatus" class="live-status">● Live</span></div>
@@ -29,7 +33,8 @@
       <section class="screen-intro">
         <div class="section-title">
           <div>
-            <h2>Ukesmeny</h2>
+            <p class="eyebrow">Denne uka</p>
+            <h2>Hva skal vi spise?</h2>
             <p class="hint">Planlegg dagene slik det passer dere.</p>
           </div>
           <button id="resetPlanInlineBtn" class="ghost danger-subtle">Tøm planen</button>
@@ -112,7 +117,7 @@
             <p class="hint">Varierte forslag basert på filtre, Pantry og hva dere nylig har laget.</p>
           </div>
           <div class="inspiration-actions">
-            <button id="recipeSuggestionsBtn" class="primary" type="button">🎲 Få forslag</button>
+            <button id="recipeSuggestionsBtn" class="primary" type="button">Få forslag</button>
             <button id="surpriseRecipeBtn" class="ghost" type="button">Overrask meg</button>
           </div>
         </div>
@@ -252,12 +257,12 @@
   </main>
 
   <nav id="appBottomNav" class="app-bottom-nav">
-    <button type="button" class="nav-btn active" data-view="viewPlan" aria-label="Ukesmeny"><span class="nav-icon" aria-hidden="true">⌂</span><span>Ukesmeny</span></button>
-    <button type="button" class="nav-btn" data-view="viewShopping" aria-label="Handleliste"><span class="nav-icon" aria-hidden="true">✓</span><span>Handleliste</span></button>
-    <button type="button" class="nav-btn" data-view="viewRecipes" aria-label="Oppskrifter"><span class="nav-icon" aria-hidden="true">▤</span><span>Oppskrifter</span></button>
-    <button type="button" class="nav-btn" data-view="viewFreezer" aria-label="Fryser"><span class="nav-icon" aria-hidden="true">❄</span><span>Fryser</span></button>
-    <button type="button" class="nav-btn" data-view="viewPantry" aria-label="Pantry"><span class="nav-icon" aria-hidden="true">◫</span><span>Pantry</span></button>
-    <button type="button" class="nav-btn" data-view="viewRecovery" aria-label="Kildehelse"><span class="nav-icon" aria-hidden="true">↺</span><span>Kildehelse</span></button>
+    <button type="button" class="nav-btn active" data-view="viewPlan" aria-label="Uke"><svg class="nav-icon" aria-hidden="true"><use href="assets/sult-icons.svg#calendar" /></svg><span>Uke</span></button>
+    <button type="button" class="nav-btn" data-view="viewShopping" aria-label="Handleliste"><svg class="nav-icon" aria-hidden="true"><use href="assets/sult-icons.svg#checklist" /></svg><span>Handleliste</span></button>
+    <button type="button" class="nav-btn" data-view="viewRecipes" aria-label="Oppskrifter"><svg class="nav-icon" aria-hidden="true"><use href="assets/sult-icons.svg#book" /></svg><span>Oppskrifter</span></button>
+    <button type="button" class="nav-btn" data-view="viewFreezer" aria-label="Fryser"><svg class="nav-icon" aria-hidden="true"><use href="assets/sult-icons.svg#snow" /></svg><span>Fryser</span></button>
+    <button type="button" class="nav-btn" data-view="viewPantry" aria-label="Pantry"><svg class="nav-icon" aria-hidden="true"><use href="assets/sult-icons.svg#archive" /></svg><span>Pantry</span></button>
+    <button type="button" class="nav-btn" data-view="viewRecovery" aria-label="Kildehelse"><svg class="nav-icon" aria-hidden="true"><use href="assets/sult-icons.svg#refresh" /></svg><span>Kilder</span></button>
   </nav>
 
   <dialog id="importDialog">
@@ -515,6 +520,6 @@
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="data-safety.js?v=29"></script>
   <script src="serving-scaling.js?v=30"></script>
-  <script src="app.js?v=38"></script>
+  <script src="app.js?v=39"></script>
 </body>
 </html>

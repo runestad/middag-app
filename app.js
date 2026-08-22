@@ -1137,7 +1137,7 @@ function recipeHasIngredientsV23(r){
 }
 const oldHasRecipeV23 = typeof hasRecipe === "function" ? hasRecipe : null;
 hasRecipe = function(r){ return recipeHasIngredientsV23(r); }
-function statusTextV23(r){ return recipeHasIngredientsV23(r) ? "✅ Oppskrift funnet" : "⚠️ mangler ingredienser"; }
+function statusTextV23(r){ return recipeHasIngredientsV23(r) ? "Oppskrift klar" : "Mangler ingredienser"; }
 function statusClassV23(r){ return recipeHasIngredientsV23(r) ? "complete-recipe" : "missing-ingredients"; }
 
 function normalizeNorwegianTextV23(value){
@@ -1192,7 +1192,7 @@ openRecipeDetails = function(id){
   if(oldOpenRecipeDetailsV23) oldOpenRecipeDetailsV23(id);
   const r=recipeById(id);
   const body=$("recipeBody")||$("recipeDetailBody")||document.querySelector("#recipeDialog .dialog-form");
-  if(r&&body&&!recipeHasIngredientsV23(r)&&!body.querySelector(".recipe-health-panel")) body.insertAdjacentHTML("afterbegin",`<div class="recipe-health-panel">⚠️ Mangler ingredienser. Handlelisten blir ikke komplett før oppskriften repareres/AI-parses på nytt.</div>`);
+  if(r&&body&&!recipeHasIngredientsV23(r)&&!body.querySelector(".recipe-health-panel")) body.insertAdjacentHTML("afterbegin",`<div class="recipe-health-panel">Mangler ingredienser. Handlelisten blir ikke komplett før oppskriften repareres eller analyseres på nytt.</div>`);
 }
 const oldAddRecipeToDayV23 = window.addRecipeToDay;
 window.addRecipeToDay = function(day,id){
@@ -2481,7 +2481,7 @@ window.markCookedV28 = markCookedV28;
 
 function imageForRecipeV28(recipe) {
   const image = recipe?.image || recipe?.thumbnail || "";
-  return image ? `<img src="${escapeAttr(image)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('image-failed');this.remove()">` : `<span>${emojiForRecipe(recipe)}</span>`;
+  return image ? `<img src="${escapeAttr(image)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('image-failed');this.remove()">` : `<span aria-hidden="true"></span>`;
 }
 function captureVideoFrameV28(url) {
   return new Promise(resolve => {
@@ -2519,9 +2519,9 @@ function pantryStatusV28(recipe, detailed=false) {
   if (!result.total) return detailed ? "" : `<span class="pantry-status neutral">Pantry-status ukjent</span>`;
   const state=result.missing.length===0?"ready":result.missing.length<=2?"close":"missing";
   const label=result.missing.length===0?"Kan lages med det du har hjemme":`Mangler ${result.missing.length} ingrediens${result.missing.length===1?"":"er"}`;
-  if (!detailed) return `<span class="pantry-status ${state}">${state==="ready"?"🟢":state==="close"?"🟡":"🔴"} ${label}</span>`;
-  return `<details class="pantry-detail"><summary>${state==="ready"?"🟢":state==="close"?"🟡":"🔴"} ${label}</summary>
-    <div>${result.present.map(item=>`<p>✓ ${escapeHtml(item.item)}</p>`).join("")}${result.missing.map(item=>`<p>✗ ${escapeHtml(item.item)}</p>`).join("")}</div></details>`;
+  if (!detailed) return `<span class="pantry-status ${state}">${label}</span>`;
+  return `<details class="pantry-detail"><summary>${label}</summary>
+    <div>${result.present.map(item=>`<p>Har · ${escapeHtml(item.item)}</p>`).join("")}${result.missing.map(item=>`<p>Mangler · ${escapeHtml(item.item)}</p>`).join("")}</div></details>`;
 }
 
 function recipeFlagsV28(recipe) {
@@ -2569,7 +2569,7 @@ function recipeCardHtmlV28(recipe, scope="recipes") {
   const action=scope==="picker"?`openPickerPreview('${escapeAttr(recipe.id)}')`:`openRecipeDetails('${escapeAttr(recipe.id)}')`;
   return `<article class="recipe-card rich ${statusClassV23(recipe)}" onclick="${action}">
     <div class="recipe-thumb">${imageForRecipeV28(recipe)}</div><div class="recipe-card-copy">
-      <div class="recipe-topline"><strong>${escapeHtml(recipe.name)}</strong><button type="button" class="favorite-btn" aria-label="${isFavorite(recipe.id)?"Fjern fra favoritter":"Legg til i favoritter"}" onclick="event.stopPropagation();toggleFavorite('${escapeAttr(recipe.id)}')">${isFavorite(recipe.id)?"★":"☆"}</button></div>
+      <div class="recipe-topline"><strong>${escapeHtml(recipe.name)}</strong><button type="button" class="favorite-btn${isFavorite(recipe.id)?" active":""}" aria-label="${isFavorite(recipe.id)?"Fjern fra favoritter":"Legg til i favoritter"}" onclick="event.stopPropagation();toggleFavorite('${escapeAttr(recipe.id)}')"><svg class="favorite-icon" aria-hidden="true"><use href="assets/sult-icons.svg#heart" /></svg></button></div>
       <div class="recipe-meta">${escapeHtml(recipe.category||"Ukjent")} · ${statusTextV23(recipe)}${minutes?` · ${minutes} min`:""}${n.protein?` · ${n.protein} g protein`:""}</div>
       ${pantryStatusV28(recipe)}
       <div class="recipe-tags">${enrichTags(recipe).slice(0,4).map(tag=>`<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>
@@ -2595,13 +2595,13 @@ window.openRecipeDetails=function(id){
   const recipe=recipeById(id); if(!recipe)return;
   const sourceUrl=originalRecipeSourceUrlV31(recipe);
   const missingCentral=!recipeHasIngredientsV23(recipe)||!String(recipe.instructions||"").trim();
-  $("recipeDialogTitle").textContent=`${emojiForRecipe(recipe)} ${recipe.name}`;
+  $("recipeDialogTitle").textContent=recipe.name;
   $("recipeDialogBody").innerHTML=`${recipe.image?`<div class="recipe-hero-image"><img src="${escapeAttr(recipe.image)}" alt=""></div>`:""}
     ${missingCentral&&resolveRecipeSourceUrl(recipe)?`<section class="recovery-inline-card"><strong>Oppskriften kan være ufullstendig</strong><p>Du kan prøve å hente manglende innhold fra kilden. Ingenting lagres før du har sett over resultatet.</p><button type="button" class="primary" onclick="recoverRecipeFromUrlV28('${escapeAttr(recipe.id)}')">Prøv å hente på nytt</button></section>`:""}
     <p class="recipe-meta">${escapeHtml(recipe.category||"Ukjent")} · ${escapeHtml(recipe.source||"")} · brukt ${usageCount(recipe.id)}×</p>
     ${pantryStatusV28(recipe,true)}
-    <div class="inline-actions"><button type="button" class="favorite-btn" onclick="toggleFavorite('${escapeAttr(recipe.id)}')">${isFavorite(recipe.id)?"★ Favoritt":"☆ Favoritt"}</button>
-    <button type="button" class="primary" onclick="openAddToDay('${escapeAttr(recipe.id)}')">+ Legg til i ukesmeny</button>
+    <div class="inline-actions"><button type="button" class="favorite-btn${isFavorite(recipe.id)?" active":""}" aria-label="${isFavorite(recipe.id)?"Fjern fra favoritter":"Legg til i favoritter"}" onclick="toggleFavorite('${escapeAttr(recipe.id)}')"><svg class="favorite-icon" aria-hidden="true"><use href="assets/sult-icons.svg#heart" /></svg><span class="visually-hidden" aria-hidden="true">★ Favoritt</span></button>
+    <button type="button" class="primary" onclick="openAddToDay('${escapeAttr(recipe.id)}')">Legg til i planen</button>
     <button type="button" class="ghost" onclick="markCookedV28('${escapeAttr(recipe.id)}')">Marker som laget</button>
     <button type="button" class="ghost" onclick="addMissingIngredientsV28('${escapeAttr(recipe.id)}')">Legg kun til manglende ingredienser</button>
     <button type="button" class="ghost" onclick="openImport('${escapeAttr(recipe.id)}');$('recipeDialog').close()">Rediger</button>
@@ -2938,16 +2938,16 @@ renderDayItems=function(card,day){
   const box=card.querySelector(".day-items"),items=plan[day]||[];
   if(!items.length){box.innerHTML=`<div class="empty-state">Ingen retter lagt til.</div>`;return}
   box.innerHTML=items.map((item,index)=>{
-    if(item.type==="text")return`<div class="plan-item text-plan-item"><div><div class="plan-item-title">✍️ ${escapeHtml(item.text)}</div><div class="plan-item-meta">Manuell rett – legg varer manuelt i handlelisten</div></div><div class="plan-actions"><button class="mini-action" onclick="addManualDishToShopping('${escapeAttr(item.text)}')">+ varer</button><button class="remove-btn" onclick="removePlanItem('${escapeAttr(day)}',${index})">×</button></div></div>`;
+    if(item.type==="text")return`<div class="plan-item text-plan-item"><div><div class="plan-item-title">${escapeHtml(item.text)}</div><div class="plan-item-meta">Manuell rett – legg varer manuelt i handlelisten</div></div><div class="plan-actions"><button class="mini-action" onclick="addManualDishToShopping('${escapeAttr(item.text)}')">Legg til varer</button><button class="remove-btn" aria-label="Fjern ${escapeAttr(item.text)}" onclick="removePlanItem('${escapeAttr(day)}',${index})">×</button></div></div>`;
     const recipe=recipeById(item.recipeId);if(!recipe)return`<div class="plan-item missing-plan-item"><span>Oppskrift ikke funnet</span><button class="remove-btn" onclick="removePlanItem('${day}',${index})">×</button></div>`;
     const servings=plannedServingsV30(item,recipe);
-    return`<div class="plan-item ${hasRecipe(recipe)?"recipe-plan-item":"missing-plan-item"}"><div><div class="plan-item-title">${escapeHtml(emojiForRecipe(recipe)+" "+recipe.name)}</div><div class="plan-item-meta">${escapeHtml(recipe.category||"Ukjent")}${servings?` · ${formatServingsV30(servings)} porsjoner`:" · mangler porsjonsgrunnlag"}</div></div><div class="plan-serving-actions">${hasRecipe(recipe)?`<button class="mini-action" onclick="openRecipeDetails('${escapeAttr(recipe.id)}')">Se</button>`:`<button class="mini-action" onclick="openImport('${escapeAttr(recipe.id)}')">Legg inn</button>`}<button class="mini-action" onclick="editPlannedServingsV30('${escapeAttr(day)}',${index})">Endre porsjoner</button><button class="remove-btn" onclick="removePlanItem('${escapeAttr(day)}',${index})">×</button></div></div>`;
+    return`<div class="plan-item ${hasRecipe(recipe)?"recipe-plan-item":"missing-plan-item"}"><div><div class="plan-item-title">${escapeHtml(recipe.name)}</div><div class="plan-item-meta">${escapeHtml(recipe.category||"Ukjent")}${servings?` · ${formatServingsV30(servings)} porsjoner`:" · mangler porsjonsgrunnlag"}</div></div><div class="plan-serving-actions">${hasRecipe(recipe)?`<button class="mini-action" onclick="openRecipeDetails('${escapeAttr(recipe.id)}')">Se</button>`:`<button class="mini-action" onclick="openImport('${escapeAttr(recipe.id)}')">Legg inn</button>`}<button class="mini-action" onclick="editPlannedServingsV30('${escapeAttr(day)}',${index})">Endre porsjoner</button><button class="remove-btn" aria-label="Fjern ${escapeAttr(recipe.name)}" onclick="removePlanItem('${escapeAttr(day)}',${index})">×</button></div></div>`;
   }).join("");
 };
 renderWeekOverview=function(){
   const box=$("weekOverview");if(!box)return;
   box.innerHTML=selectedDays().map(day=>{const items=plan[day.key]||[];
-    const chips=items.length?items.map(item=>{if(item.type==="text")return`<span class="week-chip manual">✍️ ${escapeHtml(item.text)}</span>`;const recipe=recipeById(item.recipeId);if(!recipe)return`<span class="week-chip missing">Mangler</span>`;const servings=plannedServingsV30(item,recipe);return`<button class="week-chip${hasRecipe(recipe)?"":" missing"}" onclick="openRecipeDetails('${escapeAttr(recipe.id)}')">${emojiForRecipe(recipe)} ${escapeHtml(recipe.name)}${servings?` · ${formatServingsV30(servings)} p`:""}</button>`}).join(""):`<span class="hint">Ingen retter</span>`;
+    const chips=items.length?items.map(item=>{if(item.type==="text")return`<span class="week-chip manual">${escapeHtml(item.text)}</span>`;const recipe=recipeById(item.recipeId);if(!recipe)return`<span class="week-chip missing">Mangler</span>`;const servings=plannedServingsV30(item,recipe);return`<button class="week-chip${hasRecipe(recipe)?"":" missing"}" onclick="openRecipeDetails('${escapeAttr(recipe.id)}')">${escapeHtml(recipe.name)}${servings?` · ${formatServingsV30(servings)} p`:""}</button>`}).join(""):`<span class="hint">Ingen retter</span>`;
     return`<div class="week-overview-row"><div class="week-overview-day">${day.label}</div><div class="week-overview-items">${chips}</div></div>`}).join("");
 };
 
@@ -3053,11 +3053,12 @@ function renderRecipeHelpV35(){
   const section=$("recipeHelpSection"),list=$("recipeHelpList");if(!section||!list)return;
   const pending=recipes.map(recipe=>({recipe,health:recipeCompletenessV35(recipe)})).filter(item=>!item.health.complete);
   section.hidden=!pending.length;$("recipeHelpCount").textContent=String(pending.length);
-  list.innerHTML=pending.map(({recipe,health})=>`<article class="recipe-help-row">
-    ${imageForRecipeV28(recipe)?`<img src="${escapeAttr(imageForRecipeV28(recipe))}" alt="" loading="lazy">`:`<div class="recipe-help-placeholder">${emojiForRecipe(recipe)}</div>`}
+  const preview=pending.slice(0,6);
+  list.innerHTML=preview.map(({recipe,health})=>`<article class="recipe-help-row">
+    ${recipe.image||recipe.thumbnail?`<img src="${escapeAttr(recipe.image||recipe.thumbnail)}" alt="" loading="lazy">`:`<div class="recipe-help-placeholder" aria-hidden="true"></div>`}
     <div><strong>${escapeHtml(recipe.name)}</strong><p>Mangler ${escapeHtml(health.missing.join(" og "))} · ${escapeHtml(recipeSourceStateV35(recipe))}</p></div>
     <div class="recipe-help-actions"><button type="button" class="ghost" onclick="retryRecipeHelpV35('${escapeAttr(recipe.id)}')">Prøv igjen</button>${originalRecipeSourceUrlV31(recipe)?`<a class="button-link ghost" href="${escapeAttr(originalRecipeSourceUrlV31(recipe))}" target="_blank" rel="noopener">Åpne kilde</a>`:""}<button type="button" class="primary" onclick="openImport('${escapeAttr(recipe.id)}')">Rediger</button></div>
-  </article>`).join("");
+  </article>`).join("")+ (pending.length>preview.length?`<div class="recipe-help-footer"><p class="hint">Viser ${preview.length} av ${pending.length} oppskrifter som trenger hjelp.</p><button type="button" class="ghost" onclick="showView('viewRecovery')">Se alle under Kilder</button></div>`:"");
 }
 window.retryRecipeHelpV35=function(id){const recipe=recipeById(id);if(!recipe)return;openImport(id);const url=originalRecipeSourceUrlV31(recipe);if(url)autoFetchRecipeUrlV27(url,true)};
 const PANTRY_EXCLUDES_V35=/\b(kylling|svin|storfe|biff|kjøtt|laks|torsk|sei|reker|fisk|fløte|melk|salat|avokado)\b/i;
