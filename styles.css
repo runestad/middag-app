@@ -676,3 +676,4 @@ dialog::backdrop { background: rgba(29,35,29,.38); backdrop-filter: blur(5px); }
   .picker-toolbar { grid-template-columns:1fr; }
   #appBottomNav .nav-btn { min-width:48px; }
 }
+.recipe-help-list{display:grid;gap:10px}.recipe-help-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px;border:1px solid var(--border,#ddd);border-radius:14px}.recipe-help-row img,.recipe-help-placeholder{width:52px;height:52px;border-radius:10px;object-fit:cover;display:grid;place-items:center;background:#f3eee5;font-size:24px}.recipe-help-row p{margin:4px 0 0;color:var(--muted,#666);font-size:.9rem}.recipe-help-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.button-link{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}@media(max-width:680px){.recipe-help-row{grid-template-columns:auto 1fr}.recipe-help-actions{grid-column:1/-1}.recipe-help-actions>*{flex:1}}

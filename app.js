@@ -3038,4 +3038,34 @@ window.openPantrySetupV34=openPantrySetupV34;
 const bindAllBeforeV34=bindAll;
 bindAll=function(){bindAllBeforeV34();$("startUrlImportBtn")?.addEventListener("click",startFocusedImportV34);$("newRecipeUrl")?.addEventListener("input",refreshDuplicateWarningV34);$("newRecipeUrl")?.addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();startFocusedImportV34()}});$("startPantrySetupBtn")?.addEventListener("click",openPantrySetupV34);$("pantrySetupNo")?.addEventListener("click",advancePantrySetupV34);$("pantrySetupSkip")?.addEventListener("click",advancePantrySetupV34);$("pantrySetupYes")?.addEventListener("click",()=>{pantrySetupAddingV34=true;renderPantrySetupV34()});$("pantrySetupSaveYes")?.addEventListener("click",savePantrySetupYesV34);$("pantrySetupBack")?.addEventListener("click",()=>{pantrySetupIndexV34=Math.max(0,pantrySetupIndexV34-1);pantrySetupAddingV34=false;renderPantrySetupV34()});$("pantrySetupFinish")?.addEventListener("click",()=>$("pantrySetupDialog")?.close());$("pantrySetupMinus")?.addEventListener("click",()=>{$("pantrySetupAmount").value=Math.max(0,(Number($("pantrySetupAmount").value)||1)-1)});$("pantrySetupPlus")?.addEventListener("click",()=>{$("pantrySetupAmount").value=(Number($("pantrySetupAmount").value)||0)+1})};
 
+/* ===== v35: stored-data review queue and library-aware Pantry suggestions ===== */
+function recipeCompletenessV35(recipe){
+  const ingredients=ingredientsToText(recipe).split(/\n/).map(value=>value.trim()).filter(Boolean);
+  const instructionSource=Array.isArray(recipe?.structuredInstructions)&&recipe.structuredInstructions.length
+    ?recipe.structuredInstructions.map(value=>typeof value==="object"?(value.text||value.name||""):value).join("\n")
+    :instructionsToText(recipe);
+  const instructions=instructionSource.split(/\n/).map(value=>value.trim()).filter(Boolean);
+  const missing=[];if(!ingredients.length)missing.push("ingredienser");if(!instructions.length)missing.push("fremgangsmåte");
+  return{complete:!missing.length,missing,ingredientCount:ingredients.length,instructionCount:instructions.length};
+}
+function recipeSourceStateV35(recipe){const url=originalRecipeSourceUrlV31(recipe);if(!url)return"Ingen kilde";try{const host=new URL(url).hostname;return/instagram|tiktok/.test(host)?"Sosial kilde lagret":"Kilde lagret"}catch(error){return"Lenken må rettes"}}
+function renderRecipeHelpV35(){
+  const section=$("recipeHelpSection"),list=$("recipeHelpList");if(!section||!list)return;
+  const pending=recipes.map(recipe=>({recipe,health:recipeCompletenessV35(recipe)})).filter(item=>!item.health.complete);
+  section.hidden=!pending.length;$("recipeHelpCount").textContent=String(pending.length);
+  list.innerHTML=pending.map(({recipe,health})=>`<article class="recipe-help-row">
+    ${imageForRecipeV28(recipe)?`<img src="${escapeAttr(imageForRecipeV28(recipe))}" alt="" loading="lazy">`:`<div class="recipe-help-placeholder">${emojiForRecipe(recipe)}</div>`}
+    <div><strong>${escapeHtml(recipe.name)}</strong><p>Mangler ${escapeHtml(health.missing.join(" og "))} · ${escapeHtml(recipeSourceStateV35(recipe))}</p></div>
+    <div class="recipe-help-actions"><button type="button" class="ghost" onclick="retryRecipeHelpV35('${escapeAttr(recipe.id)}')">Prøv igjen</button>${originalRecipeSourceUrlV31(recipe)?`<a class="button-link ghost" href="${escapeAttr(originalRecipeSourceUrlV31(recipe))}" target="_blank" rel="noopener">Åpne kilde</a>`:""}<button type="button" class="primary" onclick="openImport('${escapeAttr(recipe.id)}')">Rediger</button></div>
+  </article>`).join("");
+}
+window.retryRecipeHelpV35=function(id){const recipe=recipeById(id);if(!recipe)return;openImport(id);const url=originalRecipeSourceUrlV31(recipe);if(url)autoFetchRecipeUrlV27(url,true)};
+const PANTRY_EXCLUDES_V35=/\b(kylling|svin|storfe|biff|kjøtt|laks|torsk|sei|reker|fisk|fløte|melk|salat|avokado)\b/i;
+function pantryCandidatesV35(){const counts=new Map(),examples=new Map(),owned=new Set((appMeta.pantryItems||[]).map(item=>pantryKeyV28(item.name))),dismissed=new Set(appMeta.dismissedPantrySuggestions||[]);for(const recipe of recipes){if(!recipeCompletenessV35(recipe).complete)continue;for(const row of ingredientObjectsV28(recipe)){const name=normalizeIngredientName(row.item||row.name||row.original||"").trim(),key=pantryKeyV28(name);if(!key||owned.has(key)||dismissed.has(key)||PANTRY_EXCLUDES_V35.test(key)||key.length<3)continue;counts.set(key,(counts.get(key)||0)+1);if(!examples.has(key))examples.set(key,name)}}return[...counts].filter(([,count])=>count>=3).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([key,count])=>({key,count,name:examples.get(key)}))}
+function renderPantrySuggestionsV35(){const box=$("pantryLibrarySuggestions");if(!box)return;const items=pantryCandidatesV35();box.innerHTML=items.length?items.map(item=>`<article class="recipe-help-row"><div><strong>${escapeHtml(item.name)}</strong><p>Du bruker dette i ${item.count} oppskrifter. Har du vanligvis dette hjemme?</p></div><div class="recipe-help-actions"><button type="button" class="ghost" onclick="dismissPantrySuggestionV35('${escapeAttr(item.key)}')">Nei</button><button type="button" class="primary" onclick="acceptPantrySuggestionV35('${escapeAttr(item.name)}')">Ja</button></div></article>`).join(""):`<p class="hint">Ingen flere tydelige forslag akkurat nå.</p>`}
+window.dismissPantrySuggestionV35=function(key){appMeta.dismissedPantrySuggestions=appMeta.dismissedPantrySuggestions||[];appMeta.dismissedPantrySuggestions.push(key);savePlan();renderPantrySuggestionsV35()};
+window.acceptPantrySuggestionV35=function(name){ensureMetaV28();appMeta.pantryItems.push({id:`pantry-${Date.now()}`,name,quantity:"",unit:"",zone:"pantry",always:false});savePlan();renderPantryV28();renderRecipeResults()};
+const renderRecipeResultsBeforeV35=renderRecipeResults;renderRecipeResults=function(){renderRecipeResultsBeforeV35();renderRecipeHelpV35();renderPantrySuggestionsV35()};
+const renderPantryBeforeV35=renderPantryV28;renderPantryV28=function(){renderPantryBeforeV35();renderPantrySuggestionsV35()};
+
 init();

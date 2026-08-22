@@ -118,6 +118,13 @@
         </div>
         <div id="recipeSuggestions" class="recipe-suggestions" aria-live="polite"></div>
       </section>
+      <section class="card" id="recipeHelpSection" hidden>
+        <div class="section-title">
+          <div><h2>Oppskrifter som trenger hjelp</h2><p class="hint">Bare oppskrifter som mangler ingredienser eller fremgangsmåte.</p></div>
+          <span id="recipeHelpCount" class="pill">0</span>
+        </div>
+        <div id="recipeHelpList" class="recipe-help-list"></div>
+      </section>
       <section class="card">
         <div class="section-title">
           <h2>Oppskrifter</h2>
@@ -179,6 +186,10 @@
           <span id="pantryCount" class="pill">0 varer</span>
         </div>
         <div id="pantryList" class="pantry-list"></div>
+      </section>
+      <section class="card">
+        <div class="section-title"><div><h2>Forslag fra oppskriftene dine</h2><p class="hint">Valgfritt – basert på ingredienser du bruker ofte.</p></div></div>
+        <div id="pantryLibrarySuggestions" class="recipe-help-list"></div>
       </section>
     </section>
 
@@ -504,6 +515,6 @@
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="data-safety.js?v=29"></script>
   <script src="serving-scaling.js?v=30"></script>
-  <script src="app.js?v=32"></script>
+  <script src="app.js?v=37"></script>
 </body>
 </html>
