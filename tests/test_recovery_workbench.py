@@ -21,7 +21,14 @@ class RecoveryWorkbenchTests(unittest.TestCase):
         rendered = MODULE.workbench_html([])
         self.assertIn("read-only", rendered)
         self.assertNotIn("/api/save-recipe", rendered)
-        self.assertNotIn("method:'PATCH'", rendered)
+
+    def test_recovery_patch_only_fills_empty_fields(self):
+        current = {"name": "Keep", "link": "https://example.com/r", "ingredientsText": "", "instructions": ""}
+        patch = {"ingredientsText": "1 løk\n2 gulrøtter", "instructions": "1. Kutt.\n2. Kok.", "recoveryProvenance": {"method": "source"}}
+        merged = MODULE.validate_recovery_patch(current, patch)
+        self.assertEqual(merged["name"], "Keep")
+        with self.assertRaisesRegex(ValueError, "already contains"):
+            MODULE.validate_recovery_patch({**current, "ingredientsText": "brukerdata"}, patch)
 
 
 if __name__ == "__main__": unittest.main()
