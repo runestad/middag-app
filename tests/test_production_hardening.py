@@ -8,6 +8,9 @@ from api.recipe_import import (assess_import_quality, choose_resolved_url,
 
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+FETCH_SPEC = importlib.util.spec_from_file_location("api.fetch_recipe_test", ROOT / "api" / "fetch-recipe.py")
+FETCH = importlib.util.module_from_spec(FETCH_SPEC)
+FETCH_SPEC.loader.exec_module(FETCH)
 
 
 class ProductionHardeningTests(unittest.TestCase):
@@ -40,6 +43,14 @@ class ProductionHardeningTests(unittest.TestCase):
         quality = assess_import_quality({"ingredientLines": ["1 løk"], "instructionSteps": ["x" * 1700]})
         self.assertEqual(quality["status"], "INCOMPLETE")
         self.assertIn("malformed_instructions", quality["issues"])
+
+    def test_nextjs_escaped_recipe_json_ld_is_recognized(self):
+        source = '<script>{\\"@context\\":\\"https://schema.org\\",\\"@type\\":\\"Recipe\\",\\"name\\":\\"Soup\\",\\"recipeIngredient\\":[\\"1 onion\\"]}</script>'
+        recipes = FETCH.json_ld_recipes(source)
+        self.assertEqual(recipes[0]["name"], "Soup")
+
+    def test_redirect_handler_supports_308(self):
+        self.assertTrue(callable(FETCH.PublicRedirectHandler.http_error_308))
 
     def test_ui_has_focused_import_and_resumable_pantry(self):
         html = (ROOT / "index.html").read_text(encoding="utf-8")

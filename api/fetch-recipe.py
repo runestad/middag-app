@@ -31,6 +31,11 @@ class PublicRedirectHandler(urllib.request.HTTPRedirectHandler):
         validate_public_url(new_url)
         return super().redirect_request(request, file_pointer, code, message, headers, new_url)
 
+    # Python versions used by some Vercel/local runtimes do not consistently
+    # include 308 in HTTPRedirectHandler's default redirect set.
+    def http_error_308(self, request, file_pointer, code, message, headers):
+        return self.http_error_302(request, file_pointer, 302, message, headers)
+
 
 def fetch_text(url):
     validate_public_url(url)
@@ -133,6 +138,33 @@ def json_ld_recipes(html):
                 graph = item.get("@graph")
                 if isinstance(graph, list):
                     stack.extend(graph)
+    # Next.js may serialize JSON-LD inside React flight data as one escaped JSON
+    # string rather than a literal <script> body. Recover balanced objects.
+    marker = r'{\"@context\":\"https://schema.org\"'
+    start = 0
+    while True:
+        begin = html.find(marker, start)
+        if begin < 0:
+            break
+        depth = 0
+        end = begin
+        while end < len(html):
+            if html[end] == "{": depth += 1
+            elif html[end] == "}":
+                depth -= 1
+                if depth == 0:
+                    end += 1
+                    break
+            end += 1
+        try:
+            item = json.loads('"' + html[begin:end].replace('"', '\\"').replace('\\\\"', '\\"') + '"')
+            item = json.loads(item)
+            types = item.get("@type") if isinstance(item, dict) else None
+            if types == "Recipe" or isinstance(types, list) and "Recipe" in types:
+                found.append(item)
+        except (ValueError, TypeError):
+            pass
+        start = max(end, begin + len(marker))
     return found
 
 
