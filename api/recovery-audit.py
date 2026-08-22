@@ -73,28 +73,31 @@ def build_audit(recipes):
     }
 
 
-def production_recipes():
+def production_rows():
     query = urllib.parse.urlencode({"app_id": "eq." + APP_ID, "select": "*", "order": "name.asc", "limit": "5000"})
-    return [row_to_recipe(row) for row in (supabase_request("GET", "recipes", query=query) or [])]
+    return supabase_request("GET", "recipes", query=query) or []
 
 
-def audit_html(audit):
+def audit_html(audit, backup_rows=None):
     payload = json.dumps(audit, ensure_ascii=False).replace("</", "<\\/")
+    backup = json.dumps(backup_rows or [], ensure_ascii=False).replace("</", "<\\/")
     summary = {key: value for key, value in audit.items() if key != "items"}
     return """<!doctype html><html lang=\"no\"><meta charset=\"utf-8\"><title>Recipe recovery audit</title>
 <body><h1>Recipe recovery audit</h1><pre id=\"summary\">{summary}</pre>
-<script id=\"recipe-audit-data\" type=\"application/json\">{payload}</script></body></html>""".format(
-        summary=html.escape(json.dumps(summary, ensure_ascii=False, indent=2)), payload=payload
+<script id=\"recipe-audit-data\" type=\"application/json\">{payload}</script>
+<script id=\"recipe-backup-data\" type=\"application/json\">{backup}</script></body></html>""".format(
+        summary=html.escape(json.dumps(summary, ensure_ascii=False, indent=2)), payload=payload, backup=backup
     )
 
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
-            audit = build_audit(production_recipes())
+            rows = production_rows()
+            audit = build_audit([row_to_recipe(row) for row in rows])
             if "format=json" in self.path:
                 return send_json(self, {"ok": True, "audit": audit})
-            body = audit_html(audit).encode("utf-8")
+            body = audit_html(audit, rows if "backup=1" in self.path else None).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Cache-Control", "no-store")

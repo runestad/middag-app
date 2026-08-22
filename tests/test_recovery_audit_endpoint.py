@@ -33,6 +33,13 @@ class RecoveryAuditEndpointTests(unittest.TestCase):
         embedded = rendered.split('type="application/json">', 1)[1].split("</script>", 1)[0]
         self.assertEqual(json.loads(embedded)["items"][0]["title"], "Try </script>")
 
+    def test_backup_rows_are_only_embedded_when_supplied(self):
+        audit = MODULE.build_audit([])
+        row = {"id": "1", "data": {"name": "Original"}}
+        rendered = MODULE.audit_html(audit, [row])
+        embedded = rendered.split('id="recipe-backup-data" type="application/json">', 1)[1].split("</script>", 1)[0]
+        self.assertEqual(json.loads(embedded), [row])
+
 
 if __name__ == "__main__":
     unittest.main()
