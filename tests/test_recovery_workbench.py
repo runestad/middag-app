@@ -3,7 +3,7 @@ import pathlib
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-SPEC = importlib.util.spec_from_file_location("api.recovery_workbench", ROOT / "api" / "recovery-workbench.py")
+SPEC = importlib.util.spec_from_file_location("api.recovery_workbench", ROOT / "api" / "recovery-audit.py")
 MODULE = importlib.util.module_from_spec(SPEC); SPEC.loader.exec_module(MODULE)
 
 
