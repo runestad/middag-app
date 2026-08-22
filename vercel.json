@@ -1,6 +1,9 @@
 {
   "version": 2,
   "functions": {
+    "api/recipes.py": {
+      "includeFiles": "recipe-media-manifest.json"
+    },
     "api/recovery.py": {
       "includeFiles": "recovery-manifest.json"
     }

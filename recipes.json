@@ -12,7 +12,10 @@
     "status": "Fullført fra caption",
     "manualCheck": "Nei",
     "comment": "Registrert manuelt fra caption sendt i chat.",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/1.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DTatNb6gL6M/?igsh=ZWkyaXpvYXh6NjVk"
   },
   {
     "id": 2,
@@ -27,7 +30,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/2.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DO_SxfxDWRD/?igsh=MzJhcnJ0azR4bXV0"
   },
   {
     "id": 3,
@@ -42,7 +48,10 @@
     "status": "Fullført fra caption",
     "manualCheck": "Nei",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/3.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DI0h_ZcRp36/?igsh=MWlkNXUxeDhjcmFsMw=="
   },
   {
     "id": 4,
@@ -57,7 +66,10 @@
     "status": "Fullført fra caption",
     "manualCheck": "Nei",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/4.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DNGw756RfIV/?igsh=MTNteXA3cTNocTNmNw=="
   },
   {
     "id": 5,
@@ -72,7 +84,10 @@
     "status": "Fullført fra caption",
     "manualCheck": "Nei",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/5.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DKP3YWPO8UO/?igsh=bzZnMHpuaXY5NXg0"
   },
   {
     "id": 6,
@@ -87,7 +102,10 @@
     "status": "Fullført fra caption",
     "manualCheck": "Nei",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/6.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DMNlTjjIOpu/?igsh=MTc1bmd6cTYyZG1tdA=="
   },
   {
     "id": 7,
@@ -102,7 +120,10 @@
     "status": "Fullført fra caption",
     "manualCheck": "Nei",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/7.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DAk8dsoJb-3/?igsh=MWRicjd6aWh1Y3Nrbw=="
   },
   {
     "id": 8,
@@ -117,7 +138,10 @@
     "status": "Fullført fra caption",
     "manualCheck": "Nei",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/8.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGdRA7xQt/"
   },
   {
     "id": 9,
@@ -132,7 +156,10 @@
     "status": "Fullført fra caption",
     "manualCheck": "Nei",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/9.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DBRXo8ToltZ/?igsh=MWhja2R2d3ZlMnlzNw=="
   },
   {
     "id": 10,
@@ -147,7 +174,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/10.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DA3yHVhN2BS/?igsh=aDg0MW9zM2h5NnR1"
   },
   {
     "id": 11,
@@ -162,7 +192,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/11.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DAtbG8YC0Ud/?igsh=MW51MWs0ZWdwdHIxNw=="
   },
   {
     "id": 12,
@@ -177,7 +210,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/12.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C8n3IQrJnJ5/?igsh=MWJ3MWtwYnZmcHlrdw=="
   },
   {
     "id": 13,
@@ -192,7 +228,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/13.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGegygD2U/"
   },
   {
     "id": 14,
@@ -207,7 +246,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/14.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C4yesREqihB/?igsh=anp6am05aWF5bGN1"
   },
   {
     "id": 15,
@@ -237,7 +279,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/16.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C308SLVuwy_/?igsh=Y2FvdTJwemdqdzIx"
   },
   {
     "id": 17,
@@ -252,7 +297,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/17.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGeAXYMVS/"
   },
   {
     "id": 18,
@@ -267,7 +315,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/18.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C3VS5e9r10F/?igsh=MWdhNGk4aDJuY3lrdw=="
   },
   {
     "id": 19,
@@ -282,7 +333,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/19.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C20iQHdqZtT/?igsh=MWw0dzBteHhqanNmcQ=="
   },
   {
     "id": 20,
@@ -297,7 +351,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/20.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C244u7PK3Ve/?igsh=YXNxNHMwdXlsMnEx"
   },
   {
     "id": 21,
@@ -312,7 +369,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/21.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C12MnhFMVcT/?igsh=MWdxcnIzb3p0am00eA=="
   },
   {
     "id": 22,
@@ -327,7 +387,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/22.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C1Ui-v0gNiZ/?igsh=ZGdubGYzcnB3bmw="
   },
   {
     "id": 23,
@@ -342,7 +405,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/23.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/Cy-vnuWLDPF/?igshid=ZDE1MWVjZGVmZQ=="
   },
   {
     "id": 24,
@@ -357,7 +423,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/24.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CyB1zwhoIrD/?igshid=ZDE1MWVjZGVmZQ=="
   },
   {
     "id": 25,
@@ -372,7 +441,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/25.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CzWPhqUJtqa/?igshid=ZDE1MWVjZGVmZQ=="
   },
   {
     "id": 26,
@@ -387,7 +459,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/26.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGJo6qd2x/"
   },
   {
     "id": 27,
@@ -402,7 +477,10 @@
     "status": "Fullført fra åpen nettside",
     "manualCheck": "Nei",
     "comment": "Kilde: Hungry Happens. Topping kan gjøres vegetarisk.",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/27.jpg",
+    "imageRecoveryMethod": "source-metadata",
+    "imageSourceUrl": "https://hungryhappens.net/broccoli-crust-pizza-low-carb-gluten-free/"
   },
   {
     "id": 28,
@@ -417,7 +495,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/28.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/Cyvxvh1IUzb/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 29,
@@ -500,7 +581,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/30.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CyJalWzoFhP/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 31,
@@ -515,7 +599,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/31.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGeMLupnr/"
   },
   {
     "id": 32,
@@ -530,7 +617,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/32.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CxWOLO7Iya9/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 33,
@@ -545,7 +635,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/33.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGJWEBK7r/"
   },
   {
     "id": 34,
@@ -560,7 +653,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/34.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CwYI3E1raYZ/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 35,
@@ -575,7 +671,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/35.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CwU4XZFJUdl/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 36,
@@ -590,7 +689,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/36.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZNewTTS4J/"
   },
   {
     "id": 37,
@@ -605,7 +707,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/37.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CvxAxlqtPa8/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 38,
@@ -620,7 +725,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/38.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CvcroGaoEmX/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 39,
@@ -635,7 +743,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/39.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/Ct6iK8WpJy4/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 40,
@@ -650,7 +761,10 @@
     "status": "Delvis fra åpen nettside",
     "manualCheck": "Ja – Linda Stuhaug-siden var bare delvis lesbar; åpne originalen og kontroller full ingrediensliste.",
     "comment": "Kilde forsøkt: Linda Stuhaug. Kun utdrag var lesbart.",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/40.jpg",
+    "imageRecoveryMethod": "source-metadata",
+    "imageSourceUrl": "https://lindastuhaug.no/alt-i-ett-indisk-gryte-med-poteter-kikerter-spinat"
   },
   {
     "id": 41,
@@ -665,7 +779,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/41.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CsRnilbIwK2/?igshid=MTE4NWJlcWsyam80"
   },
   {
     "id": 42,
@@ -680,7 +797,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/42.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CjYTVcAK4zS/?igshid=MTc4MmM1YmI2Ng=="
   },
   {
     "id": 43,
@@ -695,7 +815,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/43.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGJQhpUPb/"
   },
   {
     "id": 44,
@@ -710,7 +833,10 @@
     "status": "Fullført fra åpen nettside",
     "manualCheck": "Nei",
     "comment": "Kilde: Myriad Recipes.",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/44.jpg",
+    "imageRecoveryMethod": "source-metadata",
+    "imageSourceUrl": "https://myriadrecipes.com/sticky-ginger-aubergine/"
   },
   {
     "id": 45,
@@ -725,7 +851,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/45.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGJQ6PqFY/"
   },
   {
     "id": 46,
@@ -740,7 +869,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/46.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGJXoEMDA/"
   },
   {
     "id": 47,
@@ -755,7 +887,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/47.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CuUcpC2JJNM/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 48,
@@ -770,7 +905,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/48.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/Ctg7KNqqM2q/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 49,
@@ -785,7 +923,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/49.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/Cqa_kSepbnU/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 50,
@@ -800,7 +941,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/50.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CsRg4dzrnNW/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 51,
@@ -815,7 +959,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/51.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CsRZwmNoSKo/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 52,
@@ -830,7 +977,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/52.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CsTbZrPpbFL/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 53,
@@ -845,7 +995,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/53.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/Crz56lbO35E/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 54,
@@ -860,7 +1013,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/54.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/Cqa3Mu0jw2d/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 55,
@@ -890,7 +1046,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/56.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CqLkLFKKTE1/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 57,
@@ -905,7 +1064,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/57.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CqGI96qKTzP/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 58,
@@ -935,7 +1097,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/59.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CpAJWegBfnQ/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 60,
@@ -950,7 +1115,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/60.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/Coo-gAZhrZ5/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 61,
@@ -965,7 +1133,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/61.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/p/CoPvbTfrGt0/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 62,
@@ -980,7 +1151,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/62.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CobupvnAeOk/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 63,
@@ -995,7 +1169,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/63.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/Cn4myT4K-2w/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 64,
@@ -1010,7 +1187,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/64.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/p/Cm31KP_Sbu9/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 65,
@@ -1040,7 +1220,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/66.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CnG2zrFKhBB/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 67,
@@ -1055,7 +1238,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/67.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/Cmqz8A2ImUS/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 68,
@@ -1070,7 +1256,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/68.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CkyR1ZHqabx/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 69,
@@ -1085,7 +1274,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/69.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CjVoQEOKZqB/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 70,
@@ -1100,7 +1292,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/70.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CjibqF8JQ9m/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 71,
@@ -1115,7 +1310,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/71.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/p/BsVquZ-BzzQ/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 72,
@@ -1130,7 +1328,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/72.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CjXxO2nJG-7/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 73,
@@ -1145,7 +1346,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/73.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/ChHlFVIpplJ/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 74,
@@ -1160,7 +1364,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/74.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/Cb7vxvyqspb/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 75,
@@ -1175,7 +1382,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/75.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CcYHuRFpX-J/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 76,
@@ -1190,7 +1400,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/76.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CbYDvFTKf_M/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 77,
@@ -1220,7 +1433,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/78.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CbD-bNbIVw6/?igshid=YmM0MjE2YWMzOA="
   },
   {
     "id": 79,
@@ -1235,7 +1451,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/79.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CX_RkBps9AN/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 80,
@@ -1311,7 +1530,10 @@
         "raw": "gressløk til topping",
         "category": ""
       }
-    ]
+    ],
+    "image": "/assets/recipe-media/80.jpg",
+    "imageRecoveryMethod": "source-metadata",
+    "imageSourceUrl": "https://oda.com/no/recipes/2980-oda-chili-sin-carne/"
   },
   {
     "id": 81,
@@ -1403,7 +1625,10 @@
         "raw": "kalamataoliven",
         "category": ""
       }
-    ]
+    ],
+    "image": "/assets/recipe-media/81.jpg",
+    "imageRecoveryMethod": "source-metadata",
+    "imageSourceUrl": "https://oda.com/no/recipes/1339-elin-larsen-elinlarsen-net-tourlou-gresk-vegetarmiddag/"
   },
   {
     "id": 82,
@@ -1418,7 +1643,10 @@
     "status": "Fullført fra åpen nettside",
     "manualCheck": "Nei",
     "comment": "Kilde: Oda.",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/82.jpg",
+    "imageRecoveryMethod": "source-metadata",
+    "imageSourceUrl": "https://oda.com/no/recipes/3009-silje-feiring-minipizza-med-spro-gronnsaker-og-kremet-avokado/"
   },
   {
     "id": 83,
@@ -1433,7 +1661,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/83.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGJ4UcWCm/"
   },
   {
     "id": 84,
@@ -1448,7 +1679,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/84.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CtIJQdHA3Al/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 85,
@@ -1463,7 +1697,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/85.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CtbqO5CuzkU/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 86,
@@ -1478,7 +1715,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/86.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/p/CTWazktqeIX/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 87,
@@ -1493,7 +1733,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/87.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/p/B0oairQH5WY/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 88,
@@ -1508,7 +1751,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/88.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/p/BYtIEUxAb3V/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 89,
@@ -1523,7 +1769,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/89.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/p/B-U0upOAqTJ/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 90,
@@ -1538,7 +1787,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/90.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/Cvmga89vMHD/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 91,
@@ -1553,7 +1805,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/91.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CtoYa3JA4w9/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 92,
@@ -1568,7 +1823,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – reel/post krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/92.jpg",
+    "imageRecoveryMethod": "source-metadata",
+    "imageSourceUrl": "https://www.facebook.com/reel/220936860908258?fs=e&s=TIeQ9V"
   },
   {
     "id": 93,
@@ -1583,7 +1841,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/93.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGerXQ8Pb/"
   },
   {
     "id": 94,
@@ -1598,7 +1859,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/94.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DZBCkT3Me0w/?igsh=MTE1OTNjOTBpNHdrMQ=="
   },
   {
     "id": 95,
@@ -1613,7 +1877,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/95.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DYwfYOyOMwl/?igsh=MWR3d3R3NWowNG13Zg=="
   },
   {
     "id": 96,
@@ -1628,7 +1895,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/96.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DU1GEauj1cf/?igsh=NHNqYzlwOTIyNGRi"
   },
   {
     "id": 97,
@@ -1643,7 +1913,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/97.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DVCHVlRko1Q/?igsh=MXBzeWNkZnp6aHMybg=="
   },
   {
     "id": 98,
@@ -1658,7 +1931,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/98.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DUD2TlTEc8B/?igsh=MTF4cTk4bWtvdzJnOA=="
   },
   {
     "id": 99,
@@ -1673,7 +1949,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/99.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DRKQDqAEQun/?igsh=MWRxcDRueXl5dTNkYQ=="
   },
   {
     "id": 100,
@@ -1688,7 +1967,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/100.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DKTwLXVqEcJ/?igsh=MXd3NGU0MDNwMnZwNg=="
   },
   {
     "id": 101,
@@ -1703,7 +1985,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/101.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C_52bufyDQV/?igsh=MTZjZmJ1dHJxaDRpbQ=="
   },
   {
     "id": 102,
@@ -1718,7 +2003,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/102.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGe7nPWJL/"
   },
   {
     "id": 103,
@@ -1733,7 +2021,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/103.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C7RhlKgvGN_/?igsh=MWY2NnN2YzRmcXpvbA=="
   },
   {
     "id": 104,
@@ -1748,7 +2039,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/104.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C5d9fYBo5hg/?igsh=MWQxcG9pMnZ5NXk0bA=="
   },
   {
     "id": 105,
@@ -1763,7 +2057,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/105.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C2zao6SSlIK/?igsh=MTIxOXMzdjZnMWJ5dw=="
   },
   {
     "id": 106,
@@ -1778,7 +2075,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/106.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C3k6n-7KRU4/?igsh=ZGg1OGc2NWw4cTBs"
   },
   {
     "id": 107,
@@ -1793,7 +2093,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/107.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CxnzjF5KSgW/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 108,
@@ -1808,7 +2111,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/108.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CvdV_PcOfZE/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 109,
@@ -1823,7 +2129,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/109.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CuhsvCQOD89/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 110,
@@ -1838,7 +2147,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/110.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CuXM7crI5V_/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 111,
@@ -1853,7 +2165,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/111.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CtGzspKNqqJ/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 112,
@@ -1883,7 +2198,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/113.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/Cs10nZdpLAE/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 114,
@@ -1898,7 +2216,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/114.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CeepDQuAEdL/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 115,
@@ -1913,7 +2234,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/115.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/Cjn04hdKErs/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 116,
@@ -1928,7 +2252,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/116.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CuzDNgzo7x3/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 117,
@@ -1943,7 +2270,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/117.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CrzczE-gSPE/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 118,
@@ -1958,7 +2288,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/118.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CuHg6DkK3NF/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 119,
@@ -1973,7 +2306,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/119.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/p/CKdrJfYsfmo/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 120,
@@ -1988,7 +2324,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/120.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CteS2CfMeSk/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 121,
@@ -2003,7 +2342,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/121.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/Csq6b30qkAG/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 122,
@@ -2018,7 +2360,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/122.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CtPmWDNBoRj/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 123,
@@ -2033,7 +2378,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – reel/post krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/123.jpg",
+    "imageRecoveryMethod": "source-metadata",
+    "imageSourceUrl": "https://www.facebook.com/reel/289458736896269?fs=e&s=TIeQ9V"
   },
   {
     "id": 124,
@@ -2048,7 +2396,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – reel/post krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/124.jpg",
+    "imageRecoveryMethod": "source-metadata",
+    "imageSourceUrl": "https://www.facebook.com/reel/1668223763618762?fs=e&s=TIeQ9V"
   },
   {
     "id": 125,
@@ -2063,7 +2414,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/125.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CvGGYx7t7VM/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 126,
@@ -2078,7 +2432,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/126.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CorHyr7PHFx/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 127,
@@ -2093,7 +2450,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – reel/post krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/127.jpg",
+    "imageRecoveryMethod": "source-metadata",
+    "imageSourceUrl": "https://www.facebook.com/reel/587803316551938?fs=e&s=TIeQ9V"
   },
   {
     "id": 128,
@@ -2108,7 +2468,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/128.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CrQtansuYXM/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 129,
@@ -2138,7 +2501,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/130.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZNdXW1xYe/"
   },
   {
     "id": 131,
@@ -2153,7 +2519,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/131.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGebmohx7/"
   },
   {
     "id": 132,
@@ -2213,7 +2582,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/135.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CztoMNZKIcn/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 136,
@@ -2228,7 +2600,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/136.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CzO_gAmKpDG/?igshid=d2h5NDk2aTRzNnN0"
   },
   {
     "id": 137,
@@ -2243,7 +2618,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/137.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/Cu4tulCr46X/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 138,
@@ -2258,7 +2636,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/138.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CtoARTJI2mT/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 139,
@@ -2273,7 +2654,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/139.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGJVRLxB2/"
   },
   {
     "id": 140,
@@ -2288,7 +2672,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/140.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/p/CR4Pmr0lrKH/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 141,
@@ -2303,7 +2690,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/141.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/p/Cr5rlTqpeNw/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 142,
@@ -2318,7 +2708,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/142.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CnxCmRPr8x0/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 143,
@@ -2333,7 +2726,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/143.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/Ct5wwSVKpOR/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 144,
@@ -2348,7 +2744,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/144.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CvFbNj9Nwt4/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 145,
@@ -2363,7 +2762,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – reel/post krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/145.jpg",
+    "imageRecoveryMethod": "source-metadata",
+    "imageSourceUrl": "https://www.facebook.com/reel/953913142425062?fs=e&s=TIeQ9V"
   },
   {
     "id": 146,
@@ -2378,7 +2780,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/146.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CoH33AGjS4E/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 147,
@@ -2393,7 +2798,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/147.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/ClgNVYhItjb/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 148,
@@ -2408,7 +2816,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/148.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/Cu4Lnz_NbqX/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 149,
@@ -2423,7 +2834,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/149.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/Ct9kt_GIiXO/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 150,
@@ -2438,7 +2852,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/150.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DXUqhIZols3/?igsh=N3lsMHRwaTFrcG5p"
   },
   {
     "id": 151,
@@ -2453,7 +2870,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/151.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DV87WTXiPQS/?igsh=MTNsazBuYmFtaXZvcw=="
   },
   {
     "id": 152,
@@ -2468,7 +2888,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/152.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DH9Y9NghRhF/?igsh=ZHA2enIwMG56dmUy"
   },
   {
     "id": 153,
@@ -2483,7 +2906,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/153.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C_doIV5IWgu/?igsh=eHZpMjc1emZ4ZzBx"
   },
   {
     "id": 154,
@@ -2498,7 +2924,10 @@
     "status": "Fullført fra åpen nettside",
     "manualCheck": "Nei",
     "comment": "Kilde: Godt.no.",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/154.jpg",
+    "imageRecoveryMethod": "source-metadata",
+    "imageSourceUrl": "https://www.godt.no/oppskrifter/pasta/nudler/9042/nudler-med-smaksrik-kjoettdeig"
   },
   {
     "id": 155,
@@ -2513,7 +2942,10 @@
     "status": "Fullført fra åpen nettside",
     "manualCheck": "Nei",
     "comment": "Kilde: Delish.",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/155.jpg",
+    "imageRecoveryMethod": "source-metadata",
+    "imageSourceUrl": "https://www.delish.com/cooking/recipe-ideas/a25658737/easy-kale-sausage-white-bean-soup-recipe/"
   },
   {
     "id": 156,
@@ -2528,7 +2960,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/156.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C5Ons2Ms0Zv/?igsh=bXNibnQxNWF6azh0"
   },
   {
     "id": 157,
@@ -2543,7 +2978,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/157.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C3lIRsgtFao/?igsh=amg0ZnBsazJ2bGF0"
   },
   {
     "id": 158,
@@ -2558,7 +2996,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/158.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C2QIHgarI_k/?igsh=MTlxaW1kMGQxcHVwaw=="
   },
   {
     "id": 159,
@@ -2573,7 +3014,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/159.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CxoDcmmvHsu/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 160,
@@ -2588,7 +3032,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/160.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CuPceuCKzOb/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 161,
@@ -2603,7 +3050,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/161.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CtzLB3XuCvk/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 162,
@@ -2618,7 +3068,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/162.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CqamHPeujuU/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 163,
@@ -2633,7 +3086,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/163.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CstfAv5oui4/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 164,
@@ -2648,7 +3104,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/164.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGdd4RJVg/"
   },
   {
     "id": 165,
@@ -2678,7 +3137,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/166.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZNdR2PLmF/"
   },
   {
     "id": 167,
@@ -2693,7 +3155,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/167.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZNRCo65FH/"
   },
   {
     "id": 168,
@@ -2708,7 +3173,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/168.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DWhjhb_kzCH/?igsh=YzQ3djRscjhxbmpx"
   },
   {
     "id": 169,
@@ -2723,7 +3191,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/169.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DU2n7UWiUnC/?igsh=MW1ocHVjOXN5aGxwYg=="
   },
   {
     "id": 170,
@@ -2738,7 +3209,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/170.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZNRrvX64S/"
   },
   {
     "id": 171,
@@ -2753,7 +3227,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/171.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DPolJ__DEGw/?igsh=eTRhY2NyZDlhZzM3"
   },
   {
     "id": 172,
@@ -2768,7 +3245,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/172.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DOnzS2NDUWG/?igsh=MWEwMnBrdmtobG9qag=="
   },
   {
     "id": 173,
@@ -2783,7 +3263,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/173.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DQE8oY1CDsJ/?igsh=MTltOGptcm9tdXJ3OQ=="
   },
   {
     "id": 174,
@@ -2798,7 +3281,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/174.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DPwT0EICjpf/?igsh=MWFtaWJ3eW0zcW94ag=="
   },
   {
     "id": 175,
@@ -2813,7 +3299,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/175.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DP1wA7rjZuc/?igsh=d3E2cjVwZjZsdGEy"
   },
   {
     "id": 176,
@@ -2828,7 +3317,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/176.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DNLsp02Imcz/?igsh=MTRoY2dsb3lpYzkzbg=="
   },
   {
     "id": 177,
@@ -2843,7 +3335,10 @@
     "status": "Delvis fra åpen nettside",
     "manualCheck": "Ja – frukt.no-siden viste fremgangsmåte, mens ingredienslisten var ufullstendig i webuttrekk; supplert fra søketreff.",
     "comment": "Kilde: Frukt.no + søkeutdrag fra Frukt.no/Instagram.",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/177.jpg",
+    "imageRecoveryMethod": "source-metadata",
+    "imageSourceUrl": "https://www.frukt.no/oppskrifter/tray-bake-fajitas3/"
   },
   {
     "id": 178,
@@ -2858,7 +3353,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/178.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DHJf1tApjAw/?igsh=amVtdHJraHBlMXA2"
   },
   {
     "id": 179,
@@ -2873,7 +3371,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/179.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DDNWBx1SSms/?igsh=cGZ4c3d0ajR2MGR2"
   },
   {
     "id": 180,
@@ -2888,7 +3389,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/180.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGdYqapmh/"
   },
   {
     "id": 181,
@@ -2903,7 +3407,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/181.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C-5uVMEor8X/?igsh=MTFxNHFjMXd4bzBscg=="
   },
   {
     "id": 182,
@@ -2918,7 +3425,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/182.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C7iawwIpD84/?igsh=aDBkaXdzc296OWl5"
   },
   {
     "id": 183,
@@ -2948,7 +3458,10 @@
     "status": "Fullført fra åpen nettside",
     "manualCheck": "Nei",
     "comment": "Kilde: Hungry Happens.",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/184.jpg",
+    "imageRecoveryMethod": "source-metadata",
+    "imageSourceUrl": "https://hungryhappens.net/one-pan-chicken-and-cabbage/"
   },
   {
     "id": 185,
@@ -2963,7 +3476,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/185.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C2z4YFNM9KH/?igsh=bTlmczgyYWIwcncw"
   },
   {
     "id": 186,
@@ -2978,7 +3494,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/186.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CzGCInGNvje/?igshid=ZDE1MWVjZGVmZQ=="
   },
   {
     "id": 187,
@@ -2993,7 +3512,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/187.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CyQw6hYMMta/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 188,
@@ -3008,7 +3530,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/188.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/Cybku7wupL2/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 189,
@@ -3023,7 +3548,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/189.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CupD0HIInse/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 190,
@@ -3038,7 +3566,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/190.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/Cvtx4ivqSsO/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 191,
@@ -3053,7 +3584,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/191.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CuEPtx8s7uL/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 192,
@@ -3068,7 +3602,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/192.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CvU0plDA8nt/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 193,
@@ -3083,7 +3620,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/193.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CvX9Ujet4bD/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 194,
@@ -3098,7 +3638,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/194.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CqS1dyNrD3s/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 195,
@@ -3113,7 +3656,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/195.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/Cp-SP4GDRp4/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 196,
@@ -3128,7 +3674,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/196.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/p/CnOym58sIbp/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 197,
@@ -3143,7 +3692,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/197.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CqlF1ckAXfg/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 198,
@@ -3158,7 +3710,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/198.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CuPEkn8o-Rr/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 199,
@@ -3173,7 +3728,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – reel/post krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/199.jpg",
+    "imageRecoveryMethod": "source-metadata",
+    "imageSourceUrl": "https://www.facebook.com/reel/759153032880480?fs=e&s=TIeQ9V"
   },
   {
     "id": 200,
@@ -3188,7 +3746,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/200.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CrYFkRsOBzz/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 201,
@@ -3218,7 +3779,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/202.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/p/CSIAG5ohR5m/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 203,
@@ -3248,7 +3812,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/204.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CuJ7oVUIYiW/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 205,
@@ -3278,7 +3845,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/206.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C-3KtFmy6P9/?igsh=MWdqb3FvYmF0ZTc1cg=="
   },
   {
     "id": 207,
@@ -3293,7 +3863,10 @@
     "status": "Fullført fra åpen nettside",
     "manualCheck": "Nei",
     "comment": "Kilde: One Balanced Life.",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/207.jpg",
+    "imageRecoveryMethod": "source-metadata",
+    "imageSourceUrl": "https://onebalancedlife.com/spicy-shrimp-bowls-2/"
   },
   {
     "id": 208,
@@ -3308,7 +3881,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/208.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CumYLhQAyMC/?igshid=MzRlODBiNWFlZA=="
   },
   {
     "id": 209,
@@ -3323,7 +3899,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/209.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CoufCsdvhkh/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 210,
@@ -3338,7 +3917,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/210.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CppHl-6oLL2/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 211,
@@ -3353,7 +3935,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/211.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/CiKqWQKj0GI/?igshid=YmM0MjE2YWMzOA=="
   },
   {
     "id": 212,
@@ -3368,7 +3953,10 @@
     "status": "Fullført fra åpen nettside",
     "manualCheck": "Nei",
     "comment": "Kilde: REMA 1000.",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/212.jpg",
+    "imageRecoveryMethod": "source-metadata",
+    "imageSourceUrl": "https://www.rema.no/oppskrifter/skalldyr/blaskjell/fransk-fiskesuppe-bouillabaisse/"
   },
   {
     "id": 213,
@@ -3398,7 +3986,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/214.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGekKfLSf/"
   },
   {
     "id": 215,
@@ -3413,7 +4004,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/215.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGekK5EwP/"
   },
   {
     "id": 216,
@@ -3428,7 +4022,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/216.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGeBmBy7Y/"
   },
   {
     "id": 217,
@@ -3443,7 +4040,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/217.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGeAYojqd/"
   },
   {
     "id": 218,
@@ -3458,7 +4058,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/218.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGeAD2VJP/"
   },
   {
     "id": 219,
@@ -3473,7 +4076,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/219.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C47gVTtvaYj/?igsh=bm54dnpzZWFodWF6"
   },
   {
     "id": 220,
@@ -3488,7 +4094,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/220.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C4OEpdrIJiX/?igsh=bTVnaWdxMWRkdzEw"
   },
   {
     "id": 221,
@@ -3503,7 +4112,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – webfetch blokkert/ustabil. Åpne reel/caption og kopier ingrediensene.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/221.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/C3vjMzSOIFW/?igsh=MTZwcDRpd2d0OG5kbQ=="
   },
   {
     "id": 222,
@@ -3518,7 +4130,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/222.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGem345TC/"
   },
   {
     "id": 223,
@@ -3533,7 +4148,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/223.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGebmK2oo/"
   },
   {
     "id": 224,
@@ -3548,7 +4166,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/224.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGeb4RjNM/"
   },
   {
     "id": 225,
@@ -3563,7 +4184,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/225.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZGegW4Rj9"
   },
   {
     "id": 226,
@@ -3578,7 +4202,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/226.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZNeowPv3X/"
   },
   {
     "id": 227,
@@ -3593,7 +4220,10 @@
     "status": "Delvis fra åpen nettside",
     "manualCheck": "Ja – Gladkokken ga 502 ved åpning; kun søkeutdrag var lesbart.",
     "comment": "Delvis hentet fra søkeutdrag. Må kontrolleres manuelt.",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/227.jpg",
+    "imageRecoveryMethod": "source-metadata",
+    "imageSourceUrl": "https://gladkokken.no/oppskrifter/r%C3%B8dk%C3%A5l-ribbe-jul-k%C3%A5l-hjemmelaget-tradisjonsmat"
   },
   {
     "id": 228,
@@ -3608,7 +4238,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/228.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://vm.tiktok.com/ZNdbsyhqL/"
   },
   {
     "id": 229,
@@ -3623,7 +4256,10 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – original Instagram Reel krever gjenoppretting.",
     "comment": "Gjenopprettet fra original oppskriftsliste 2026-08-22.",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/229.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DY5aSADv-CJ/?igsh=NXEzeWg3cG43OHJ6"
   },
   {
     "id": 230,
@@ -3638,6 +4274,9 @@
     "status": "Må sjekkes manuelt",
     "manualCheck": "Ja – original Instagram Reel krever gjenoppretting.",
     "comment": "Gjenopprettet fra original oppskriftsliste 2026-08-22.",
-    "ingredientLines": []
+    "ingredientLines": [],
+    "image": "/assets/recipe-media/230.jpg",
+    "imageRecoveryMethod": "video-social-thumbnail",
+    "imageSourceUrl": "https://www.instagram.com/reel/DZS9sxXP1Ru/?igsh=dWFjcjQwbmZudnhm"
   }
 ]

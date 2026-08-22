@@ -182,6 +182,13 @@ def extract(url):
             pass
 
     html, content_type, resolved = fetch_text(url)
+    if "tiktok.com" in host and resolved != url:
+        try:
+            result = tiktok_oembed(resolved)
+            result.update({"resolvedUrl": safe_resolved_source_url(url, resolved), "sourceType": "TikTok", "method": "oembed-resolved-shortlink"})
+            return result
+        except Exception:
+            pass
     if "json" in content_type:
         return {"resolvedUrl": safe_resolved_source_url(url, resolved), "caption": html, "sourceType": "Web", "method": "json"}
     recipes = json_ld_recipes(html)

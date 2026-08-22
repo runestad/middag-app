@@ -84,6 +84,16 @@ class RecoverySystemTests(unittest.TestCase):
         self.assertIn("1 gul løk", parser_input)
         self.assertIn("Kok opp.", parser_input)
 
+    def test_tiktok_shortlink_thumbnail_keeps_original_source(self):
+        original = "https://vm.tiktok.com/ABC123/"
+        canonical = "https://www.tiktok.com/@cook/video/123456"
+        with patch.object(FETCH_MODULE, "tiktok_oembed", side_effect=[RuntimeError("shortlink"), {"image": "https://cdn.example/exact.jpg", "resolvedUrl": canonical}]), \
+             patch.object(FETCH_MODULE, "fetch_text", return_value=("<html></html>", "text/html", canonical)):
+            result = FETCH_MODULE.extract(original)
+        self.assertEqual(result["image"], "https://cdn.example/exact.jpg")
+        self.assertEqual(result["resolvedUrl"], canonical)
+        self.assertEqual(result["method"], "oembed-resolved-shortlink")
+
     def test_recovered_high_items_are_removed_from_queue(self):
         javascript = (ROOT / "app.js").read_text(encoding="utf-8")
         self.assertIn("function highQueueV27()", javascript)

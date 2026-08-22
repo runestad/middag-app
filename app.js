@@ -98,7 +98,7 @@ const oldGenerateShoppingList=generateShoppingList;
 generateShoppingList=function(){const raw=[];for(const d of selectedDays()){const day=d.key;for(const item of(plan[day]||[])){if(item.type==="text")continue;const r=recipeById(item.recipeId);if(!r||!hasRecipe(r))continue;for(const line of extractIngredientLines(r))raw.push({text:line,category:categorize(line),recipe:r.name,done:false})}}shoppingItems=typeof mergeShoppingItems==="function"?mergeShoppingItems(raw):raw;renderShoppingList(shoppingItems);savePlan();showView("viewShopping")}
 function defaultFreezerItems(){const raw=[["edamame",1,"pk","Grønnsaker"],["rødkål",1,"pose","Grønnsaker"],["frosne bringebær",1,"pose","Frukt/smoothie"],["smoothieblanding mango ananas banan",1,"pose","Frukt/smoothie"],["acai smoothie",1,"pose","Frukt/smoothie"],["paibunner",4,"stk","Bakst"],["erter",4,"poser","Grønnsaker"],["ørretfilet",4,"stk","Fisk"],["søtpotetfries",1,"pose","Grønnsaker"],["broccoli wings",1,"pose","Vegetar"],["lobnobs",4,"pk","Annet"],["granateplekjerner",1,"pk","Frukt/smoothie"],["div skinke",8,"pk","Kjøtt"],["karbonadedeig",12,"pk","Kjøtt"],["kokt scampi",2,"pk","Fisk"],["glutenfritt brød",2.5,"stk","Bakst"],["4-pk kyllingfilet",6,"pk","Kylling"],["3-pk kyllingfilet",3,"pk","Kylling"],["ytrefilet svin 700g",3,"stk","Kjøtt"],["5-pakning kyllinglårfilet",2,"stk","Kylling"],["3-pakning bacon",2,"stk","Kjøtt"],["kylling gyoza",1,"pk","Kylling"],["kylling dumplings",1,"pk","Kylling"],["kyllingboller 2,5 kg",1,"pk","Kylling"],["flintsteak",9,"stk","Kjøtt"],["pork brisket 800g",1,"stk","Kjøtt"],["ytrefilet svin urte/hvitløksmarinert 1kg",1,"stk","Kjøtt"],["veggisfarse 1 kg",2,"pk","Vegetar"],["hvitløksmarinert koteletter",1,"pk","Kjøtt"],["pepper og ramsløk kotelett",1,"pk","Kjøtt"],["kalkunfilet 937g",1,"stk","Kjøtt"]];return raw.map((x,i)=>({id:`freezer-${i+1}`,name:x[0],qty:x[1],unit:x[2],category:x[3],updatedAt:new Date().toISOString()}))}
 function renderFreezer(){const box=$("freezerList");if(!box)return;const groups={};for(const item of freezerItems){if(Number(item.qty)<=0)continue;(groups[item.category||"Annet"] ||= []).push(item)}box.innerHTML=Object.keys(groups).sort().map(cat=>`<div class="freezer-category"><h3>${cat}</h3>${groups[cat].map(freezerItemHtml).join("")}</div>`).join("")||`<p class="hint">Fryseren er tom.</p>`}
-function freezerItemHtml(item){return`<div class="freezer-item"><div><div class="freezer-name">${escapeHtml(item.name)}</div><div class="freezer-meta">${escapeHtml(item.category||"Annet")} · ${escapeHtml(item.unit||"stk")}</div></div><div class="freezer-controls"><button onclick="changeFreezerQty('${item.id}',-1)">−</button><span class="freezer-qty">${item.qty}</span><button onclick="changeFreezerQty('${item.id}',1)">+</button><button class="remove-btn" onclick="removeFreezerItem('${item.id}')">×</button></div></div>`}
+function freezerItemHtml(item){const name=escapeHtml(item.name),id=escapeAttr(item.id),unit=String(item.unit||"").trim();return`<article class="freezer-item"><div class="freezer-item-copy"><div class="freezer-name">${name}</div>${unit?`<div class="freezer-meta">${escapeHtml(unit)}</div>`:""}</div><div class="freezer-item-actions"><div class="freezer-stepper" aria-label="Antall ${name}"><button type="button" aria-label="Reduser ${name}" onclick="changeFreezerQty('${id}',-1)">−</button><output class="freezer-qty" aria-live="polite">${item.qty}</output><button type="button" aria-label="Øk ${name}" onclick="changeFreezerQty('${id}',1)">+</button></div><button type="button" class="freezer-remove" aria-label="Fjern ${name}" onclick="removeFreezerItem('${id}')"><svg aria-hidden="true"><use href="assets/sult-icons.svg#trash" /></svg></button></div></article>`}
 window.changeFreezerQty=function(id,delta){const item=freezerItems.find(x=>x.id===id);if(!item)return;item.qty=Math.max(0,Number(item.qty||0)+delta);savePlan();renderFreezer()}
 window.removeFreezerItem=function(id){freezerItems=freezerItems.filter(x=>x.id!==id);savePlan();renderFreezer()}
 function addFreezerItem(){const name=prompt("Hva vil du legge til i fryseren?");if(!name||!name.trim())return;const qty=Number(prompt("Antall?","1")||1);const unit=prompt("Enhet? f.eks. pk, pose, stk","stk")||"stk";freezerItems.push({id:`freezer-${Date.now()}`,name:name.trim(),qty:qty||1,unit,category:guessFreezerCategory(name),updatedAt:new Date().toISOString()});savePlan();renderFreezer()}
@@ -126,9 +126,16 @@ fillDaySelectorsV20=function(){
   updateDateLabels();
 }
 updateDateLabels=function(){
-  if($("startDateLabel"))$("startDateLabel").textContent=formatDateLabel($("startDate")?.value);
-  if($("endDateLabel"))$("endDateLabel").textContent=formatDateLabel($("endDate")?.value);
+  const start=$("startDate")?.value,end=$("endDate")?.value;
+  if(start)$("startDate").setAttribute("aria-label",`Fra ${formatDateLabel(start)}`);
+  if(end)$("endDate").setAttribute("aria-label",`Til ${formatDateLabel(end)}`);
 }
+function dayHeadingV39(iso){
+  const date=parseLocalDate(iso),days=selectedDays(),crossesYears=days.some(day=>parseLocalDate(day.key).getFullYear()!==date.getFullYear());
+  const options={weekday:"long",day:"numeric",month:"short",...(crossesYears?{year:"numeric"}:{})};
+  return capitalize(new Intl.DateTimeFormat("nb-NO",options).format(date).replace(/\.$/,""));
+}
+function isTodayV39(iso){return iso===toISODateLocal(new Date())}
 selectedDays=function(){
   const a=$("startDate")?.value,b=$("endDate")?.value;
   if(!a||!b)return[];
@@ -184,8 +191,8 @@ createDayRows=function(){
   c.innerHTML="";
   for(const d of days){
     const day=d.key;
-    const card=document.createElement("div");card.className="day-row day-card-v16";
-    card.innerHTML=`<div class="day-head-v16"><h3>${d.label}</h3><button type="button" class="ghost" data-picker="${day}">+ Oppskrift</button></div><input class="day-text-input" data-free="${day}" placeholder="Skriv rett manuelt, f.eks. Grillmat"><div class="day-actions-row"><button type="button" class="ghost" data-addtext="${day}">+ Legg til tekstrett</button><button type="button" class="ghost" data-clear="${day}">Tøm dag</button></div><div class="day-items"></div>`;
+    const card=document.createElement("section");card.className=`day-row day-card-v16${isTodayV39(day)?" is-today":""}`;
+    card.innerHTML=`<div class="day-head-v16"><div class="day-heading"><h3>${dayHeadingV39(day)}</h3>${isTodayV39(day)?`<span class="today-label">I dag</span>`:""}</div><button type="button" class="ghost" data-picker="${day}">Legg til oppskrift</button></div><div class="day-manual-row"><input class="day-text-input" data-free="${day}" placeholder="Skriv rett manuelt, f.eks. grillmat"><button type="button" class="ghost" data-addtext="${day}">Legg til</button></div><div class="day-items"></div><button type="button" class="text-button danger-subtle day-clear" data-clear="${day}">Tøm dag</button>`;
     c.appendChild(card);
     card.querySelector("[data-picker]").addEventListener("click",()=>openRecipePicker(day));
     card.querySelector("[data-addtext]").addEventListener("click",()=>addFreeTextToDay(day,card.querySelector("[data-free]").value));
@@ -196,7 +203,7 @@ createDayRows=function(){
 }
 renderDayItems=function(card,day){
   const box=card.querySelector(".day-items"),items=plan[day]||[];
-  if(!items.length){box.innerHTML=`<div class="empty-state">Ingen retter lagt til.</div>`;return}
+  if(!items.length){box.innerHTML=`<div class="empty-state day-empty-state">Ingen retter lagt til.</div>`;return}
   box.innerHTML=items.map((item,idx)=>{
     if(item.type==="text")return`<div class="plan-item text-plan-item"><div><div class="plan-item-title">✍️ ${escapeHtml(item.text)}</div><div class="plan-item-meta">Manuell rett – legg varer manuelt i handlelisten</div></div><div class="plan-actions"><button type="button" class="mini-action" onclick="addManualDishToShopping('${escapeAttr(item.text)}')">+ varer</button><button type="button" class="remove-btn" onclick="removePlanItem('${day}',${idx})">×</button></div></div>`;
     const r=recipeById(item.recipeId);
@@ -499,7 +506,7 @@ function renderUseFirstCard(){
     const order=["Fisk","Kylling","Kjøtt","Vegetar","Grønnsaker","Bakst","Frukt/smoothie","Annet"];
     return order.indexOf(a.category||"Annet")-order.indexOf(b.category||"Annet") || Number(b.qty)-Number(a.qty);
   }).slice(0,6);
-  box.innerHTML=`<div class="use-first-card"><h3>⚠️ Bruk opp dette først</h3><div class="use-first-list">${priority.map(x=>`<span class="use-first-chip">${escapeHtml(x.qty+" "+(x.unit||"stk")+" "+x.name)}</span>`).join("")}</div></div>`;
+  box.innerHTML=`<div class="use-first-card"><h3>Bruk opp dette først</h3><div class="use-first-list">${priority.map(x=>`<span class="use-first-chip">${escapeHtml(x.qty+" "+(x.unit||"stk")+" "+x.name)}</span>`).join("")}</div></div>`;
 }
 function renderFreezerRecipeSuggestions(){
   const box=$("freezerRecipeSuggestions"); if(!box)return;
@@ -2479,9 +2486,17 @@ function markCookedV28(id, silent=false, dateValue=new Date().toISOString()) {
 }
 window.markCookedV28 = markCookedV28;
 
+function recipeImageV39(recipe){
+  const boxes=[recipe,recipe?.data,recipe?.metadata,recipe?.sourceMetadata,recipe?.importMetadata,recipe?.recoveryMetadata].filter(value=>value&&typeof value==="object");
+  const fields=["image","imageUrl","thumbnail","thumbnailUrl","poster","posterUrl","sourceImage","videoThumbnail","sourceScreenshot"];
+  for(const box of boxes)for(const field of fields){const value=box[field];if(typeof value==="string"&&/^(https?:\/\/|data:image\/|\/assets\/)/i.test(value.trim()))return value.trim()}
+  const media=boxes.flatMap(box=>Array.isArray(box.media)?box.media:box.media?[box.media]:[]);
+  for(const item of media){const value=typeof item==="string"?item:item?.url||item?.thumbnailUrl||item?.posterUrl;if(typeof value==="string"&&/^(https?:\/\/|data:image\/|\/assets\/)/i.test(value.trim()))return value.trim()}
+  return"";
+}
 function imageForRecipeV28(recipe) {
-  const image = recipe?.image || recipe?.thumbnail || "";
-  return image ? `<img src="${escapeAttr(image)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('image-failed');this.remove()">` : `<span aria-hidden="true"></span>`;
+  const image = recipeImageV39(recipe);
+  return image ? `<img src="${escapeAttr(image)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('image-failed');this.remove()">` : `<img class="recipe-placeholder-symbol" src="assets/sult-symbol-mono.svg" alt="" aria-hidden="true">`;
 }
 function captureVideoFrameV28(url) {
   return new Promise(resolve => {
@@ -2596,7 +2611,8 @@ window.openRecipeDetails=function(id){
   const sourceUrl=originalRecipeSourceUrlV31(recipe);
   const missingCentral=!recipeHasIngredientsV23(recipe)||!String(recipe.instructions||"").trim();
   $("recipeDialogTitle").textContent=recipe.name;
-  $("recipeDialogBody").innerHTML=`${recipe.image?`<div class="recipe-hero-image"><img src="${escapeAttr(recipe.image)}" alt=""></div>`:""}
+  const detailImage=recipeImageV39(recipe);
+  $("recipeDialogBody").innerHTML=`${detailImage?`<div class="recipe-hero-image"><img src="${escapeAttr(detailImage)}" alt=""></div>`:""}
     ${missingCentral&&resolveRecipeSourceUrl(recipe)?`<section class="recovery-inline-card"><strong>Oppskriften kan være ufullstendig</strong><p>Du kan prøve å hente manglende innhold fra kilden. Ingenting lagres før du har sett over resultatet.</p><button type="button" class="primary" onclick="recoverRecipeFromUrlV28('${escapeAttr(recipe.id)}')">Prøv å hente på nytt</button></section>`:""}
     <p class="recipe-meta">${escapeHtml(recipe.category||"Ukjent")} · ${escapeHtml(recipe.source||"")} · brukt ${usageCount(recipe.id)}×</p>
     ${pantryStatusV28(recipe,true)}
@@ -2936,7 +2952,7 @@ confirmAddToDay=function(){
 
 renderDayItems=function(card,day){
   const box=card.querySelector(".day-items"),items=plan[day]||[];
-  if(!items.length){box.innerHTML=`<div class="empty-state">Ingen retter lagt til.</div>`;return}
+  if(!items.length){box.innerHTML=`<div class="empty-state day-empty-state">Ingen retter lagt til.</div>`;return}
   box.innerHTML=items.map((item,index)=>{
     if(item.type==="text")return`<div class="plan-item text-plan-item"><div><div class="plan-item-title">${escapeHtml(item.text)}</div><div class="plan-item-meta">Manuell rett – legg varer manuelt i handlelisten</div></div><div class="plan-actions"><button class="mini-action" onclick="addManualDishToShopping('${escapeAttr(item.text)}')">Legg til varer</button><button class="remove-btn" aria-label="Fjern ${escapeAttr(item.text)}" onclick="removePlanItem('${escapeAttr(day)}',${index})">×</button></div></div>`;
     const recipe=recipeById(item.recipeId);if(!recipe)return`<div class="plan-item missing-plan-item"><span>Oppskrift ikke funnet</span><button class="remove-btn" onclick="removePlanItem('${day}',${index})">×</button></div>`;
@@ -3055,7 +3071,7 @@ function renderRecipeHelpV35(){
   section.hidden=!pending.length;$("recipeHelpCount").textContent=String(pending.length);
   const preview=pending.slice(0,6);
   list.innerHTML=preview.map(({recipe,health})=>`<article class="recipe-help-row">
-    ${recipe.image||recipe.thumbnail?`<img src="${escapeAttr(recipe.image||recipe.thumbnail)}" alt="" loading="lazy">`:`<div class="recipe-help-placeholder" aria-hidden="true"></div>`}
+    ${recipeImageV39(recipe)?`<img src="${escapeAttr(recipeImageV39(recipe))}" alt="" loading="lazy">`:`<div class="recipe-help-placeholder" aria-hidden="true"><img src="assets/sult-symbol-mono.svg" alt=""></div>`}
     <div><strong>${escapeHtml(recipe.name)}</strong><p>Mangler ${escapeHtml(health.missing.join(" og "))} · ${escapeHtml(recipeSourceStateV35(recipe))}</p></div>
     <div class="recipe-help-actions"><button type="button" class="ghost" onclick="retryRecipeHelpV35('${escapeAttr(recipe.id)}')">Prøv igjen</button>${originalRecipeSourceUrlV31(recipe)?`<a class="button-link ghost" href="${escapeAttr(originalRecipeSourceUrlV31(recipe))}" target="_blank" rel="noopener">Åpne kilde</a>`:""}<button type="button" class="primary" onclick="openImport('${escapeAttr(recipe.id)}')">Rediger</button></div>
   </article>`).join("")+ (pending.length>preview.length?`<div class="recipe-help-footer"><p class="hint">Viser ${preview.length} av ${pending.length} oppskrifter som trenger hjelp.</p><button type="button" class="ghost" onclick="showView('viewRecovery')">Se alle under Kilder</button></div>`:"");
