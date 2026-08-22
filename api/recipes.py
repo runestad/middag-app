@@ -19,12 +19,15 @@ def recipe_source_urls(recipe):
 
 
 def add_verified_media(recipe, manifest):
-    if any(recipe.get(key) for key in ("image", "thumbnail")):
-        return recipe
     entry = manifest.get(str(recipe.get("id", "")))
     if not entry or entry.get("sourceUrl") not in recipe_source_urls(recipe):
         return recipe
-    return {**recipe, "image": entry.get("image", ""), "imageRecoveryMethod": entry.get("method", ""), "imageSourceUrl": entry.get("sourceUrl", "")}
+    verified = entry.get("image", "")
+    if not any(recipe.get(key) for key in ("image", "thumbnail")):
+        return {**recipe, "image": verified, "imageRecoveryMethod": entry.get("method", ""), "imageSourceUrl": entry.get("sourceUrl", "")}
+    # Preserve an existing preferred image, but always expose the verified local
+    # source-aware asset so the renderer can recover from a failed remote URL.
+    return {**recipe, "verifiedFallbackImage": verified}
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):

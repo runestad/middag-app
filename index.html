@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png?v=39" />
   <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=39" />
   <meta name="theme-color" content="#FAFAF7" />
-  <link rel="stylesheet" href="styles.css?v=40" />
+  <link rel="stylesheet" href="styles.css?v=41" />
 </head>
 <body>
   <header class="app-header">
@@ -163,21 +163,21 @@
             <h2>Pantry</h2>
             <p class="hint">Det dere har hjemme – klart for smartere forslag og kortere handlelister.</p>
           </div>
-          <button id="startPantrySetupBtn" class="primary" type="button">Sett opp pantry</button>
+          <button id="startPantrySetupBtn" class="ghost" type="button">Sett opp pantry</button>
         </div>
       </section>
       <section class="card pantry-composer-card">
         <form id="pantryForm" class="pantry-composer" autocomplete="off">
-          <input id="pantryName" placeholder="Legg til ingrediens …" aria-label="Ingrediens" />
-          <input id="pantryQuantity" inputmode="decimal" placeholder="Mengde" aria-label="Mengde" />
-          <select id="pantryUnit" aria-label="Enhet">
+          <label class="pantry-name-field">Ingrediens<input id="pantryName" placeholder="Legg til ingrediens …" /></label>
+          <label>Mengde<input id="pantryQuantity" inputmode="decimal" placeholder="Mengde" /></label>
+          <label>Enhet<select id="pantryUnit">
             <option value="">Ingen enhet</option><option>stk</option><option>g</option><option>kg</option>
             <option>ml</option><option>dl</option><option>l</option><option>pk</option><option>boks</option>
-          </select>
-          <select id="pantryZone" aria-label="Oppbevaringssted">
+          </select></label>
+          <label class="pantry-zone-field">Oppbevaring<select id="pantryZone">
             <option value="pantry">Tørrlager</option><option value="fridge">Kjøleskap</option><option value="freezer">Fryser</option>
-          </select>
-          <label class="inline-check"><input id="pantryAlways" type="checkbox" /> Alltid tilgjengelig</label>
+          </select></label>
+          <label class="inline-check"><input id="pantryAlways" type="checkbox" /><span>Alltid tilgjengelig</span></label>
           <button class="primary" type="submit">Legg til</button>
         </form>
         <input id="pantrySearch" class="pantry-search" placeholder="Søk i Pantry …" />
@@ -406,6 +406,20 @@
     </form>
   </dialog>
 
+  <dialog id="deleteRecipeDialog" class="small-dialog" aria-labelledby="deleteRecipeTitle" aria-describedby="deleteRecipeDescription">
+    <form method="dialog" class="dialog-form">
+      <div>
+        <h2 id="deleteRecipeTitle">Slette oppskriften?</h2>
+        <p id="deleteRecipeDescription" class="hint"></p>
+      </div>
+      <p id="deleteRecipeError" class="delete-error" role="alert" hidden></p>
+      <div class="dialog-actions delete-dialog-actions">
+        <button id="cancelDeleteRecipeBtn" type="button" class="ghost">Avbryt</button>
+        <button id="confirmDeleteRecipeBtn" type="button" class="destructive">Slett permanent</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog id="addToDayDialog">
     <form method="dialog" class="dialog-form small-dialog">
       <div class="section-title">
@@ -518,6 +532,6 @@
   <script src="data-safety.js?v=29"></script>
   <script src="serving-scaling.js?v=30"></script>
   <script src="shopping-list-model.js?v=40"></script>
-  <script src="app.js?v=40"></script>
+  <script src="app.js?v=41"></script>
 </body>
 </html>

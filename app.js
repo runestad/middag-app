@@ -3119,3 +3119,119 @@ async function ensureOriginalRecipesV38(){
 const initBeforeV38=init;init=async function(){await initBeforeV38();await ensureOriginalRecipesV38()};
 
 init();
+
+/* ===== v41: verified media fallback and permanent recipe deletion ===== */
+const showViewBeforeV41=showView;
+showView=function(viewId){
+  showViewBeforeV41(viewId);
+  window.scrollTo({top:0,left:0,behavior:"instant"});
+};
+function recipeImageFallbackV41(recipe){
+  const value=recipe?.verifiedFallbackImage;
+  return typeof value==="string"&&value.startsWith("/assets/")?value:"";
+}
+window.advanceRecipeImageV41=function(image){
+  const fallback=image.dataset.fallback||"";
+  if(fallback&&image.src!==new URL(fallback,location.href).href){
+    image.src=fallback;
+    image.removeAttribute("data-fallback");
+    return;
+  }
+  const symbol=document.createElement("img");
+  symbol.className="recipe-placeholder-symbol";
+  symbol.src="assets/sult-symbol-mono.svg";
+  symbol.alt="";
+  symbol.setAttribute("aria-hidden","true");
+  image.parentElement?.classList.add("is-fallback");
+  image.replaceWith(symbol);
+};
+imageForRecipeV28=function(recipe){
+  const image=recipeImageV39(recipe),fallback=recipeImageFallbackV41(recipe);
+  if(!image&&!fallback)return`<img class="recipe-placeholder-symbol" src="assets/sult-symbol-mono.svg" alt="" aria-hidden="true">`;
+  const preferred=image||fallback;
+  const backup=image&&fallback&&image!==fallback?` data-fallback="${escapeAttr(fallback)}"`:"";
+  return`<img src="${escapeAttr(preferred)}" alt="" loading="lazy"${backup} onerror="advanceRecipeImageV41(this)">`;
+};
+
+let deleteRecipeTargetV41=null,deleteRecipeBusyV41=false;
+function deletionStateV41(recipe){
+  const target=String(recipe.id),nextPlan=clonePlanSafe(plan),nextMeta=JSON.parse(JSON.stringify(appMeta||{}));
+  for(const [day,items] of Object.entries(nextPlan)){
+    if(!Array.isArray(items))continue;
+    nextPlan[day]=items.map(item=>item?.type==="recipe"&&String(item.recipeId)===target
+      ?{type:"text",text:recipe.name,fromDeletedRecipe:true}:item);
+  }
+  nextMeta.favorites=(nextMeta.favorites||[]).filter(id=>String(id)!==target);
+  for(const key of ["usageCounts","lastUsed","recipeMeta"])if(nextMeta[key])delete nextMeta[key][target];
+  nextMeta.deletedRecipeIds=[...new Set([...(nextMeta.deletedRecipeIds||[]).map(String),target])];
+  const source=originalRecipeSourceUrlV31(recipe);
+  if(source)nextMeta.deletedRecipeSourceUrls=[...new Set([...(nextMeta.deletedRecipeSourceUrls||[]),normalizedImportUrlV34(source)])];
+  nextMeta.updatedAt=new Date().toISOString();
+  return{items:nextPlan,shoppingItems:ensureShoppingMetadataV25(shoppingItems),freezerItems:freezerItems||[],meta:nextMeta,updatedAt:nextMeta.updatedAt};
+}
+async function persistPlanSnapshotV41(payload){
+  const response=await fetch("/api/plan",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({plan:payload})});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok||data.ok===false)throw new Error(data.error||"Planen kunne ikke lagres");
+  return data.plan||payload;
+}
+window.openDeleteRecipeV41=function(id){
+  const recipe=recipeById(id);if(!recipe)return;
+  deleteRecipeTargetV41=String(recipe.id);
+  $("deleteRecipeDescription").textContent=`Er du sikker på at du vil slette «${recipe.name}»? Oppskriften slettes permanent og kan ikke gjenopprettes.`;
+  $("deleteRecipeError").hidden=true;
+  $("recipeDialog")?.close();
+  $("deleteRecipeDialog").showModal();
+  requestAnimationFrame(()=>$('cancelDeleteRecipeBtn')?.focus());
+};
+async function confirmDeleteRecipeV41(){
+  if(deleteRecipeBusyV41)return;
+  const recipe=recipeById(deleteRecipeTargetV41);if(!recipe)return;
+  deleteRecipeBusyV41=true;
+  const confirmButton=$("confirmDeleteRecipeBtn"),error=$("deleteRecipeError");
+  confirmButton.disabled=true;confirmButton.textContent="Sletter …";error.hidden=true;
+  const previous=statePayloadV25(),next=deletionStateV41(recipe);
+  try{
+    if(typeof runSaveWorkerV25==="function")await runSaveWorkerV25();
+    const persisted=await persistPlanSnapshotV41(next);
+    const response=await fetch("/api/delete-recipe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:recipe.id})});
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok||result.ok!==true)throw new Error(result.error||"Slettingen feilet");
+    plan=migratePlan(persisted.items||next.items);
+    appMeta=persisted.meta||next.meta;
+    recipes=recipes.filter(item=>String(item.id)!==String(recipe.id));
+    delete customRecipes[String(recipe.id)];delete customRecipes[recipe.id];
+    localStorage.setItem("middag_custom_recipes",JSON.stringify(customRecipes));
+    randomOrderV28.delete(String(recipe.id));
+    lastRemoteUpdatedAt=persisted.updatedAt||next.updatedAt;
+    persistLocalStateV25();
+    $("deleteRecipeDialog").close();
+    showView("viewRecipes");createDayRows();renderRecipeResults();renderPickerResults();
+    if($("recipeCount"))$("recipeCount").textContent=`${recipes.length} oppskrifter`;
+    setLiveStatus("Oppskriften er slettet.");
+    setTimeout(()=>setLiveStatus("Live"),2200);
+  }catch(deleteError){
+    try{await persistPlanSnapshotV41(previous)}catch(rollbackError){console.error("Kunne ikke gjenopprette plan etter slettingsfeil",rollbackError)}
+    error.textContent="Kunne ikke slette oppskriften. Prøv igjen.";error.hidden=false;
+    console.warn("Sletting av oppskrift feilet",deleteError);
+  }finally{
+    deleteRecipeBusyV41=false;confirmButton.disabled=false;confirmButton.textContent="Slett permanent";
+  }
+}
+const openRecipeDetailsBeforeV41=window.openRecipeDetails;
+window.openRecipeDetails=function(id){
+  openRecipeDetailsBeforeV41(id);
+  const recipe=recipeById(id),body=$("recipeDialogBody");if(!recipe||!body)return;
+  const hero=body.querySelector(".recipe-hero-image img"),fallback=recipeImageFallbackV41(recipe);
+  if(hero){if(fallback&&hero.getAttribute("src")!==fallback)hero.dataset.fallback=fallback;hero.onerror=()=>advanceRecipeImageV41(hero)}
+  body.insertAdjacentHTML("beforeend",`<div class="recipe-management-actions"><button type="button" class="recipe-delete-trigger" onclick="openDeleteRecipeV41('${escapeAttr(recipe.id)}')">Slett oppskrift</button></div>`);
+};
+$("cancelDeleteRecipeBtn")?.addEventListener("click",()=>$("deleteRecipeDialog")?.close());
+$("confirmDeleteRecipeBtn")?.addEventListener("click",confirmDeleteRecipeV41);
+
+const ensureOriginalRecipesBeforeV41=ensureOriginalRecipesV38;
+ensureOriginalRecipesV38=async function(){
+  const blocked=new Set((appMeta.deletedRecipeSourceUrls||[]).map(normalizedImportUrlV34));
+  if(ORIGINAL_RECIPE_URLS_V38.some(url=>blocked.has(normalizedImportUrlV34(url))))return;
+  await ensureOriginalRecipesBeforeV41();
+};

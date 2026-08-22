@@ -8,7 +8,7 @@
   --radius-sm:6px; --radius-md:10px; --radius-lg:14px; --radius-image:16px;
   --shadow-sm:0 1px 2px rgba(15,17,16,.04); --shadow-md:0 16px 50px rgba(15,17,16,.10);
   --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-6:24px;
-  --space-8:32px; --space-12:48px; --nav-height:68px; --safe-bottom:env(safe-area-inset-bottom,0px);
+  --space-8:32px; --space-12:48px; --nav-height:68px; --safe-top:env(safe-area-inset-top,0px); --safe-bottom:env(safe-area-inset-bottom,0px);
   --ease:180ms cubic-bezier(.2,.8,.2,1);
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue","Segoe UI",sans-serif;
 }
@@ -17,7 +17,7 @@
 button,input,textarea,select{font:inherit} button,a,input,textarea,select{-webkit-tap-highlight-color:transparent} button{touch-action:manipulation} img{max-width:100%}
 h1,h2,h3,p{margin-top:0} h1{margin:0;font-size:22px;line-height:1;letter-spacing:.28em;font-weight:650} h2{margin-bottom:6px;font-size:clamp(28px,5vw,38px);line-height:1.06;letter-spacing:-.04em;font-weight:620} h3{margin-bottom:0;font-size:18px;line-height:1.25;letter-spacing:-.015em;font-weight:620}
 a{color:var(--ink);text-underline-offset:3px;text-decoration-thickness:1px}
-.app-header{width:min(100% - 32px,1120px);min-height:92px;margin:0 auto;padding:calc(20px + env(safe-area-inset-top,0px)) 0 14px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid var(--border)}
+.app-header{width:min(100% - 32px,1120px);min-height:92px;margin:0 auto;padding:calc(20px + var(--safe-top)) 0 14px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid var(--border)}
 .brand{display:flex;align-items:center;gap:13px;min-width:0}.brand-mark{width:42px;height:42px;display:block;border-radius:10px}.brand p{margin:5px 0 0;color:var(--muted);font-size:12px;letter-spacing:.01em}.header-actions{display:flex;align-items:center}
 .live-status{display:inline-flex;align-items:center;gap:6px;padding:6px 0;color:var(--success);font-size:12px;font-weight:600}.live-status.syncing{color:var(--warning)}.live-status.error{color:var(--danger)}
 main{width:min(100% - 32px,1120px);margin:0 auto;padding:28px 0 calc(var(--nav-height) + var(--safe-bottom) + 40px)}
@@ -68,3 +68,62 @@ dialog{width:min(92vw,760px);max-height:min(90vh,900px);padding:0;border:1px sol
   .serving-stepper input{width:100%}
   .serving-quick-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
 }
+
+/* v41 final mobile polish: shared safe areas, compact inventory and stable media. */
+.recipe-thumb.is-fallback{background:var(--mist)}
+.freezer-item{gap:14px;padding:10px 0}
+.freezer-stepper{height:44px;grid-template-columns:44px minmax(34px,auto) 44px}
+.freezer-stepper button{width:44px;min-height:42px}
+.pantry-composer{grid-template-columns:minmax(0,2fr) minmax(90px,1fr) minmax(110px,1fr) minmax(140px,1fr) auto auto;gap:10px}
+.pantry-composer>*{min-width:0}
+.pantry-search{margin-top:14px}
+.inline-check{min-height:46px;display:flex;align-items:center;gap:10px;padding:0 8px;color:var(--ink);white-space:nowrap;cursor:pointer}
+.inline-check input{appearance:none;width:22px;height:22px;min-width:22px;min-height:22px;padding:0;margin:0;border:1.5px solid var(--sage);border-radius:5px;background:var(--surface);display:grid;place-items:center}
+.inline-check input:checked{background:var(--sage)}
+.inline-check input:checked::after{content:"✓";color:white;font-size:14px;font-weight:800}
+.pantry-row{padding:12px 0}
+.pantry-row>div:first-child{min-width:0}
+.pantry-row strong{overflow-wrap:anywhere}
+.destructive{border-color:var(--tomato);background:var(--tomato);color:white}
+.destructive:hover{background:#D83E34}
+.delete-dialog-actions{justify-content:flex-end}
+.delete-error{margin:0;padding:10px 12px;border-radius:var(--radius-sm);background:#FFF0EC;color:var(--danger);font-size:14px}
+.recipe-management-actions{margin-top:24px;padding-top:16px;border-top:1px solid var(--border)}
+.recipe-delete-trigger{border:0;background:transparent;color:var(--danger);padding-inline:4px}
+.recipe-delete-trigger:hover{background:#FFF0EC}
+
+@media(max-width:560px){
+  .app-header{padding-top:calc(14px + max(var(--safe-top),20px))}
+  .period-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px 12px}
+  .period-grid label,.period-grid input[type="date"]{min-width:0;max-width:100%}
+  .period-grid input[type="date"]{width:100%;height:54px;box-sizing:border-box}
+  .period-grid>button{grid-column:1/-1;justify-self:stretch;width:100%}
+  .pantry-composer{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .pantry-composer>*{grid-column:span 1}
+  .pantry-composer .pantry-name-field{grid-column:1/-1}
+  .pantry-composer .pantry-zone-field{grid-column:1}
+  .pantry-composer .inline-check{grid-column:2}
+  .pantry-composer button{grid-column:1/-1}
+  .pantry-view>.screen-intro .section-title{align-items:flex-start}
+  .pantry-row{align-items:flex-start;flex-direction:column;gap:8px}
+  .pantry-row .inline-actions{width:100%}
+  .freezer-item{grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px 0}
+  .freezer-item-actions{justify-content:flex-end}
+  .shopping-category,.category{padding-block:6px}
+  .category-toggle{padding-block:5px}
+  .category-inline-add{min-height:34px}
+  dialog{padding-bottom:var(--safe-bottom)}
+}
+
+@media(max-width:360px){
+  .freezer-item{grid-template-columns:1fr}
+  .freezer-item-actions{justify-content:space-between}
+}
+
+@media(max-width:390px){
+  #appBottomNav .nav-btn:nth-child(4),#appBottomNav .nav-btn:nth-child(6){display:flex}
+  #appBottomNav{grid-template-columns:repeat(6,minmax(0,1fr))}
+  #appBottomNav .nav-btn span:last-child{font-size:8px}
+}
+
+.recipe-hero-image img.recipe-placeholder-symbol{width:58px;height:58px;margin:48px auto;aspect-ratio:1;object-fit:contain;opacity:.22}
