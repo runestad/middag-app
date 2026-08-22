@@ -3068,4 +3068,21 @@ window.acceptPantrySuggestionV35=function(name){ensureMetaV28();appMeta.pantryIt
 const renderRecipeResultsBeforeV35=renderRecipeResults;renderRecipeResults=function(){renderRecipeResultsBeforeV35();renderRecipeHelpV35();renderPantrySuggestionsV35()};
 const renderPantryBeforeV35=renderPantryV28;renderPantryV28=function(){renderPantryBeforeV35();renderPantrySuggestionsV35()};
 
+/* ===== v38: restore recipes missing from the original list ===== */
+const ORIGINAL_RECIPE_URLS_V38=[
+  "https://www.instagram.com/reel/DY5aSADv-CJ/?igsh=NXEzeWg3cG43OHJ6",
+  "https://www.instagram.com/reel/DZS9sxXP1Ru/?igsh=dWFjcjQwbmZudnhm"
+];
+async function ensureOriginalRecipesV38(){
+  const current=new Set(recipes.map(recipe=>normalizedImportUrlV34(originalRecipeSourceUrlV31(recipe))));
+  if(ORIGINAL_RECIPE_URLS_V38.every(url=>current.has(normalizedImportUrlV34(url))))return;
+  try{
+    const response=await fetch("/api/ensure-original-recipes",{method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
+    const result=await response.json();if(!response.ok||!result.ok)throw new Error(result.error||"Kunne ikke gjenopprette originale oppskrifter");
+    const refreshed=await fetch(`/api/recipes?ts=${Date.now()}`,{cache:"no-store"}).then(value=>value.json());
+    if(refreshed.ok&&Array.isArray(refreshed.recipes)){recipes=refreshed.recipes;mergeCustomData();renderRecipeResults();createDayRows();if($("recipeCount"))$("recipeCount").textContent=`${recipes.length} oppskrifter`}
+  }catch(error){console.warn("Originale oppskrifter venter på Supabase-synkronisering",error)}
+}
+const initBeforeV38=init;init=async function(){await initBeforeV38();await ensureOriginalRecipesV38()};
+
 init();

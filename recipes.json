@@ -3609,5 +3609,35 @@
     "manualCheck": "Ja – shortlink/video krever manuell sjekk.",
     "comment": "",
     "ingredientLines": []
+  },
+  {
+    "id": 229,
+    "name": "Spicy cucumber side dish",
+    "category": "Vegetar",
+    "subCategory": "",
+    "link": "https://www.instagram.com/reel/DY5aSADv-CJ/?igsh=NXEzeWg3cG43OHJ6",
+    "source": "Instagram",
+    "servings": "",
+    "ingredientsText": "",
+    "instructions": "",
+    "status": "Må sjekkes manuelt",
+    "manualCheck": "Ja – original Instagram Reel krever gjenoppretting.",
+    "comment": "Gjenopprettet fra original oppskriftsliste 2026-08-22.",
+    "ingredientLines": []
+  },
+  {
+    "id": 230,
+    "name": "Thai red curry udon noodle soup",
+    "category": "Vegetar",
+    "subCategory": "",
+    "link": "https://www.instagram.com/reel/DZS9sxXP1Ru/?igsh=dWFjcjQwbmZudnhm",
+    "source": "Instagram",
+    "servings": "",
+    "ingredientsText": "",
+    "instructions": "",
+    "status": "Må sjekkes manuelt",
+    "manualCheck": "Ja – original Instagram Reel krever gjenoppretting.",
+    "comment": "Gjenopprettet fra original oppskriftsliste 2026-08-22.",
+    "ingredientLines": []
   }
 ]
