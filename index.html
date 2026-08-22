@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png?v=39" />
   <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=39" />
   <meta name="theme-color" content="#FAFAF7" />
-  <link rel="stylesheet" href="styles.css?v=41" />
+  <link rel="stylesheet" href="styles.css?v=42" />
 </head>
 <body>
   <header class="app-header">
@@ -92,7 +92,7 @@
         </div>
         <div id="shoppingList" class="shopping-list"></div>
       </section>
-      <section class="card smart-card shopping-smart-card">
+      <section class="card smart-card shopping-smart-card" hidden>
         <div class="section-title">
           <div><p class="eyebrow">Sekundært verktøy</p><h2>Smart velger</h2></div>
           <button id="randomWeekBtn" class="ghost">Overrask meg</button>
@@ -120,12 +120,13 @@
         </div>
         <div id="recipeSuggestions" class="recipe-suggestions" aria-live="polite"></div>
       </section>
-      <section class="card" id="recipeHelpSection" hidden>
-        <div class="section-title">
-          <div><h2>Oppskrifter som trenger hjelp</h2><p class="hint">Bare oppskrifter som mangler ingredienser eller fremgangsmåte.</p></div>
-          <span id="recipeHelpCount" class="pill">0</span>
+      <section class="maintenance-entry" id="recipeHelpSection" hidden>
+        <div>
+          <strong><span id="recipeHelpCount">0</span> oppskrifter trenger hjelp</strong>
+          <p>Mangler ingredienser eller fremgangsmåte.</p>
         </div>
-        <div id="recipeHelpList" class="recipe-help-list"></div>
+        <button id="openRecipeHelpBtn" type="button" class="ghost">Se gjennom</button>
+        <div id="recipeHelpList" hidden></div>
       </section>
       <section class="card">
         <div class="section-title">
@@ -406,6 +407,16 @@
     </form>
   </dialog>
 
+  <dialog id="recipeHelpDialog" class="triage-dialog" aria-labelledby="recipeHelpDialogTitle">
+    <form method="dialog" class="dialog-form">
+      <div class="section-title">
+        <div><p class="eyebrow">Vedlikehold</p><h2 id="recipeHelpDialogTitle">Oppskrifter som trenger hjelp</h2><p id="recipeHelpDialogSummary" class="hint"></p></div>
+        <button type="button" class="ghost" data-dialog-close>Lukk</button>
+      </div>
+      <div id="recipeHelpDialogList" class="recipe-help-list"></div>
+    </form>
+  </dialog>
+
   <dialog id="deleteRecipeDialog" class="small-dialog" aria-labelledby="deleteRecipeTitle" aria-describedby="deleteRecipeDescription">
     <form method="dialog" class="dialog-form">
       <div>
@@ -532,6 +543,6 @@
   <script src="data-safety.js?v=29"></script>
   <script src="serving-scaling.js?v=30"></script>
   <script src="shopping-list-model.js?v=40"></script>
-  <script src="app.js?v=41"></script>
+  <script src="app.js?v=42"></script>
 </body>
 </html>
