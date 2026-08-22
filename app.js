@@ -1251,23 +1251,10 @@ function shoppingIdV25(){
 function shoppingItemTimeV25(item){ return Date.parse(item?.updatedAt || SHOPPING_EPOCH) || 0; }
 function isVisibleShoppingItemV25(item){ return item && !item.deleted; }
 function ensureShoppingMetadataV25(items){
-  return (Array.isArray(items) ? items : []).map((item, index) => ({
-    ...item,
-    id: item.id || `shop-legacy-${index}-${normalize(item.text || "")}`,
-    text: String(item.text || "").trim(),
-    category: item.category || categorize(item.text || ""),
-    done: Boolean(item.done),
-    deleted: Boolean(item.deleted),
-    updatedAt: item.updatedAt || SHOPPING_EPOCH
-  }));
+  return ShoppingListModel.withMetadata(items, {categorize});
 }
 function mergeShoppingStatesV25(localItems, remoteItems){
-  const merged = new Map();
-  for (const item of [...ensureShoppingMetadataV25(remoteItems), ...ensureShoppingMetadataV25(localItems)]) {
-    const current = merged.get(item.id);
-    if (!current || shoppingItemTimeV25(item) >= shoppingItemTimeV25(current)) merged.set(item.id, item);
-  }
-  return [...merged.values()];
+  return ShoppingListModel.mergeStates(localItems, remoteItems, {categorize});
 }
 function visibleShoppingItemsV25(){ return ensureShoppingMetadataV25(shoppingItems).filter(isVisibleShoppingItemV25); }
 function setShoppingStatusV25(text, state = ""){
@@ -1319,6 +1306,10 @@ async function runSaveWorkerV25(){
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok || data.ok === false) throw new Error(data.error || "Lagringen feilet");
+        if (Array.isArray(data.plan?.shoppingItems)) {
+          shoppingItems = mergeShoppingStatesV25(shoppingItems, data.plan.shoppingItems);
+          persistLocalStateV25();
+        }
         savedRevisionV25 = revision;
         lastRemoteUpdatedAt = payload.updatedAt;
         setLiveStatus("Live");
@@ -1397,6 +1388,7 @@ function addShoppingItemV25(text, preferredCategory = ""){
     id: shoppingIdV25(),
     text: cleaned,
     category,
+    manualCategory: Boolean(preferredCategory),
     recipe: "Egen vare",
     done: false,
     deleted: false,
@@ -1442,13 +1434,16 @@ function shoppingRowHtmlV25(item){
   </div>`;
 }
 function renderShoppingCategoryV25(category, items){
-  if (!items.length) return "";
   const collapsed = collapsedShoppingCategoriesV25.has(category);
   return `<section class="shopping-category" data-shopping-category="${escapeAttr(category)}">
     <button type="button" class="category-toggle" aria-expanded="${!collapsed}" onclick="toggleShoppingCategoryV25('${escapeAttr(category)}')">
       <span>${escapeHtml(category)}</span><span class="category-count">${items.length}</span>
     </button>
-    <div class="category-items" ${collapsed ? "hidden" : ""}>${items.map(shoppingRowHtmlV25).join("")}</div>
+    <div class="category-items" ${collapsed ? "hidden" : ""}>${items.map(shoppingRowHtmlV25).join("")}
+      <div class="category-inline-add" data-inline-category="${escapeAttr(category)}">
+        <button type="button" class="category-add-trigger" onclick="openCategoryAddV40('${escapeAttr(category)}')">+ Legg til vare</button>
+      </div>
+    </div>
   </section>`;
 }
 renderShoppingList = function(items){
@@ -1479,7 +1474,6 @@ renderShoppingList = function(items){
        ${done.length ? `<section class="completed-section">
          <div class="completed-head">
            <button type="button" class="completed-toggle" aria-expanded="false" onclick="toggleCompletedShoppingV25(this)">Fullført (${done.length})</button>
-           <button type="button" class="text-button danger-subtle" onclick="clearCompletedShoppingV25()">Fjern fullførte</button>
          </div>
          <div class="completed-items" hidden>${done.map(shoppingRowHtmlV25).join("")}</div>
        </section>` : ""}`
@@ -1511,8 +1505,7 @@ window.toggleShoppingDoneV25 = function(id, checked){
   if (row) row.classList.toggle("done", item.done);
   updateShoppingRemainingV25();
   savePlan();
-  clearTimeout(shoppingRenderTimerV25);
-  shoppingRenderTimerV25 = setTimeout(() => renderShoppingList(shoppingItems), 420);
+  renderShoppingWithoutViewportJumpV31();
 };
 window.toggleShoppingActionsV25 = function(id, button){
   const row = document.querySelector(`[data-shopping-id="${CSS.escape(String(id))}"]`);
@@ -1537,7 +1530,7 @@ window.editShoppingItemV25 = function(id){
     const value = input.value.trim();
     if (commit && value) {
       item.text = normalizeIngredientLineForDisplay(value);
-      item.category = categorize(item.text);
+      if (!item.manualCategory) item.category = categorize(item.text);
       item.updatedAt = nowIsoV25();
       savePlan();
     }
@@ -1557,25 +1550,41 @@ window.removeShoppingItemV25 = function(id){
   if (!item) return;
   item.deleted = true;
   item.updatedAt = nowIsoV25();
-  const row = document.querySelector(`[data-shopping-id="${CSS.escape(String(id))}"]`);
-  if (row) {
-    row.classList.add("is-pending");
-    row.style.opacity = "0";
-    row.style.transform = "translateX(12px)";
-    setTimeout(() => renderShoppingList(shoppingItems), 180);
-  } else renderShoppingList(shoppingItems);
-  savePlan();
-};
-window.clearCompletedShoppingV25 = function(){
-  const done = visibleShoppingItemsV25().filter(item => item.done);
-  if (!done.length) return;
-  if (done.length > 2 && !confirm(`Fjerne ${done.length} fullførte varer?`)) return;
-  const timestamp = nowIsoV25();
-  done.forEach(item => { item.deleted = true; item.updatedAt = timestamp; });
-  renderShoppingList(shoppingItems);
+  renderShoppingWithoutViewportJumpV31();
   savePlan();
 };
 window.retryShoppingSaveV25 = function(){ void runSaveWorkerV25(); };
+
+window.openCategoryAddV40 = function(category){
+  const host = document.querySelector(`[data-inline-category="${CSS.escape(category)}"]`);
+  if (!host || host.querySelector("input")) return;
+  host.innerHTML = `<form class="category-add-form" onsubmit="submitCategoryAddV40(event,'${escapeAttr(category)}')">
+    <input type="text" enterkeyhint="done" aria-label="Ny vare i ${escapeAttr(category)}" placeholder="Ny vare" autocomplete="off">
+    <button type="submit" class="text-button">Legg til</button>
+    <button type="button" class="text-button category-add-cancel" onclick="cancelCategoryAddV40('${escapeAttr(category)}')" aria-label="Avbryt">Avbryt</button>
+  </form>`;
+  const input = host.querySelector("input");
+  input?.addEventListener("keydown", event => {
+    if (event.key === "Escape") { event.preventDefault(); cancelCategoryAddV40(category); }
+    if (event.key === "Enter" && !event.isComposing) {
+      event.preventDefault();
+      event.currentTarget.form?.requestSubmit();
+    }
+  });
+  input?.focus({preventScroll:true});
+};
+window.cancelCategoryAddV40 = function(category){
+  const host = document.querySelector(`[data-inline-category="${CSS.escape(category)}"]`);
+  if (host) host.innerHTML = `<button type="button" class="category-add-trigger" onclick="openCategoryAddV40('${escapeAttr(category)}')">+ Legg til vare</button>`;
+};
+window.submitCategoryAddV40 = function(event, category){
+  event.preventDefault();
+  const input = event.currentTarget.querySelector("input");
+  if (!input?.value.trim()) return;
+  if (addShoppingItemV25(input.value, category)) {
+    requestAnimationFrame(() => openCategoryAddV40(category));
+  }
+};
 
 resetShoppingList = function(){
   const visible = visibleShoppingItemsV25();
@@ -1612,13 +1621,10 @@ generateShoppingList = function(){
     }
   }
   const timestamp = nowIsoV25();
-  const tombstones = ensureShoppingMetadataV25(shoppingItems).map(item =>
-    isVisibleShoppingItemV25(item) ? {...item, deleted: true, updatedAt: timestamp} : item
-  );
   const generated = (typeof mergeShoppingItems === "function" ? mergeShoppingItems(raw) : raw)
     .map(item => ({...item, id: item.id || shoppingIdV25(), deleted: false, updatedAt: timestamp}));
-  shoppingItems = [...tombstones, ...generated];
-  renderShoppingList(shoppingItems);
+  shoppingItems = ShoppingListModel.mergeWeekMenuItems(shoppingItems, generated, {categorize});
+  renderShoppingWithoutViewportJumpV31();
   savePlan();
   showView("viewShopping");
   if (missing.length) {
@@ -2974,10 +2980,20 @@ generateShoppingList=function(){
     if(!recipe||!hasRecipe(recipe)){if(recipe)missing.push(recipe.name);continue}
     for(const line of scaledIngredientLinesV30(recipe,plannedServingsV30(planItem,recipe)))raw.push({id:shoppingIdV25(),text:line,category:categorize(line),recipe:recipe.name,done:false,deleted:false,updatedAt:nowIsoV25()});
   }
-  const timestamp=nowIsoV25(),tombstones=ensureShoppingMetadataV25(shoppingItems).map(item=>isVisibleShoppingItemV25(item)?{...item,deleted:true,updatedAt:timestamp}:item);
+  const timestamp=nowIsoV25();
   const generated=mergeShoppingItems(raw).map(item=>({...item,id:item.id||shoppingIdV25(),deleted:false,updatedAt:timestamp}));
-  shoppingItems=[...tombstones,...generated];renderShoppingList(shoppingItems);savePlan();showView("viewShopping");
+  shoppingItems=ShoppingListModel.mergeWeekMenuItems(shoppingItems,generated,{categorize});renderShoppingWithoutViewportJumpV31();savePlan();showView("viewShopping");
   if(missing.length)alert(`${missing.length} oppskrift(er) mangler data og ble ikke lagt til i handlelisten.`);
+};
+
+window.addManualDishToShopping=function(dish){
+  const text=prompt(`Legg til vare til "${dish}" i handlelisten:`);
+  if(!text||!text.trim())return;
+  if(addShoppingItemV25(text,"")){
+    const item=shoppingItems[shoppingItems.length-1];
+    if(item){item.recipe=dish;item.updatedAt=nowIsoV25();savePlan()}
+    showView("viewShopping");
+  }
 };
 
 function enrichPlanServingMetadataV30(){
