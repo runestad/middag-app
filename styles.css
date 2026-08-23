@@ -149,3 +149,11 @@ dialog{width:min(92vw,760px);max-height:min(90vh,900px);padding:0;border:1px sol
   .recipe-help-row{grid-template-columns:48px minmax(0,1fr)}.recipe-help-media{width:48px;height:48px}.recipe-help-actions{grid-column:2;justify-content:flex-start;gap:4px;flex-wrap:nowrap}.recipe-help-actions>*{flex:0 0 auto;padding-inline:7px;font-size:11px}.triage-dialog .dialog-form{gap:8px}
   dialog{border-radius:var(--radius-sheet) var(--radius-sheet) 0 0}#appBottomNav{padding-inline:5px;gap:0}#appBottomNav .nav-btn{min-height:50px}#appBottomNav .nav-btn span:last-child{font-size:8.5px}.nav-icon{width:21px;height:21px}
 }
+/* v43: manual review ownership and user recipe images */
+.recipe-image-editor{display:grid;gap:12px;padding:14px;border:1px solid var(--border,#d9ddd8);border-radius:16px;background:var(--surface,#fff)}
+.recipe-image-editor h3{margin:0}.recipe-image-editor .hint{margin:3px 0 0}
+.recipe-image-editor-preview{width:min(100%,280px);aspect-ratio:16/10;border-radius:12px;overflow:hidden;background:#eef1ed;display:grid;place-items:center}
+.recipe-image-editor-preview img{width:100%;height:100%;object-fit:cover}.recipe-image-editor-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.manual-review-status{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#edf3ed;color:#365443;font-size:.88rem}
+.recipe-help-actions .approve-recipe{white-space:nowrap}
+@media(max-width:430px){.recipe-image-editor-preview{width:100%}.recipe-image-editor-actions>*{min-height:44px}.recipe-help-actions{max-width:100%;flex-wrap:wrap}}

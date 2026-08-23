@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png?v=39" />
   <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=39" />
   <meta name="theme-color" content="#FAFAF7" />
-  <link rel="stylesheet" href="styles.css?v=42" />
+  <link rel="stylesheet" href="styles.css?v=43" />
 </head>
 <body>
   <header class="app-header">
@@ -301,6 +301,17 @@
         <input id="importServings" type="text" inputmode="decimal" placeholder="f.eks. 2 eller 4" />
       </label>
 
+      <section class="recipe-image-editor" aria-labelledby="recipeImageEditorTitle">
+        <div><h3 id="recipeImageEditorTitle">Oppskriftsbilde</h3><p class="hint">Eget bilde vises foran bildet fra kilden.</p></div>
+        <div id="recipeImageEditorPreview" class="recipe-image-editor-preview"></div>
+        <input id="recipeImageInput" class="visually-hidden" type="file" accept="image/*" />
+        <div class="recipe-image-editor-actions">
+          <button id="chooseRecipeImageBtn" type="button" class="ghost">Last opp bilde</button>
+          <button id="removeRecipeImageBtn" type="button" class="text-button danger-subtle" hidden>Fjern eget bilde</button>
+        </div>
+        <p id="recipeImageStatus" class="hint" role="status" aria-live="polite"></p>
+      </section>
+
       <label>Lim inn Instagram/TikTok-caption
         <textarea id="captionInput" rows="12" placeholder="Ingredients:\n- ...\nInstructions:\n1. ..."></textarea>
       </label>
@@ -543,6 +554,6 @@
   <script src="data-safety.js?v=29"></script>
   <script src="serving-scaling.js?v=30"></script>
   <script src="shopping-list-model.js?v=40"></script>
-  <script src="app.js?v=42"></script>
+  <script src="app.js?v=43"></script>
 </body>
 </html>

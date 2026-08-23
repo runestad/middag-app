@@ -587,6 +587,116 @@ savePlan = function(){
   });
 };
 
+/* ===== v43: user-owned review state and recipe images ===== */
+function normalizeRecipeOwnershipV43(recipe){
+  if(!recipe||typeof recipe!=="object")return recipe;
+  if(!["approved","needs-help"].includes(recipe.reviewOverride))recipe.reviewOverride=null;
+  if(typeof recipe.userImagePath!=="string"||!recipe.userImagePath.trim())recipe.userImagePath=null;
+  return recipe;
+}
+recipes.forEach(normalizeRecipeOwnershipV43);
+const mergeCustomDataBeforeV43=mergeCustomData;
+mergeCustomData=function(){mergeCustomDataBeforeV43();recipes.forEach(normalizeRecipeOwnershipV43)};
+
+function recipeNeedsHelp(recipe){
+  if(recipe?.reviewOverride==="approved")return false;
+  if(recipe?.reviewOverride==="needs-help")return true;
+  return !recipeCompletenessV35(recipe).complete;
+}
+function incompleteRecipesV43(){
+  return recipes.map(recipe=>({recipe,health:recipeCompletenessV35(recipe)})).filter(item=>recipeNeedsHelp(item.recipe));
+}
+incompleteRecipesV42=incompleteRecipesV43;
+
+async function persistRecipeFieldsV43(recipe,patch={},unsetFields=[]){
+  const response=await fetch("/api/save-recipe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:recipe.id,patch,unsetFields})});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok||result.ok===false)throw new Error(result.error||"Oppskriften kunne ikke lagres");
+  Object.assign(recipe,patch);
+  for(const field of unsetFields)recipe[field]=null;
+  recipe.updatedAt=new Date().toISOString();
+  return recipe;
+}
+window.setRecipeReviewOverrideV43=async function(id,value){
+  const recipe=recipeById(id);if(!recipe)return;
+  const button=globalThis.event?.currentTarget; if(button)button.disabled=true;
+  try{
+    if(value===null)await persistRecipeFieldsV43(recipe,{},["reviewOverride"]);
+    else await persistRecipeFieldsV43(recipe,{reviewOverride:value});
+    renderRecipeResults();renderRecipeHelpV35();
+    if($("recipeHelpDialog")?.open&&!recipeNeedsHelp(recipe))setLiveStatus("Markert som klar");
+    if($("recipeDialog")?.open)openRecipeDetails(id);
+  }catch(error){alert(`Statusen ble ikke lagret: ${error.message}`)}finally{if(button)button.disabled=false}
+};
+
+function sourceRecipeImageV43(recipe){return sourceRecipeImageBeforeV43(recipe)}
+function userRecipeImageUrlV43(recipe){return recipe?.userImagePath?`/api/recipe-image?path=${encodeURIComponent(recipe.userImagePath)}`:""}
+const sourceRecipeImageBeforeV43=recipeImageV39;
+function getRecipeDisplayImages(recipe){return[ userRecipeImageUrlV43(recipe),sourceRecipeImageV43(recipe),recipeImageFallbackV41(recipe)].filter((value,index,list)=>value&&list.indexOf(value)===index)}
+function getRecipeDisplayImage(recipe){return getRecipeDisplayImages(recipe)[0]||""}
+recipeImageV39=getRecipeDisplayImage;
+function recipeImageTagV43(recipe,alt="",lazy=true){
+  const images=getRecipeDisplayImages(recipe);
+  if(!images.length)return`<img class="recipe-placeholder-symbol" src="assets/sult-symbol-mono.svg" alt="" aria-hidden="true">`;
+  return`<img src="${escapeAttr(images[0])}" alt="${escapeAttr(alt)}"${lazy?' loading="lazy"':""} data-image-candidates="${escapeAttr(JSON.stringify(images.slice(1)))}" onerror="advanceRecipeImageV43(this)">`;
+}
+window.advanceRecipeImageV43=function(image){
+  let candidates=[];try{candidates=JSON.parse(image.dataset.imageCandidates||"[]")}catch(_){candidates=[]}
+  const next=candidates.shift();
+  if(next){image.dataset.imageCandidates=JSON.stringify(candidates);image.src=next;return}
+  const symbol=document.createElement("img");symbol.className="recipe-placeholder-symbol";symbol.src="assets/sult-symbol-mono.svg";symbol.alt="";symbol.setAttribute("aria-hidden","true");image.parentElement?.classList.add("is-fallback");image.replaceWith(symbol);
+};
+imageForRecipeV28=recipe=>recipeImageTagV43(recipe,`Bilde av ${recipe.name}`);
+
+function recipeHelpRowV43({recipe,health}){
+  const source=originalRecipeSourceUrlV31(recipe),reason=recipe.reviewOverride==="needs-help"?"Markert for gjennomgang":`Mangler ${health.missing.join(" og ")}`;
+  return`<article class="recipe-help-row"><div class="recipe-help-media">${recipeImageTagV43(recipe,`Bilde av ${recipe.name}`)}</div><div class="recipe-help-copy"><strong>${escapeHtml(recipe.name)}</strong><p>${escapeHtml(reason)}</p><span>${escapeHtml(recipeSourceStateV35(recipe))}</span></div><div class="recipe-help-actions"><button type="button" class="ghost approve-recipe" onclick="setRecipeReviewOverrideV43('${escapeAttr(recipe.id)}','approved')">Marker som klar</button><button type="button" class="ghost" onclick="retryRecipeHelpV35('${escapeAttr(recipe.id)}')">Prøv igjen</button>${source?`<a class="button-link ghost" href="${escapeAttr(source)}" target="_blank" rel="noopener">Åpne kilde</a>`:""}<button type="button" class="text-button" onclick="openImport('${escapeAttr(recipe.id)}')">Rediger</button><button type="button" class="text-button danger-subtle" onclick="openDeleteRecipeV41('${escapeAttr(recipe.id)}')">Slett</button></div></article>`;
+}
+recipeHelpRowV42=recipeHelpRowV43;
+
+const openRecipeDetailsBeforeV43=window.openRecipeDetails;
+window.openRecipeDetails=function(id){
+  openRecipeDetailsBeforeV43(id);const recipe=recipeById(id),body=$("recipeDialogBody");if(!recipe||!body)return;
+  const hero=body.querySelector(".recipe-hero-image");if(hero)hero.innerHTML=recipeImageTagV43(recipe,`Bilde av ${recipe.name}`,false);
+  const approved=recipe.reviewOverride==="approved";
+  body.insertAdjacentHTML("afterbegin",`<div class="recipe-review-control">${approved?'<span class="manual-review-status">Manuelt godkjent</span>':""}<button type="button" class="text-button" onclick="setRecipeReviewOverrideV43('${escapeAttr(recipe.id)}','${approved?"needs-help":"approved"}')">${approved?"Marker som trenger hjelp":"Marker som klar"}</button></div>`);
+};
+
+function renderRecipeImageEditorV43(){
+  const recipe=recipeById(activeImportId),preview=$("recipeImageEditorPreview"),choose=$("chooseRecipeImageBtn"),remove=$("removeRecipeImageBtn");if(!recipe||!preview)return;
+  preview.innerHTML=recipeImageTagV43(recipe,`Nåværende bilde for ${recipe.name}`,false);
+  choose.textContent=recipe.userImagePath?"Bytt bilde":"Last opp bilde";remove.hidden=!recipe.userImagePath;
+  $("recipeImageStatus").textContent=recipe.userImagePath?"Eget bilde er i bruk.":"Bildet fra kilden brukes når det finnes.";
+}
+const openImportBeforeV43=openImport;
+openImport=function(id){const result=openImportBeforeV43(id);renderRecipeImageEditorV43();return result};
+
+function canvasBlobV43(canvas,type,quality){return new Promise(resolve=>canvas.toBlob(resolve,type,quality))}
+async function processRecipeImageV43(file){
+  if(!file||!String(file.type).startsWith("image/"))throw new Error("Velg en gyldig bildefil.");
+  if(file.size>20*1024*1024)throw new Error("Originalbildet kan ikke være større enn 20 MB.");
+  let bitmap;try{bitmap=await createImageBitmap(file,{imageOrientation:"from-image"})}catch(_){throw new Error("Bildet kunne ikke leses. HEIC/HEIF støttes ikke av denne nettleseren; velg JPEG, PNG eller WebP.")}
+  const scale=Math.min(1,1600/Math.max(bitmap.width,bitmap.height)),canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));canvas.getContext("2d").drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close?.();
+  let blob=await canvasBlobV43(canvas,"image/webp",.84);if(!blob)blob=await canvasBlobV43(canvas,"image/jpeg",.86);if(!blob)throw new Error("Bildet kunne ikke behandles.");return blob;
+}
+async function cleanupRecipeImageV43(recipe,path){if(!path)return;try{await fetch("/api/recipe-image",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({recipeId:recipe.id,path})})}catch(error){console.warn("Kunne ikke rydde opp oppskriftsbilde",error)}}
+async function uploadRecipeImageV43(file){
+  const recipe=recipeById(activeImportId);if(!recipe)return;const status=$("recipeImageStatus"),choose=$("chooseRecipeImageBtn"),oldPath=recipe.userImagePath||"";choose.disabled=true;status.textContent="Behandler bilde …";
+  let newPath="";
+  try{
+    const blob=await processRecipeImageV43(file);status.textContent="Laster opp bilde …";
+    const upload=await fetch("/api/recipe-image",{method:"POST",headers:{"Content-Type":blob.type,"X-Recipe-Id":String(recipe.id)},body:blob});const uploaded=await upload.json().catch(()=>({}));if(!upload.ok||!uploaded.ok)throw new Error(uploaded.error||"Opplastingen feilet");newPath=uploaded.path;
+    status.textContent="Lagrer bildet på oppskriften …";await persistRecipeFieldsV43(recipe,{userImagePath:newPath});renderRecipeImageEditorV43();renderRecipeResults();if(oldPath&&oldPath!==newPath)await cleanupRecipeImageV43(recipe,oldPath);status.textContent="Bildet er lagret.";
+  }catch(error){if(newPath)await cleanupRecipeImageV43(recipe,newPath);status.textContent=`Bildet ble ikke lagret: ${error.message}`;renderRecipeImageEditorV43()}finally{choose.disabled=false;$("recipeImageInput").value=""}
+}
+async function removeRecipeImageV43(){
+  const recipe=recipeById(activeImportId),path=recipe?.userImagePath;if(!recipe||!path)return;const button=$("removeRecipeImageBtn"),status=$("recipeImageStatus");button.disabled=true;status.textContent="Fjerner eget bilde …";
+  try{await persistRecipeFieldsV43(recipe,{},["userImagePath"]);renderRecipeImageEditorV43();renderRecipeResults();await cleanupRecipeImageV43(recipe,path);status.textContent="Eget bilde er fjernet. Bildet fra kilden brukes igjen."}catch(error){status.textContent=`Bildet ble ikke fjernet: ${error.message}`}finally{button.disabled=false}
+}
+$("chooseRecipeImageBtn")?.addEventListener("click",()=>$("recipeImageInput")?.click());
+$("recipeImageInput")?.addEventListener("change",event=>{const file=event.target.files?.[0];if(file)void uploadRecipeImageV43(file)});
+$("removeRecipeImageBtn")?.addEventListener("click",()=>void removeRecipeImageV43());
+
 syncFromServer = async function(){
   try {
     if (isSavingPlan || Date.now() - lastLocalSaveAt < 2500) return;
@@ -3271,4 +3381,19 @@ renderDayItems=function(card,day){
   const box=card.querySelector(".day-items"),items=plan[day]||[];
   if(!items.length){box.innerHTML=`<div class="day-empty-state">Ingen middag planlagt</div>`;return}
   box.innerHTML=items.map((item,index)=>{if(item.type==="text")return`<div class="plan-item text-plan-item"><div><div class="plan-item-title">${escapeHtml(item.text)}</div><div class="plan-item-meta">Manuell rett</div></div><div class="plan-actions"><button class="text-button" onclick="addManualDishToShopping('${escapeAttr(item.text)}')">Legg til varer</button><button class="remove-btn" aria-label="Fjern ${escapeAttr(item.text)}" onclick="removePlanItem('${escapeAttr(day)}',${index})">×</button></div></div>`;const recipe=recipeById(item.recipeId);if(!recipe)return`<div class="plan-item missing-plan-item"><span>Oppskrift ikke funnet</span><button class="remove-btn" onclick="removePlanItem('${escapeAttr(day)}',${index})">×</button></div>`;const servings=plannedServingsV30(item,recipe);return`<div class="plan-item ${hasRecipe(recipe)?"recipe-plan-item":"missing-plan-item"}"><button type="button" class="plan-item-open" onclick="${hasRecipe(recipe)?`openRecipeDetails('${escapeAttr(recipe.id)}')`:`openImport('${escapeAttr(recipe.id)}')`}"><span class="plan-item-title">${escapeHtml(recipe.name)}</span><span class="plan-item-meta">${servings?`${formatServingsV30(servings)} porsjoner`:"Mangler porsjonsgrunnlag"}</span></button><div class="plan-serving-actions"><button class="text-button" onclick="editPlannedServingsV30('${escapeAttr(day)}',${index})">Porsjoner</button><button class="remove-btn" aria-label="Fjern ${escapeAttr(recipe.name)}" onclick="removePlanItem('${escapeAttr(day)}',${index})">×</button></div></div>`}).join("");
+};
+
+/* v43 must be the final active presentation layer. */
+incompleteRecipesV42=incompleteRecipesV43;
+recipeImageV39=getRecipeDisplayImage;
+imageForRecipeV28=recipe=>recipeImageTagV43(recipe,`Bilde av ${recipe.name}`);
+recipeHelpRowV42=recipeHelpRowV43;
+const openImportActiveBeforeV43=openImport;
+openImport=function(id){const result=openImportActiveBeforeV43(id);renderRecipeImageEditorV43();return result};
+const openRecipeDetailsActiveBeforeV43=window.openRecipeDetails;
+window.openRecipeDetails=function(id){
+  openRecipeDetailsActiveBeforeV43(id);const recipe=recipeById(id),body=$("recipeDialogBody");if(!recipe||!body)return;
+  const hero=body.querySelector(".recipe-hero-image");if(hero)hero.innerHTML=recipeImageTagV43(recipe,`Bilde av ${recipe.name}`,false);
+  const approved=recipe.reviewOverride==="approved";
+  body.insertAdjacentHTML("afterbegin",`<div class="recipe-review-control">${approved?'<span class="manual-review-status">Manuelt godkjent</span>':""}<button type="button" class="text-button" onclick="setRecipeReviewOverrideV43('${escapeAttr(recipe.id)}','${approved?"needs-help":"approved"}')">${approved?"Marker som trenger hjelp":"Marker som klar"}</button></div>`);
 };

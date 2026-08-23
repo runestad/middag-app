@@ -1,3 +1,4 @@
+import re
 import urllib.parse
 from http.server import BaseHTTPRequestHandler
 
@@ -18,6 +19,21 @@ class handler(BaseHTTPRequestHandler):
                 key: value for key, value in payload.items() if key != "id"
             }
             patch = dict(patch)
+            unset_fields = payload.get("unsetFields") if isinstance(payload.get("unsetFields"), list) else []
+            allowed_unsets = {"reviewOverride", "userImagePath"}
+            ownership_patch = {}
+            if "reviewOverride" in patch:
+                if patch["reviewOverride"] not in ("approved", "needs-help"):
+                    return send_json(self, {"ok": False, "error": "Ugyldig reviewOverride."}, 400)
+                ownership_patch["reviewOverride"] = patch.pop("reviewOverride")
+            if "userImagePath" in patch:
+                image_path = str(patch.pop("userImagePath") or "").strip()
+                storage_app_id = re.sub(r"[^A-Za-z0-9_-]", "-", str(APP_ID).strip())[:160]
+                storage_recipe_id = re.sub(r"[^A-Za-z0-9_-]", "-", str(recipe_id).strip())[:160]
+                expected_prefix = f"{storage_app_id}/{storage_recipe_id}/"
+                if not image_path.startswith(expected_prefix) or ".." in image_path:
+                    return send_json(self, {"ok": False, "error": "Ugyldig bildesti."}, 400)
+                ownership_patch["userImagePath"] = image_path
             if "structuredIngredients" in patch:
                 patch["structuredIngredients"] = normalize_structured_ingredients(patch["structuredIngredients"])
 
@@ -32,6 +48,10 @@ class handler(BaseHTTPRequestHandler):
                 patch.pop("title", None)
             patch = safe_recipe_merge(current, patch)
             current = merge_preserving_existing_data(current, patch)
+            current.update(ownership_patch)
+            for field in unset_fields:
+                if field in allowed_unsets:
+                    current.pop(field, None)
             row = recipe_to_row(current)
             if rows:
                 update_query = urllib.parse.urlencode({"id": f"eq.{recipe_id}", "app_id": f"eq.{APP_ID}"})

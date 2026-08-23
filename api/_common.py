@@ -63,6 +63,23 @@ def supabase_request(method, path, payload=None, query=None, prefer="return=repr
         raise RuntimeError(f"Supabase-feil {e.code}: {detail}")
 
 
+def supabase_storage_request(method, path, payload=None, content_type="application/octet-stream"):
+    """Call private Storage with the server-side key; never expose signed URLs."""
+    base, key = supabase_config()
+    url = f"{base}/storage/v1/{path.lstrip('/')}"
+    headers = {"apikey": key, "Authorization": f"Bearer {key}"}
+    if payload is not None:
+        headers["Content-Type"] = content_type
+    request = urllib.request.Request(url, data=payload, headers=headers, method=method)
+    try:
+        with urllib.request.urlopen(request, timeout=60, context=get_ssl_context()) as response:
+            body = response.read()
+            return body, response.headers.get("Content-Type", "application/octet-stream")
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"Supabase Storage-feil {error.code}: {detail}")
+
+
 def recipe_to_row(recipe):
     rid = str(recipe.get("id") or f"custom-{int(time.time()*1000)}")
     return {
