@@ -1,4 +1,3 @@
-import importlib.util
 import json
 import pathlib
 import subprocess
@@ -7,13 +6,9 @@ from unittest.mock import patch
 
 from api.data_merge import merge_preserving_existing_data
 from api.recipe_import import safe_recipe_merge
+from api import recipes as IMAGE_API
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-IMAGE_SPEC = importlib.util.spec_from_file_location("api.recipe_image", ROOT / "api" / "recipe-image.py")
-IMAGE_API = importlib.util.module_from_spec(IMAGE_SPEC)
-IMAGE_SPEC.loader.exec_module(IMAGE_API)
-
-
 class RecipeOwnershipAndImagesTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -69,9 +64,9 @@ class RecipeOwnershipAndImagesTests(unittest.TestCase):
 
     def test_storage_paths_do_not_depend_on_recipe_title(self):
         with patch.object(IMAGE_API, "APP_ID", "test-app"):
-            self.assertTrue(IMAGE_API.valid_owned_path("test-app/recipe-7/random.webp", "recipe-7"))
-            self.assertFalse(IMAGE_API.valid_owned_path("test-app/other/random.webp", "recipe-7"))
-            self.assertNotIn("name", IMAGE_API.safe_segment("Oppskrift med navn"))
+            self.assertTrue(IMAGE_API.valid_owned_image_path("test-app/recipe-7/random.webp", "recipe-7"))
+            self.assertFalse(IMAGE_API.valid_owned_image_path("test-app/other/random.webp", "recipe-7"))
+            self.assertNotIn("name", IMAGE_API.safe_storage_segment("Oppskrift med navn"))
 
     def test_delete_is_recipe_first_and_image_cleanup_best_effort(self):
         source = (ROOT / "api" / "delete-recipe.py").read_text(encoding="utf-8")

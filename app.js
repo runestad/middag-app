@@ -630,7 +630,7 @@ window.setRecipeReviewOverrideV43=async function(id,value){
 };
 
 function sourceRecipeImageV43(recipe){return sourceRecipeImageBeforeV43(recipe)}
-function userRecipeImageUrlV43(recipe){return recipe?.userImagePath?`/api/recipe-image?path=${encodeURIComponent(recipe.userImagePath)}`:""}
+function userRecipeImageUrlV43(recipe){return recipe?.userImagePath?`/api/recipes?imagePath=${encodeURIComponent(recipe.userImagePath)}`:""}
 const sourceRecipeImageBeforeV43=recipeImageV39;
 function getRecipeDisplayImages(recipe){return[ userRecipeImageUrlV43(recipe),sourceRecipeImageV43(recipe),recipeImageFallbackV41(recipe)].filter((value,index,list)=>value&&list.indexOf(value)===index)}
 function getRecipeDisplayImage(recipe){return getRecipeDisplayImages(recipe)[0]||""}
@@ -679,13 +679,13 @@ async function processRecipeImageV43(file){
   const scale=Math.min(1,1600/Math.max(bitmap.width,bitmap.height)),canvas=document.createElement("canvas");canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));canvas.getContext("2d").drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close?.();
   let blob=await canvasBlobV43(canvas,"image/webp",.84);if(!blob)blob=await canvasBlobV43(canvas,"image/jpeg",.86);if(!blob)throw new Error("Bildet kunne ikke behandles.");return blob;
 }
-async function cleanupRecipeImageV43(recipe,path){if(!path)return;try{await fetch("/api/recipe-image",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({recipeId:recipe.id,path})})}catch(error){console.warn("Kunne ikke rydde opp oppskriftsbilde",error)}}
+async function cleanupRecipeImageV43(recipe,path){if(!path)return;try{await fetch("/api/recipes",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({recipeId:recipe.id,path})})}catch(error){console.warn("Kunne ikke rydde opp oppskriftsbilde",error)}}
 async function uploadRecipeImageV43(file){
   const recipe=recipeById(activeImportId);if(!recipe)return;const status=$("recipeImageStatus"),choose=$("chooseRecipeImageBtn"),oldPath=recipe.userImagePath||"";choose.disabled=true;status.textContent="Behandler bilde …";
   let newPath="";
   try{
     const blob=await processRecipeImageV43(file);status.textContent="Laster opp bilde …";
-    const upload=await fetch("/api/recipe-image",{method:"POST",headers:{"Content-Type":blob.type,"X-Recipe-Id":String(recipe.id)},body:blob});const uploaded=await upload.json().catch(()=>({}));if(!upload.ok||!uploaded.ok)throw new Error(uploaded.error||"Opplastingen feilet");newPath=uploaded.path;
+    const upload=await fetch("/api/recipes",{method:"POST",headers:{"Content-Type":blob.type,"X-Recipe-Id":String(recipe.id)},body:blob});const uploaded=await upload.json().catch(()=>({}));if(!upload.ok||!uploaded.ok)throw new Error(uploaded.error||"Opplastingen feilet");newPath=uploaded.path;
     status.textContent="Lagrer bildet på oppskriften …";await persistRecipeFieldsV43(recipe,{userImagePath:newPath});renderRecipeImageEditorV43();renderRecipeResults();if(oldPath&&oldPath!==newPath)await cleanupRecipeImageV43(recipe,oldPath);status.textContent="Bildet er lagret.";
   }catch(error){if(newPath)await cleanupRecipeImageV43(recipe,newPath);status.textContent=`Bildet ble ikke lagret: ${error.message}`;renderRecipeImageEditorV43()}finally{choose.disabled=false;$("recipeImageInput").value=""}
 }
