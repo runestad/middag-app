@@ -14,6 +14,7 @@ class FocusedMobileFixTests(unittest.TestCase):
     def setUp(self):
         self.html = (ROOT / "index.html").read_text(encoding="utf-8")
         self.js = (ROOT / "app.js").read_text(encoding="utf-8")
+        self.css = (ROOT / "styles.css").read_text(encoding="utf-8")
 
     def test_date_inputs_have_no_duplicate_visible_helpers(self):
         self.assertIn('id="startDate"', self.html)
@@ -21,6 +22,11 @@ class FocusedMobileFixTests(unittest.TestCase):
         self.assertNotIn('id="startDateLabel"', self.html)
         self.assertNotIn('id="endDateLabel"', self.html)
         self.assertIn("createDaysBtn:createDayRows", self.js)
+
+    def test_manual_meal_input_stays_visible_on_mobile(self):
+        final_mobile = self.css[self.css.rindex("@media(max-width:560px)"):]
+        self.assertIn(".day-manual-row{display:grid}", final_mobile)
+        self.assertNotIn(".day-manual-row{display:none}", final_mobile)
 
     def test_freezer_controls_keep_existing_mutations(self):
         self.assertIn('class="freezer-stepper"', self.js)
