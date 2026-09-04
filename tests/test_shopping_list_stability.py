@@ -108,11 +108,19 @@ class ShoppingUxContractTests(unittest.TestCase):
         self.assertIn("@media (max-width: 430px)", self.css)
         self.assertIn(".period-grid{grid-template-columns:1fr}", self.css)
         self.assertIn('input[type="date"]{display:block;width:100%;max-width:100%;min-width:0', self.css)
+        self.assertIn("column-gap:18px;row-gap:14px", self.css)
 
-    def test_only_specific_delete_and_clear_create_tombstones(self):
+    def test_completed_items_can_be_cleared_with_tombstones(self):
         active = self.js[self.js.index("/* ===== v25 professional UI"):]
-        self.assertNotIn("clearCompletedShoppingV25", active)
-        self.assertNotIn("tombstones=ensureShoppingMetadataV25", active)
+        self.assertIn("clearCompletedShoppingV25", active)
+        self.assertIn('completedIds.has(item.id) ? {...item, deleted: true', active)
+
+    def test_shopping_categories_are_complete_and_canonical(self):
+        expected = '["Frukt og grønt","Kjøtt","Frysevarer","Meieri","Hermetikk/halvfabrikat","Tørrvarer","Krydder","Glutenfritt","Bakevarer","Annet"]'
+        self.assertIn(f"const CATEGORIES={expected}", self.js)
+        final_render = self.js[self.js.rindex("renderShoppingList=function(items)"):]
+        self.assertIn("new Map(CATEGORIES.map(category=>[category,[]]))", final_render)
+        self.assertIn("CATEGORIES.map(category=>renderShoppingCategoryV25", final_render)
 
 
 if __name__ == "__main__":

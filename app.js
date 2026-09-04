@@ -1,6 +1,6 @@
 
 const DAYS=["mandag","tirsdag","onsdag","torsdag","fredag","lørdag","søndag"];
-const CATEGORIES=["Frukt og grønt","Kjøtt","Kjølevarer","Meieri","Frys","Hermetikk/halvfabrikat","Tørrvarer","Krydder","Glutenfritt","Bakevarer","Annet"];
+const CATEGORIES=["Frukt og grønt","Kjøtt","Frysevarer","Meieri","Hermetikk/halvfabrikat","Tørrvarer","Krydder","Glutenfritt","Bakevarer","Annet"];
 let recipes=[],plan={},shoppingItems=[],customRecipes=JSON.parse(localStorage.getItem("middag_custom_recipes")||"{}"),activeImportId=null,activePickerDay=null,pendingAddRecipeId=null;
 let appMeta={favorites:[],usageCounts:{},lastUsed:{},updatedAt:""},lastRemoteUpdatedAt="",syncTimer=null;
 let freezerItems=[];
@@ -1344,8 +1344,7 @@ categorize = function(line){
   const has = words => words.some(word => value.includes(normalize(word)));
   if (has(["kylling","biff","flankestek","okse","kjøttdeig","karbonadedeig","svin","kotelett","pølse","kalkun","bacon","lam","skinke"])) return "Kjøtt";
   if (has(["halloumi","melk","fløte","rømme","parmesan","feta","cottage cheese","yoghurt","smør","mozzarella","cheddar","ost"])) return "Meieri";
-  if (has(["tofu"])) return "Kjølevarer";
-  if (has(["frossen","frosne","edamame"])) return "Frys";
+  if (has(["frossen","frosne","edamame"])) return "Frysevarer";
   if (has(["paprikapulver","chilipulver","salt","pepper","oregano","basilikum","gochugaru","spisskummen","kanel","chiliflak","karri","garam masala","laurbær","sesamfrø","timian","rosmarin","kajenne"])) return "Krydder";
   if (has(["boks","kokosmelk","kidneybønner","kikerter","hakkede tomater","hermetisk","mais på boks"])) return "Hermetikk/halvfabrikat";
   if (has(["maizena","maisstivelse","soyasaus","tamari","sesamolje","olivenolje","riseddik","eddik","sriracha","fiskesaus","kraft","buljong","peanøttsmør","tomatpuré","tomatpure","panko","brødsmuler","hvetemel"," hoisin","worcestershire","pasta","nudler","ris","orzo","bulgur","quinoa","couscous","linser"])) return "Tørrvarer";
@@ -1605,6 +1604,18 @@ window.toggleCompletedShoppingV25 = function(button){
   if (!items) return;
   items.hidden = !items.hidden;
   button.setAttribute("aria-expanded", String(!items.hidden));
+};
+window.clearCompletedShoppingV25 = function(){
+  const completed = visibleShoppingItemsV25().filter(item => item.done);
+  if (!completed.length) return;
+  if (!confirm(`Fjerne ${completed.length} fullførte ${completed.length === 1 ? "vare" : "varer"}?`)) return;
+  const timestamp = nowIsoV25();
+  const completedIds = new Set(completed.map(item => item.id));
+  shoppingItems = ensureShoppingMetadataV25(shoppingItems).map(item =>
+    completedIds.has(item.id) ? {...item, deleted: true, updatedAt: timestamp} : item
+  );
+  renderShoppingWithoutViewportJumpV31();
+  savePlan();
 };
 window.toggleShoppingDoneV25 = function(id, checked){
   const item = getShoppingItem(id);
@@ -3370,10 +3381,10 @@ $("openRecipeHelpBtn")?.addEventListener("click",openRecipeHelpV42);
 
 renderShoppingList=function(items){
   shoppingItems=ensureShoppingMetadataV25(items||[]);const box=$("shoppingList");if(!box)return;
-  const visible=visibleShoppingItemsV25(),active=visible.filter(item=>!item.done),done=visible.filter(item=>item.done),grouped=new Map();
-  for(const item of active){const predicted=item.manualCategory?item.category:categorize(item.text);const category=item.manualCategory?(CATEGORIES.includes(item.category)?item.category:"Annet"):(predicted!=="Annet"?predicted:(CATEGORIES.includes(item.category)?item.category:"Annet"));item.category=category;if(!grouped.has(category))grouped.set(category,[]);grouped.get(category).push(item)}
-  const categories=[...grouped.entries()].map(([category,categoryItems])=>renderShoppingCategoryV25(category,categoryItems)).join("");
-  box.innerHTML=visible.length?`<p class="shopping-summary"><strong>${active.length}</strong> igjen · ${done.length} fullført</p>${categories||`<div class="empty-state"><strong>Alt er handlet inn</strong><p>Du er ferdig med denne listen.</p></div>`}${done.length?`<section class="completed-section"><button type="button" class="completed-toggle" aria-expanded="false" onclick="toggleCompletedShoppingV25(this)">Fullført (${done.length})</button><div class="completed-items" hidden>${done.map(shoppingRowHtmlV25).join("")}</div></section>`:""}`:`<div class="empty-state"><strong>Handlelisten er tom</strong><p>Legg til en vare, eller hent ingredienser fra ukesmenyen.</p><button type="button" class="ghost" onclick="generateShoppingList()">Hent fra ukesmenyen</button></div>`;
+  const visible=visibleShoppingItemsV25(),active=visible.filter(item=>!item.done),done=visible.filter(item=>item.done),grouped=new Map(CATEGORIES.map(category=>[category,[]]));
+  for(const item of active){const legacyCategory=item.category==="Frys"?"Frysevarer":item.category==="Kjølevarer"?"Annet":item.category;const predicted=item.manualCategory?legacyCategory:categorize(item.text);const category=item.manualCategory?(CATEGORIES.includes(legacyCategory)?legacyCategory:"Annet"):(predicted!=="Annet"?predicted:(CATEGORIES.includes(legacyCategory)?legacyCategory:"Annet"));item.category=category;grouped.get(category).push(item)}
+  const categories=CATEGORIES.map(category=>renderShoppingCategoryV25(category,grouped.get(category))).join("");
+  box.innerHTML=`<p class="shopping-summary"><strong>${active.length}</strong> igjen · ${done.length} fullført</p>${categories}${done.length?`<section class="completed-section"><div class="completed-head"><button type="button" class="completed-toggle" aria-expanded="false" onclick="toggleCompletedShoppingV25(this)">Fullført (${done.length})</button><button type="button" class="text-button danger-subtle clear-completed" onclick="clearCompletedShoppingV25()">Fjern fullførte</button></div><div class="completed-items" hidden>${done.map(shoppingRowHtmlV25).join("")}</div></section>`:""}`;
   updateShoppingRemainingV25();
 };
 
