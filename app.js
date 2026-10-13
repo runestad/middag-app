@@ -39,14 +39,14 @@ window.addRecipeToDay=(day,id)=>{plan[day].push({type:"recipe",recipeId:id});bum
 function openAddRecipe(){$("addRecipeDialog").showModal()}
 function openImport(id){activeImportId=id;const r=recipeById(id),sourceUrl=resolveRecipeSourceUrl(r);$("importTarget").textContent=`Lagrer på: ${r.name}`;$("importLinkWrap").innerHTML=sourceUrl?`Kilde: <a href="${escapeAttr(sourceUrl)}" target="_blank" rel="noopener">åpne originaloppskrift</a>`:"Ingen kilde registrert";$("importName").value=r.name||"";$("importLink").value=sourceUrl;$("importCategory").value=r.category||"Annet";$("importServings").value=r.servings||"";$("captionInput").value="";$("parsedIngredients").value=ingredientsToText(r);$("parsedInstructions").value=instructionsToText(r);window.lastAiParsedRecipe=null;$("importDialog").showModal()}
 async function parseCaptionAI(){const caption=$("captionInput").value.trim(),status=$("aiStatus"),btn=$("aiParseCaptionBtn"),r=recipeById(activeImportId)||{};if(!caption)return alert("Lim inn caption/oppskriftstekst først.");try{btn.disabled=true;btn.textContent="AI parser …";status.textContent="Sender tekst til AI-parser …";const res=await fetch("/api/parse-caption",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({caption,recipeName:$("importName").value.trim()||r.name||"",sourceUrl:$("importLink").value.trim()||resolveRecipeSourceUrl(r),category:$("importCategory").value||r.category||""})});const data=await res.json();if(!data.ok)throw new Error(data.error||"AI-parser feilet");const p=data.parsed||{};$("importName").value=$("importName").value.trim()||p.title||r.name||"";$("importCategory").value=p.category||$("importCategory").value||"Annet";$("importServings").value=p.servings||$("importServings").value||"";$("parsedIngredients").value=(p.ingredients||[]).map(formatAiIngredient).join("\n");$("parsedInstructions").value=(p.instructions||[]).map((s,i)=>`${i+1}. ${s}`).join("\n");const context=mergePreservingExistingData(r,{...p,name:p.title||$("importName").value});p.tags=enrichTags(context);p.emoji=emojiForRecipe(context);window.lastAiParsedRecipe=p;status.textContent=`AI-parsing ferdig. Tags: ${(p.tags||[]).join(", ")}`}catch(err){status.textContent="AI-parser feilet: "+(err?.message||err);alert("AI-parser feilet. Se statusfelt.")}finally{btn.disabled=false;btn.textContent="AI-parse caption"}}
-function formatAiIngredient(ing){if(typeof ing==="string")return ing;const amount=ing.amount||"",unit=ing.unit||"",item=ing.item||"",note=ing.note?` (${ing.note})`:"",cat=ing.shoppingCategory?` [${ing.shoppingCategory}]`:"";return`${amount} ${unit} ${item}${note}${cat}`.replace(/\s+/g," ").trim()}
+function formatAiIngredient(ing){if(typeof ing==="string")return ing;const amount=/^(null|undefined|nan)$/i.test(String(ing.amount))?"":(ing.amount??""),unit=ing.unit||"",item=ing.item||"",note=ing.note?` (${ing.note})`:"",cat=ing.shoppingCategory?` [${ing.shoppingCategory}]`:"";return`${amount} ${unit} ${item}${note}${cat}`.replace(/\s+/g," ").trim()}
 function parseCaption(){const text=$("captionInput").value.trim(),lines=text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean),ing=[],inst=[];let mode="";for(const line of lines){if(/ingredients|ingredienser/i.test(line)){mode="ing";continue}if(/instructions|method|fremgangsmåte|slik gjør/i.test(line)){mode="inst";continue}if(mode==="inst"||/^\d+[\.)]/.test(line))inst.push(line);else if(mode==="ing"||/^[-*•]?\s*[\d¼½¾]/.test(line))ing.push(convertIngredientLine(line.replace(/^[-*•]\s*/,"")))}$("parsedIngredients").value=ing.join("\n");$("parsedInstructions").value=inst.join("\n")}
 async function saveParsedRecipe(){if(!activeImportId)return alert("Ingen oppskrift valgt.");const base=recipeById(activeImportId)||{},name=$("importName").value.trim()||"Ny oppskrift",link=$("importLink").value.trim()||resolveRecipeSourceUrl(base),category=$("importCategory").value||"Annet",ai=window.lastAiParsedRecipe||{};const patch=meaningfulPatch({name,link,category,source:sourceTypeFromUrl(link)||base.source||"Manuell",servings:$("importServings").value.trim(),ingredientsText:$("parsedIngredients").value.trim(),instructions:$("parsedInstructions").value.trim(),structuredIngredients:ai.ingredients||[],structuredInstructions:ai.instructions||[],tags:ai.tags||enrichTags(mergePreservingExistingData(base,{name,category,ingredientsText:$("parsedIngredients").value,instructions:$("parsedInstructions").value})),emoji:ai.emoji||emojiForRecipe(mergePreservingExistingData(base,{name,category})),aiParsed:!!window.lastAiParsedRecipe,aiConfidence:ai.confidence||"",status:"Fullført",manualCheck:"Nei",updatedAt:new Date().toISOString()});const idx=recipes.findIndex(r=>String(r.id)===String(activeImportId));if(idx>=0)recipes[idx]=mergePreservingExistingData(recipes[idx],patch);else recipes.push({id:activeImportId,...patch});try{const response=await fetch("/api/save-recipe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:activeImportId,patch})});const saveResult=await response.json().catch(()=>({}));if(!response.ok||saveResult.ok===false)throw new Error(saveResult.error||"Lagring feilet");$("importDialog").close();createDayRows();renderRecipeResults();alert("Oppskriften er lagret permanent i Supabase ✅")}catch(err){customRecipes[activeImportId]=mergePreservingExistingData(customRecipes[activeImportId]||{},patch);localStorage.setItem("middag_custom_recipes",JSON.stringify(customRecipes));alert("Oppskriften vises nå i denne nettleseren, men Supabase-lagring feilet: "+(err?.message||err))}}
 function generateShoppingList(){const days=selectedDays(),raw=[];for(const day of days){for(const item of(plan[day]||[])){if(item.type==="text")continue;const r=recipeById(item.recipeId);if(!r||!hasRecipe(r))continue;for(const line of extractIngredientLines(r))raw.push({text:line,category:categorize(line),recipe:r.name,done:false})}}shoppingItems=mergeShoppingItems(raw);renderShoppingList(shoppingItems);savePlan();showView("viewShopping")}
 function mergeShoppingItems(items){const map=new Map(),pass=[];for(const it of items){const p=parseAmount(it.text);if(!p.name){pass.push(it);continue}const key=normalize(p.name+"|"+(p.unit||""));if(!map.has(key)){map.set(key,{...it,text:formatMergedItem(p),_p:p,_recipes:new Set([it.recipe])})}else{const cur=map.get(key);if(p.amount!=null&&cur._p.amount!=null&&p.unit===cur._p.unit){cur._p.amount+=p.amount;cur.text=formatMergedItem(cur._p)}else cur.text=cur.text+" + "+it.text;cur._recipes.add(it.recipe);cur.recipe=[...cur._recipes].join(", ");cur.merged=true;cur.category=bestCategory(cur.category,it.category)}}return[...map.values(),...pass].map(x=>{delete x._p;delete x._recipes;return x})}
 function parseAmount(text){let s=convertIngredientLine(String(text||"").replace(/\s*\[[^\]]+\]\s*$/,"").trim());const m=s.match(/^(\d+(?:[.,]\d+)?)\s*(g|kg|dl|l|ml|ss|ts|stk|pk|boks|fedd)?\s+(.+)$/i);if(!m)return{amount:null,unit:"",name:normalizeIngredientName(s),original:s};let amount=parseFloat(m[1].replace(",",".")),unit=(m[2]||"stk").toLowerCase(),name=normalizeIngredientName(m[3]);if(unit==="kg"){amount*=1000;unit="g"}if(unit==="l"){amount*=10;unit="dl"}return{amount,unit,name,original:s}}
 function normalizeIngredientName(name){let s=String(name||"").toLowerCase().trim();s=s.replace(/\([^)]*\)/g,"").replace(/[,].*$/,"").trim();s=s.replace(/\b(chopped|finely|thinly|sliced|diced|minced|grated|fresh|freshly|large|medium|small|heaped|smooth|natural|drained|rinsed|optional|to serve|hakket|finhakket|skivet|revet|fersk|stor|liten|medium|valgfritt|til servering)\b/g,"").replace(/\s+/g," ").trim();const aliases={"garlic":"hvitløk","onion":"løk","carrot":"gulrot","carrots":"gulrot","cucumber":"agurk","tomatoes":"tomat","tomato":"tomat","chickpeas":"kikerter","beans":"bønner","rice noodles":"risnudler","noodles":"nudler","soy sauce":"soyasaus","olive oil":"olivenolje"};return aliases[s]||s}
-function formatMergedItem(p){if(p.amount==null)return p.original;return`${(Math.round(p.amount*10)/10).toString().replace(".",",")} ${p.unit} ${p.name}`.trim()}
+function formatMergedItem(p){if(p.amount==null)return p.original;return`${(Math.round(p.amount*1000)/1000).toString().replace(".",",")} ${p.unit} ${p.name}`.trim()}
 function bestCategory(a,b){if(a===b)return a;const pr=["Krydder","Kjøtt","Meieri","Frys","Hermetikk/halvfabrikat","Tørrvarer","Glutenfritt","Bakevarer","Frukt og grønt","Kjølevarer","Annet"];return pr.indexOf(a)<=pr.indexOf(b)?a:b}
 function renderShoppingList(items){const grouped=Object.fromEntries(CATEGORIES.map(c=>[c,[]]));for(const item of items){if(!grouped[item.category])grouped[item.category]=[];grouped[item.category].push(item)}const total=items.length,merged=items.filter(x=>x.merged).length;$("shoppingList").innerHTML=`<p class="shopping-summary">${total} varer${merged?` · ${merged} slått sammen`:""}</p>`+CATEGORIES.map(cat=>{const arr=grouped[cat]||[];return`<div class="category" data-category="${escapeAttr(cat)}"><div class="category-head"><h3>${cat}</h3><button class="tiny-add" onclick="addCustomShoppingItem('${escapeAttr(cat)}')">+ Legg til</button></div><div class="category-items">${arr.length?arr.map(it=>shoppingItemHtml(it)).join(""):`<p class="hint small-hint">Ingen varer enda.</p>`}</div></div>`}).join("")}
 function shoppingItemHtml(it){return`<div class="item"><input type="checkbox" ${it.done?"checked":""} onchange="this.closest('.item').classList.toggle('done', this.checked)"><input type="text" value="${escapeAttr(it.text)}" title="Fra: ${escapeAttr(it.recipe||'Egen vare')}">${it.merged?`<span class="merged-badge">slått sammen</span>`:""}<button class="remove-btn" title="Fjern" onclick="this.closest('.item').remove()">×</button></div>`}
@@ -1079,15 +1079,14 @@ function normalizeForMergeUnit(unit,name){
 }
 
 function parseAmount(text){
-  let s=normalizeIngredientLineForDisplay(String(text||"").replace(/\s*\[[^\]]+\]\s*$/,"").trim());
-  const m=s.match(/^(\d+(?:[.,]\d+)?)\s*(g|kg|dl|l|ml|ss|ts|stk|pk|pose|poser|boks|fedd|stilker|stilk)?\s+(.+)$/i);
-  if(!m)return{amount:null,unit:"",name:normalizeIngredientName(s),original:s};
-  let amount=parseFloat(m[1].replace(",",".")),unit=(m[2]||"stk").toLowerCase(),name=normalizeIngredientName(m[3]);
-  if(unit==="kg"){amount*=1000;unit="g"}
-  if(unit==="l"){amount*=10;unit="dl"}
-  if(unit==="stilker")unit="stilk";
-  unit=normalizeForMergeUnit(unit,name);
-  return{amount,unit,name,original:s}
+  const p=ShoppingIngredients.parse(normalizeIngredientLineForDisplay(text));
+  // Unknown quantities/ranges keep their whole identity, including commas.
+  if(p.amount==null)return p;
+  const notes=p.name.match(/\([^)]*\)/g)||[];
+  p.name=normalizeIngredientName(p.name)+(notes.length?' '+notes.join(' '):'');
+  if(p.unit==='kg'){p.amount*=1000;p.unit='g'}
+  if(p.unit==='l'){p.amount*=10;p.unit='dl'}
+  return p;
 }
 
 function normalizeIngredientName(name){
@@ -1102,6 +1101,10 @@ function normalizeIngredientName(name){
 
 function translateIngredientWords(s){
   const replacements=[
+    [/black (?:beans|bønner)/g,"sorte bønner"],[/black pepper/g,"sort pepper"],[/chili powder/g,"chilipulver"],
+    [/garlic powder/g,"hvitløkspulver"],[/onion powder/g,"løkpulver"],[/smoked paprika/g,"røkt paprikapulver"],
+    [/dried oregano/g,"tørket oregano"],[/sea salt/g,"havsalt"],[/ground cumin/g,"malt spisskummen"],
+    [/cumin/g,"spisskummen"],[/cilantro/g,"koriander"],[/shredded/g,"revet"],
     [/celery stalks?/g,"stangselleri"],[/celery/g,"stangselleri"],[/garlic cloves?/g,"fedd hvitløk"],[/garlic/g,"hvitløk"],
     [/yellow onion/g,"gul løk"],[/red onion/g,"rødløk"],[/spring onions?/g,"vårløk"],[/onions?/g,"løk"],
     [/carrots?/g,"gulrot"],[/cucumber/g,"agurk"],[/tomatoes/g,"tomat"],[/tomato/g,"tomat"],
@@ -1117,23 +1120,7 @@ function translateIngredientWords(s){
 }
 
 function normalizeIngredientLineForDisplay(line){
-  let s=String(line||"").trim();
-  s=s.replace(/\s+/g," ");
-  s=translateIngredientWords(s);
-
-  // Avoid nonsense like "4,2 dl stangselleri". Cups of chopped vegetables become approximate pieces/stalks.
-  s=s.replace(/(\d+(?:[.,]\d+)?)\s*cups?\s+(?:chopped\s+|diced\s+|sliced\s+)?(celery|stangselleri)\b/gi,(_,n)=>`${Math.max(1,Math.round(parseFloat(n.replace(",","."))*2))} stilker stangselleri`);
-  s=s.replace(/(\d+(?:[.,]\d+)?)\s*cups?\s+(?:chopped\s+|diced\s+|sliced\s+)?(onion|løk)\b/gi,(_,n)=>`${Math.max(1,Math.round(parseFloat(n.replace(",","."))))} løk`);
-  s=s.replace(/(\d+(?:[.,]\d+)?)\s*cups?\s+(?:chopped\s+|diced\s+|sliced\s+)?(carrot|gulrot|carrots)\b/gi,(_,n)=>`${Math.max(1,Math.round(parseFloat(n.replace(",","."))*2))} gulrot`);
-  s=s.replace(/(\d+(?:[.,]\d+)?)\s*cups?\s+(?:chopped\s+|diced\s+|sliced\s+)?(bell pepper|paprika)\b/gi,(_,n)=>`${Math.max(1,Math.round(parseFloat(n.replace(",","."))))} paprika`);
-
-  // Generic cups: keep dl for liquids/dry goods.
-  s=s.replace(/(\d+(?:[.,]\d+)?)\s*cups?\b/gi,(_,n)=>`${String(Math.round(parseFloat(n.replace(",","."))*24)/10).replace(".",",")} dl`);
-  s=s.replace(/(\d+(?:[.,]\d+)?)\s*(tbsp|tablespoons?)\b/gi,"$1 ss");
-  s=s.replace(/(\d+(?:[.,]\d+)?)\s*(tsp|teaspoons?)\b/gi,"$1 ts");
-  s=s.replace(/(\d+(?:[.,]\d+)?)\s*(oz|ounces?)\b/gi,(_,n)=>`${Math.round(parseFloat(n.replace(",","."))*28.35)} g`);
-
-  return s.trim();
+  return translateIngredientWords(ShoppingIngredients.convert(line));
 }
 
 convertIngredientLine=function(line){
@@ -1145,7 +1132,7 @@ function mergeShoppingItems(items){
   for(const it of items){
     const normalizedText=normalizeIngredientLineForDisplay(it.text);
     const p=parseAmount(normalizedText);
-    if(!p.name){pass.push({...it,text:normalizedText});continue}
+    if(!p.name||ShoppingIngredients.heading(normalizedText))continue;
     const key=normalize(p.name+"|"+(p.unit||""));
     if(!map.has(key)){
       map.set(key,{...it,id:it.id||`shop-${Date.now()}-${Math.random().toString(16).slice(2)}`,text:formatMergedItem(p),category:categorize(p.name),_p:p,_recipes:new Set([it.recipe])});
@@ -1268,12 +1255,7 @@ function normalizeNorwegianTextV23(value){
       [/\bcarrots?\b/gi,"gulrot"],[/\btomatoes\b/gi,"tomater"],[/\btomato\b/gi,"tomat"],[/\bchicken\b/gi,"kylling"],[/\bcornstarch\b/gi,"maizena"],[/\bcorn starch\b/gi,"maizena"],[/\bsoy sauce\b/gi,"soyasaus"],[/\bolive oil\b/gi,"olivenolje"]
     ];
     for(const [a,b] of reps) s=s.replace(a,b);
-    const num=x=>parseFloat(String(x).replace(",","."));
-    s=s.replace(/(\d+(?:[.,]\d+)?)\s*cups?\s+(?:chopped\s+|diced\s+|sliced\s+)?(?:celery|stangselleri)\b/gi,(_,n)=>`${Math.max(1,Math.round(num(n)*2))} stilker stangselleri`);
-    s=s.replace(/(\d+(?:[.,]\d+)?)\s*cups?\s+(?:chopped\s+|diced\s+|sliced\s+)?(?:onion|løk|gul løk)\b/gi,(_,n)=>`${Math.max(1,Math.round(num(n)))} gul løk`);
-    s=s.replace(/(\d+(?:[.,]\d+)?)\s*cups?\b/gi,(_,n)=>`${String(Math.round(num(n)*24)/10).replace(".",",")} dl`);
-    s=s.replace(/(\d+(?:[.,]\d+)?)\s*(tbsp|tablespoons?)\b/gi,"$1 ss").replace(/(\d+(?:[.,]\d+)?)\s*(tsp|teaspoons?)\b/gi,"$1 ts");
-    return s.replace(/\s+/g," ").trim();
+    return ShoppingIngredients.convert(s).replace(/\s+/g," ").trim();
   };
   if(typeof value==="string") return value.split(/\n/).map(clean).filter(Boolean).join("\n");
   if(Array.isArray(value)) return value.map(x=>typeof x==="string"?clean(x):(x&&typeof x==="object"?normalizeNorwegianTextV23(x):x));
@@ -2815,19 +2797,47 @@ function addMissingIngredientsV28(id){
 }
 window.addMissingIngredientsV28=addMissingIngredientsV28;
 
+// Recover only old cup collisions that match the saved source lines exactly.
+function legacyShoppingRecoveryV46(item){
+  if(!item||item.deleted||!item.recipe||! /\d+\/\d+,\d+ dl/.test(item.text))return null;
+  const candidates=[];
+  for(const recipe of recipes){
+    if(item.recipe!==recipe.name)continue;
+    const lines=Array.isArray(recipe.structuredIngredients)&&recipe.structuredIngredients.length
+      ?recipe.structuredIngredients.map(formatAiIngredient):ingredientsToText(recipe).split(/\n/);
+    for(const line of lines){
+      if(!/\d+\/\d+ cups?\b/.test(line))continue;
+      const legacy=translateIngredientWords(line.replace(/(\d+(?:[.,]\d+)?)\s*cups?\b/gi,(_,n)=>`${String(Math.round(parseFloat(n.replace(",","."))*24)/10).replace(".",",")} dl`));
+      candidates.push({legacy,current:normalizeIngredientLineForDisplay(line)});
+    }
+  }
+  return ShoppingIngredients.recoverLegacyGroup(translateIngredientWords(item.text),candidates);
+}
+function repairLegacyShoppingItemV46(id){
+  const original=shoppingItems.find(item=>item.id===id),lines=legacyShoppingRecoveryV46(original);
+  if(!lines)return;
+  if(!confirm("Erstatt den feilaktige sammenslåingen med disse separate varene?\n\n"+lines.join("\n")))return;
+  localStorage.setItem('middag_shopping_repair_backup_'+id,JSON.stringify(original));
+  const timestamp=nowIsoV25();
+  shoppingItems=shoppingItems.map(item=>item.id===id?{...item,deleted:true,updatedAt:timestamp}:item);
+  for(const text of lines)shoppingItems.push({...original,id:shoppingIdV25(),text,category:original.manualCategory?original.category:categorize(text),deleted:false,updatedAt:timestamp});
+  renderShoppingList(shoppingItems);savePlan();
+}
+
 const categorizeBeforeV28=categorize;
 categorize=function(line){
   ensureMetaV28(); const key=pantryKeyV28(line),override=appMeta.ingredientRegistryOverrides[key];
   if(override&&CATEGORIES.includes(override))return override;
-  const text=normalize(line);
-  if(/\b(salt|pepper|oregano|timian|basilikum|spisskummen|kanel|muskat|karri|kardemomme|kajenne|laurbær)\b/.test(text)||/\b(pulver|flak|krydder|masala)\b/.test(text))return"Krydder";
-  return categorizeBeforeV28(line);
+  const category=ShoppingIngredients.category(normalizeIngredientLineForDisplay(line));
+  if(category)return CATEGORIES.includes(category)?category:"Annet";
+  return categorizeBeforeV28(ShoppingIngredients.parse(normalizeIngredientLineForDisplay(line)).name.replace(/\([^)]*\)/g,""));
 };
 shoppingRowHtmlV25=function(item){
   const source=item.recipe&&item.recipe!=="Egen vare"?item.recipe:"";
   return `<div class="shopping-row${item.done?" done":""}" data-shopping-id="${escapeAttr(item.id)}">
     <input class="shopping-check" type="checkbox" ${item.done?"checked":""} onchange="toggleShoppingDoneV25('${escapeAttr(item.id)}',this.checked)">
-    <div class="shopping-item-main"><button type="button" class="shopping-item-text" onclick="editShoppingItemV25('${escapeAttr(item.id)}')">${escapeHtml(item.text)}</button>${source?`<span class="shopping-source">Fra ${escapeHtml(source)}</span>`:""}</div>
+    <div class="shopping-item-main"><button type="button" class="shopping-item-text" onclick="editShoppingItemV25('${escapeAttr(item.id)}')">${escapeHtml(ShoppingIngredients.clean(item.text))}</button>${source?`<span class="shopping-source">Fra ${escapeHtml(source)}</span>`:""}</div>
+    ${legacyShoppingRecoveryV46(item)?`<button type="button" class="text-button" onclick="repairLegacyShoppingItemV46('${escapeAttr(item.id)}')">Rett sammenslåing</button>`:""}
     <button type="button" class="shopping-more" onclick="toggleShoppingActionsV25('${escapeAttr(item.id)}',this)">•••</button>
     <div class="shopping-actions"><button type="button" class="shopping-delete category-action" onclick="openShoppingCategoryV28('${escapeAttr(item.id)}')">Endre kategori</button><button type="button" class="shopping-delete" onclick="removeShoppingItemV25('${escapeAttr(item.id)}')">Slett vare</button></div></div>`;
 };
@@ -2990,9 +3000,13 @@ function scaledIngredientLineV30(ingredient){
 }
 function scaledIngredientLinesV30(recipe,servings){
   if(Array.isArray(recipe?.structuredIngredients)&&recipe.structuredIngredients.length){
-    return ServingScaling.scaledStructuredIngredients(recipe,servings).map(scaledIngredientLineV30);
+    const factor=ServingScaling.scaleFactorFor(recipe,servings)??1;
+    return recipe.structuredIngredients.map(item=>typeof item==='string'
+      ?ShoppingIngredients.scale(item,factor)
+      :scaledIngredientLineV30(ServingScaling.scaleStructuredIngredient(item,factor)))
+      .filter(line=>line&&!ShoppingIngredients.heading(line));
   }
-  return extractIngredientLines(recipe);
+  return ingredientsToText(recipe).split(/;|\n/).map(line=>ShoppingIngredients.scale(line,ServingScaling.scaleFactorFor(recipe,servings)??1)).filter(line=>line&&!ShoppingIngredients.heading(line));
 }
 function servingControlsHtmlV30(recipe,selected){
   const base=baseServingsV30(recipe);
