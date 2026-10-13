@@ -25,3 +25,12 @@ class ShoppingIngredientsTests(unittest.TestCase):
  def test_legacy_repair_requires_exact_unambiguous_source_matches(self):
   result=run("const text='1/4,8 dl carrots + 1/4,8 dl beans';const candidates=[{legacy:'1/4,8 dl carrots',current:'1,2 dl carrots'},{legacy:'1/4,8 dl beans',current:'1,2 dl beans'}];console.log(JSON.stringify([m.recoverLegacyGroup(text,candidates),m.recoverLegacyGroup(text,candidates.slice(0,1)),m.recoverLegacyGroup(text,[...candidates,{legacy:candidates[0].legacy,current:'99 carrots'}]),m.recoverLegacyGroup('milk + butter',candidates)]));")
   self.assertEqual(result,[['1,2 dl carrots','1,2 dl beans'],None,None,None])
+
+ def test_preparation_notes_do_not_split_identical_products(self):
+  cases=['gul løk (diced)','gul løk (finhakket)','hvitløk (minced)','hvitløk (finhakket og presset)','gulrot, diced','gulrot (revet)','lime (saften av en halv lime)','lime (saften)','salt (til saus)']
+  self.assertEqual(run('console.log(JSON.stringify('+json.dumps(cases)+'.map(x=>m.mergeName(x))));'),['gul løk','gul løk','hvitløk','hvitløk','gulrot','gulrot','lime (saft)','lime (saft)','salt'])
+ def test_product_types_and_uncertain_notes_stay_distinct(self):
+  cases=['fersk koriander','malt koriander','glutenfri pasta','pasta','tomater (hermetiske)','tomater (ferske)','lime (skall)','lime (saften)','paprika, røkt','ris (valgfritt)']
+  result=run('console.log(JSON.stringify('+json.dumps(cases)+'.map(x=>m.mergeName(x))));')
+  self.assertEqual(len(set(result)),len(cases))
+  self.assertEqual(result[4],'tomater (hermetiske)')

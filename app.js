@@ -1082,8 +1082,9 @@ function parseAmount(text){
   const p=ShoppingIngredients.parse(normalizeIngredientLineForDisplay(text));
   // Unknown quantities/ranges keep their whole identity, including commas.
   if(p.amount==null)return p;
-  const notes=p.name.match(/\([^)]*\)/g)||[];
-  p.name=normalizeIngredientName(p.name)+(notes.length?' '+notes.join(' '):'');
+  p.name=ShoppingIngredients.mergeName(p.name);
+  // Unspecified units on counted ingredients are pieces, never convert volume to pieces.
+  p.unit=p.unit||'stk';
   if(p.unit==='kg'){p.amount*=1000;p.unit='g'}
   if(p.unit==='l'){p.amount*=10;p.unit='dl'}
   return p;
@@ -2824,6 +2825,29 @@ function repairLegacyShoppingItemV46(id){
   renderShoppingList(shoppingItems);savePlan();
 }
 
+function shoppingMergeProposalV47(){
+  const groups=new Map();
+  for(const item of shoppingItems){
+    if(item.deleted||item.done||!item.recipe||item.recipe==='Egen vare')continue;
+    const parsed=parseAmount(item.text);
+    if(parsed.amount==null||!parsed.name||ShoppingIngredients.heading(item.text))continue;
+    const key=normalize(parsed.name)+'|'+parsed.unit+'|'+(item.manualCategory?item.category:'auto');
+    if(!groups.has(key))groups.set(key,[]);
+    groups.get(key).push(item);
+  }
+  return [...groups.values()].filter(items=>items.length>1).map(items=>({items,merged:mergeShoppingItems(items)[0]}));
+}
+function mergeExistingShoppingV47(){
+  const proposal=shoppingMergeProposalV47();if(!proposal.length)return;
+  const preview=proposal.map(group=>group.items.map(item=>item.text).join(' + ')+' → '+group.merged.text).join('\n\n');
+  if(!confirm('Slå sammen disse like varene?\n\n'+preview))return;
+  localStorage.setItem('middag_shopping_before_merge',JSON.stringify(shoppingItems));
+  const ids=new Set(proposal.flatMap(group=>group.items.map(item=>item.id))),timestamp=nowIsoV25();
+  shoppingItems=shoppingItems.map(item=>ids.has(item.id)?{...item,deleted:true,updatedAt:timestamp}:item);
+  for(const group of proposal)shoppingItems.push({...group.merged,id:shoppingIdV25(),deleted:false,updatedAt:timestamp});
+  renderShoppingList(shoppingItems);savePlan();
+}
+
 const categorizeBeforeV28=categorize;
 categorize=function(line){
   ensureMetaV28(); const key=pantryKeyV28(line),override=appMeta.ingredientRegistryOverrides[key];
@@ -3416,7 +3440,7 @@ renderShoppingList=function(items){
   const visible=visibleShoppingItemsV25(),active=visible.filter(item=>!item.done),done=visible.filter(item=>item.done),grouped=new Map(CATEGORIES.map(category=>[category,[]]));
   for(const item of active){const legacyCategory=item.category==="Frys"?"Frysevarer":item.category==="Kjølevarer"?"Annet":item.category;const predicted=item.manualCategory?legacyCategory:categorize(item.text);const category=item.manualCategory?(CATEGORIES.includes(legacyCategory)?legacyCategory:"Annet"):(predicted!=="Annet"?predicted:(CATEGORIES.includes(legacyCategory)?legacyCategory:"Annet"));item.category=category;grouped.get(category).push(item)}
   const categories=CATEGORIES.map(category=>renderShoppingCategoryV25(category,grouped.get(category))).join("");
-  box.innerHTML=`<p class="shopping-summary"><strong>${active.length}</strong> igjen · ${done.length} fullført</p>${categories}${done.length?`<section class="completed-section"><div class="completed-head"><button type="button" class="completed-toggle" aria-expanded="false" onclick="toggleCompletedShoppingV25(this)">Fullført (${done.length})</button><button type="button" class="text-button danger-subtle clear-completed" onclick="clearCompletedShoppingV25()">Fjern fullførte</button></div><div class="completed-items" hidden>${done.map(shoppingRowHtmlV25).join("")}</div></section>`:""}`;
+  box.innerHTML=`<p class="shopping-summary"><strong>${active.length}</strong> igjen · ${done.length} fullført</p>${shoppingMergeProposalV47().length?'<button type="button" class="text-button" onclick="mergeExistingShoppingV47()">Slå sammen like varer</button>':""}${categories}${done.length?`<section class="completed-section"><div class="completed-head"><button type="button" class="completed-toggle" aria-expanded="false" onclick="toggleCompletedShoppingV25(this)">Fullført (${done.length})</button><button type="button" class="text-button danger-subtle clear-completed" onclick="clearCompletedShoppingV25()">Fjern fullførte</button></div><div class="completed-items" hidden>${done.map(shoppingRowHtmlV25).join("")}</div></section>`:""}`;
   updateShoppingRemainingV25();
 };
 

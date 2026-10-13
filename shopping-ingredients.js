@@ -54,6 +54,23 @@
     if(/gulrøtter|gulrot|løk|purre|potet|squash|tomat|agurk|paprika|chili|jalape[nñ]o|brokkoli|blomkål|kål|selleri|spinat|salat|ruccola|sopp|sjampinjong|avokado|ingefær|fennikel|pak choi|bok choy|slaw|bønnespirer|rødbet|gresskar|daikon|persille|koriander|cilantro|dill|mynte|gressløk|sitron|lime|eple|epler|mango|fersken|nektarin|ananas|appelsin|jordbær|granateple|vannmelon|bananpepper/.test(s))return 'Frukt og grønt';
     return null;
   }
+  // Preparation is not a different product. Unknown/type notes remain distinct.
+  function mergeName(value){
+    const preparation=/^(?:(?:finely|roughly|thinly|freshly|grovt|fint)\s+)?(?:chopped|minced|diced|grated|sliced|shredded|hakket|finhakket|grovhakket|revet|finrevet|skivet|finsnittet|strimlet|presset|knust|i terninger|kuttet i terninger|skåret i terninger|skjært i terninger)$/i;
+    const note=value=>{
+      const text=value.trim();
+      if(text.split(/\s+(?:og|and)\s+|,\s*/).every(part=>preparation.test(part)))return '';
+      if(/^(?:til|for) (?:pynt|servering|saus|sausen|dressing|dressingen|marinade|marinaden|topping|garnish|serving)$/i.test(text))return '';
+      if(/^(?:saft(?:en)?(?: av (?:en halv|en|halv) lime)?|juiced|juice)$/i.test(text))return '(saft)';
+      if(/^(?:revet skall|skall(?:et)?|zest|zested)$/i.test(text))return '(skall)';
+      return '('+text+')';
+    };
+    let name=String(value).toLowerCase().replace(/\(([^()]*)\)/g,(_,text)=>note(text));
+    // A trailing comma often introduces preparation; do not discard product types.
+    name=name.replace(/,\s*([^,()]*)$/,(_,text)=>' '+note(text));
+    name=name.replace(/\b(?:finhakket|grovhakket|finrevet|finsnittet|chopped|minced|diced|grated|sliced|shredded|hakket|revet|skivet)\b/g,'');
+    return name.replace(/\s+/g,' ').trim();
+  }
   function recoverLegacyGroup(text,candidates){
     if(!/\d+\/\d+,\d+ dl/.test(text))return null;
     const parts=text.split(' + ');if(parts.length<2)return null;
@@ -65,5 +82,5 @@
     }
     return restored;
   }
-  return {parse,convert,scale,clean,heading,category,fmt,recoverLegacyGroup};
+  return {parse,convert,scale,clean,heading,category,fmt,mergeName,recoverLegacyGroup};
 });
