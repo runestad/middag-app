@@ -61,12 +61,12 @@
     {"name":"ørret","category":"Frys","aliases":["trout"]},
     {"name":"edamame","category":"Frys","aliases":["edamame beans"]},
     {"name":"frosne erter","category":"Frys","aliases":["frozen peas"]},
-    {"name":"tofu","category":"Kjølevarer","aliases":["firm tofu","silken tofu"]},
+    {"name":"tofu","category":"Kjølevarer","aliases":[]},
     {"name":"egg","category":"Kjølevarer","aliases":["eggs"]},
-    {"name":"melk","category":"Meieri","aliases":["milk","whole milk"]},
+    {"name":"melk","category":"Meieri","aliases":["milk"]},
     {"name":"kremfløte","category":"Meieri","aliases":["heavy cream","double cream","cream","fløte"]},
     {"name":"rømme","category":"Meieri","aliases":["sour cream"]},
-    {"name":"yoghurt","category":"Meieri","aliases":["yogurt","greek yogurt","gresk yoghurt"]},
+    {"name":"yoghurt","category":"Meieri","aliases":["yogurt"]},
     {"name":"smør","category":"Meieri","aliases":["butter"]},
     {"name":"parmesan","category":"Meieri","aliases":["parmesan cheese","parmigiano"]},
     {"name":"fetaost","category":"Meieri","aliases":["feta","feta cheese"]},
@@ -117,7 +117,7 @@
     {"name":"salt","category":"Krydder","aliases":["sea salt","kosher salt"]},
     {"name":"sort pepper","category":"Krydder","aliases":["black pepper","pepper"]},
     {"name":"chiliflak","category":"Krydder","aliases":["chilli flakes","chili flakes","red pepper flakes","crushed chillies"]},
-    {"name":"paprikapulver","category":"Krydder","aliases":["paprika powder","smoked paprika"]},
+    {"name":"paprikapulver","category":"Krydder","aliases":["paprika powder"]},
     {"name":"oregano","category":"Krydder","aliases":["dried oregano"]},
     {"name":"tørket basilikum","category":"Krydder","aliases":["dried basil"]},
     {"name":"spisskummen","category":"Krydder","aliases":["cumin","ground cumin"]},
@@ -131,6 +131,12 @@
     {"name":"tortilla","category":"Bakevarer","aliases":["tortillas","tortilla wraps"]},
     {"name":"pitabrød","category":"Bakevarer","aliases":["pita","pita bread"]},
     {"name":"burgerbrød","category":"Bakevarer","aliases":["burger buns","hamburger buns"]},
-    {"name":"naan","category":"Bakevarer","aliases":["naan bread"]}
+    {"name":"naan","category":"Bakevarer","aliases":["naan bread"]},
+    {"name":"fast tofu","category":"Kjølevarer","aliases":["firm tofu"]},
+    {"name":"silketofu","category":"Kjølevarer","aliases":["silken tofu"]},
+    {"name":"helmelk","category":"Meieri","aliases":["whole milk"]},
+    {"name":"gresk yoghurt","category":"Meieri","aliases":["greek yogurt"]},
+    {"name":"røkt paprikapulver","category":"Krydder","aliases":["smoked paprika"]},
+    {"name":"fersk basilikum","category":"Frukt og grønt","aliases":["fresh basil"]}
   ]
 }

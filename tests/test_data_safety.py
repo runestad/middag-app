@@ -256,7 +256,8 @@ class RecoveryRegressionContractTests(unittest.TestCase):
 
     def test_recipe_save_endpoint_uses_defensive_merge(self):
         source = (ROOT / "api" / "save-recipe.py").read_text(encoding="utf-8")
-        self.assertIn("merge_preserving_existing_data(current, patch)", source)
+        self.assertIn("merge_reviewed_recipe(current, patch, explicit_name_edit)", source)
+        self.assertIn("safe_recipe_merge(current, patch)", source)
         self.assertNotIn("current.update(patch)", source)
 
     def test_data_safety_is_loaded_before_application(self):

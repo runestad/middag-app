@@ -10,16 +10,8 @@ CATALOG_PATH = os.path.join(os.path.dirname(__file__), "..", "ingredient-catalog
 def _key(value):
     text = unicodedata.normalize("NFKD", str(value or "").strip().lower())
     text = "".join(char for char in text if not unicodedata.combining(char))
-    text = re.sub(r"\([^)]*\)", "", text)
-    text = re.sub(r"[,;].*$", "", text)
-    text = re.sub(
-        r"\b(fresh|freshly|dried|chopped|finely|thinly|sliced|diced|minced|"
-        r"grated|large|medium|small|heaped|smooth|natural|drained|rinsed|"
-        r"optional|to serve|fersk|torket|hakket|finhakket|skivet|revet|"
-        r"stor|liten|valgfritt|til servering|i terninger)\b",
-        " ",
-        text,
-    )
+    # Preparation/type words distinguish ingredients: fresh and dried basil,
+    # tomatoes and canned tomatoes must never collide in the alias registry.
     return re.sub(r"\s+", " ", text).strip(" -")
 
 
@@ -53,23 +45,29 @@ def normalize_ingredient_name(value):
     if lookup in ALIASES:
         return ALIASES[lookup]
 
-    # Prefer the longest whole alias embedded in a more descriptive name.
-    matches = [
-        (len(alias), canonical)
-        for alias, canonical in ALIASES.items()
-        if len(alias) >= 4 and re.search(rf"(^|\s){re.escape(alias)}($|\s)", lookup)
-    ]
-    if matches:
-        return max(matches)[1]
+    # An embedded alias is useful for categorization, never for replacement:
+    # replacing "glutenfri pasta" with "pasta" destroys essential information.
     return original.lower()
 
 
 def ingredient_category(name, fallback="Annet"):
     canonical = normalize_ingredient_name(name)
     key = _key(canonical)
-    if key in SPICE_WORDS or any(key.endswith(suffix) for suffix in SPICE_SUFFIXES):
+    if re.search(r"\b(glutenfri\w*|gluten.free)\b", key):
+        return "Glutenfritt"
+    if "proteinpulver" in key or "protein powder" in key:
+        return "Tørrvarer"
+    if key in ("bakepulver", "baking powder", "kakaopulver", "cocoa powder"):
+        return "Bakevarer"
+    if key.startswith(("fersk ", "fresh ")) and any(herb in key for herb in ("basil", "persille", "parsley", "timian", "thyme", "koriander", "cilantro", "dill")):
+        return "Frukt og grønt"
+    if canonical in CATEGORIES:
+        return CATEGORIES[canonical]
+    if key in SPICE_WORDS or key.startswith(("malt ", "torket ", "ground ", "dried ")) or any(key.endswith(suffix) for suffix in SPICE_SUFFIXES):
         return "Krydder"
-    return CATEGORIES.get(canonical, fallback if fallback in CATALOG["categories"] else "Annet")
+    matches = [(len(alias), CATEGORIES[target]) for alias, target in ALIASES.items()
+               if len(alias) >= 4 and re.search(rf"(^|\s){re.escape(alias)}($|\s)", key)]
+    return max(matches)[1] if matches else (fallback if fallback in CATALOG["categories"] else "Annet")
 
 
 def normalize_structured_ingredient(ingredient):

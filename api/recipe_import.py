@@ -165,4 +165,27 @@ def safe_recipe_merge(existing, imported):
             merged[key] = value
     if protected_name:
         merged["name"] = protected_name
+    elif new.get("name") or new.get("title"):
+        merged["name"] = new.get("name") or new.get("title")
+    return merged
+
+
+def merge_reviewed_recipe(existing, patch, explicit_name_edit=False):
+    """Save the preview the user reviewed, keeping automatic recovery fill-only."""
+    from .data_merge import merge_preserving_existing_data
+    merged = merge_preserving_existing_data(existing, patch)
+    if existing.get("name") and not explicit_name_edit:
+        merged["name"] = existing["name"]
+    # Keep every representation aligned; obsolete aliases must not win after
+    # reload, scaling, or a later recovery pass.
+    if patch.get("ingredientsText"):
+        merged["ingredientLines"] = [line.strip() for line in patch["ingredientsText"].splitlines() if line.strip()]
+        if "structuredIngredients" not in patch:
+            merged.pop("structuredIngredients", None)
+    if patch.get("instructions"):
+        merged["instructionSteps"] = instruction_lines(patch["instructions"].splitlines())
+        if "structuredInstructions" not in patch:
+            merged.pop("structuredInstructions", None)
+    if "servings" in patch and "baseServings" not in patch:
+        merged.pop("baseServings", None)
     return merged

@@ -3,9 +3,8 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler
 
 from ._common import APP_ID, read_body, recipe_to_row, row_to_recipe, send_json, supabase_request
-from .data_merge import merge_preserving_existing_data
 from .ingredient_normalization import normalize_structured_ingredients
-from .recipe_import import safe_recipe_merge
+from .recipe_import import safe_recipe_merge, merge_reviewed_recipe
 
 
 class handler(BaseHTTPRequestHandler):
@@ -43,11 +42,19 @@ class handler(BaseHTTPRequestHandler):
             # Existing user names are immutable through import/recovery patches.
             # A name may only be set on a new recipe or by an explicit name edit.
             explicit_name_edit = bool(payload.get("explicitNameEdit"))
-            if rows and not explicit_name_edit:
+            if rows and current.get("name") and not explicit_name_edit:
                 patch.pop("name", None)
                 patch.pop("title", None)
-            patch = safe_recipe_merge(current, patch)
-            current = merge_preserving_existing_data(current, patch)
+            if payload.get("explicitContentEdit") is True:
+                current = merge_reviewed_recipe(current, patch, explicit_name_edit)
+            else:
+                reviewed_name = patch.get("name") if explicit_name_edit else None
+                current = safe_recipe_merge(current, patch)
+                if reviewed_name:
+                    current["name"] = reviewed_name
+            if not str(current.get("name") or "").strip():
+                return send_json(self, {"ok": False, "error": "Oppskriften må ha et navn."}, 400)
+            current["id"] = recipe_id
             current.update(ownership_patch)
             for field in unset_fields:
                 if field in allowed_unsets:
@@ -55,9 +62,12 @@ class handler(BaseHTTPRequestHandler):
             row = recipe_to_row(current)
             if rows:
                 update_query = urllib.parse.urlencode({"id": f"eq.{recipe_id}", "app_id": f"eq.{APP_ID}"})
-                supabase_request("PATCH", "recipes", payload=row, query=update_query, prefer="return=representation")
-                return send_json(self, {"ok": True, "updated": True, "id": recipe_id, "storage": "supabase"})
-            supabase_request("POST", "recipes", payload=row, prefer="return=representation")
-            return send_json(self, {"ok": True, "updated": False, "id": recipe_id, "storage": "supabase"})
+                saved = supabase_request("PATCH", "recipes", payload=row, query=update_query, prefer="return=representation")
+            else:
+                saved = supabase_request("POST", "recipes", payload=row, prefer="return=representation")
+            if not saved or len(saved) != 1:
+                raise RuntimeError("Lagringen ble ikke bekreftet av databasen.")
+            return send_json(self, {"ok": True, "updated": bool(rows), "id": recipe_id,
+                                    "recipe": row_to_recipe(saved[0]), "storage": "supabase"})
         except Exception as exc:
             send_json(self, {"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)

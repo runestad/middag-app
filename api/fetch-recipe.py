@@ -6,6 +6,7 @@ import urllib.parse
 import urllib.request
 import traceback
 from html import unescape
+from html.parser import HTMLParser
 from http.server import BaseHTTPRequestHandler
 
 from ._common import get_ssl_context, read_body, send_json
@@ -57,15 +58,15 @@ def fetch_text(url):
 
 
 def meta_value(html, key):
-    patterns = [
-        rf'<meta[^>]+(?:property|name)=["\']{re.escape(key)}["\'][^>]+content=["\']([^"\']*)',
-        rf'<meta[^>]+content=["\']([^"\']*)["\'][^>]+(?:property|name)=["\']{re.escape(key)}["\']',
-    ]
-    for pattern in patterns:
-        match = re.search(pattern, html, re.I)
-        if match:
-            return unescape(match.group(1)).strip()
-    return ""
+    class MetadataParser(HTMLParser):
+        value = ""
+        def handle_starttag(self, tag, attrs):
+            attributes = dict(attrs)
+            if tag == "meta" and (attributes.get("property") or attributes.get("name") or "").lower() == key.lower() and not self.value:
+                self.value = (attributes.get("content") or "").strip()
+    parser = MetadataParser(convert_charrefs=True)
+    parser.feed(html)
+    return parser.value
 
 
 def text_content(value):

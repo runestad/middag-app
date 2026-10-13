@@ -14,6 +14,9 @@ FETCH_SPEC.loader.exec_module(FETCH)
 
 
 class ProductionHardeningTests(unittest.TestCase):
+    def test_caption_metadata_keeps_apostrophes_and_quoted_recipe_text(self):
+        self.assertEqual(FETCH.meta_value('<meta property="og:description" content="Chef\'s pasta: 2 eggs &amp; &quot;salt&quot;">', 'og:description'), 'Chef\'s pasta: 2 eggs & "salt"')
+
     def test_url_normalization_removes_tracking_but_keeps_identity(self):
         value = normalize_source_url("https://www.instagram.com/reel/ABC/?igsh=x&utm_source=y&foo=1")
         self.assertIn("/reel/ABC/", value)
