@@ -84,6 +84,10 @@ class RecipeEditTests(unittest.TestCase):
     def test_powders_are_not_all_spices(self):
         for name,category in [('vaniljeproteinpulver','Tørrvarer'),('bakepulver','Bakevarer'),('paprikapulver','Krydder'),('malt ingefær','Krydder'),('fersk basilikum','Frukt og grønt'),('glutenfri pasta','Glutenfritt')]:
             self.assertEqual(ingredient_category(name),category)
+        self.assertEqual(ingredient_category('røkt paprika', 'Krydder'), 'Krydder')
+        self.assertEqual(ingredient_category('paprika', 'Krydder'), 'Krydder')
+        self.assertEqual(ingredient_category('paprika'), 'Frukt og grønt')
+        self.assertEqual(ingredient_category('vegansk yoghurt', 'Kjølevarer'), 'Kjølevarer')
 
     def test_editor_does_not_split_ingredient_names_as_unit_prefixes(self):
         js=(ROOT/'app.js').read_text()

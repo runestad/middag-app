@@ -59,6 +59,11 @@ def ingredient_category(name, fallback="Annet"):
         return "Tørrvarer"
     if key in ("bakepulver", "baking powder", "kakaopulver", "cocoa powder"):
         return "Bakevarer"
+    if fallback == "Krydder" and re.search(r"\bpaprika\b", key):
+        # Imported paprika can mean the spice; retain its explicit category.
+        return "Krydder"
+    if re.search(r"\b(vegansk|vegan|plantebasert)\b", key) and re.search(r"\b(yoghurt|yogurt|ost|cheese)\b", key):
+        return "Kjølevarer"
     if key.startswith(("fersk ", "fresh ")) and any(herb in key for herb in ("basil", "persille", "parsley", "timian", "thyme", "koriander", "cilantro", "dill")):
         return "Frukt og grønt"
     if canonical in CATEGORIES:
