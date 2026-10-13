@@ -102,3 +102,26 @@ class RecipeEditTests(unittest.TestCase):
         script='const elements={structuredIngredientPreview:{dataset:{sourceText:"old"}},parsedIngredients:{value:"corrected"}};const $=id=>elements[id];let refreshed=false;function structuredPreviewV28(){refreshed=true};\n'+js[start:end]+'\nsyncStructuredPreviewV28();console.log(JSON.stringify({refreshed,text:elements.parsedIngredients.value}));'
         result=json.loads(subprocess.check_output(['node','-e',script],text=True))
         self.assertEqual(result,{'refreshed':True,'text':'corrected'})
+
+    def test_pantry_preserves_ingredient_identity(self):
+        js=(ROOT/'app.js').read_text()
+        start=js.index('function normalizeIngredientName(name){',js.index('function normalizeIngredientName(name){')+1)
+        end=js.index('function normalizeIngredientLineForDisplay',start)
+        pantry=js[js.index('function ingredientObjectsV28('):js.index('function pantryAnalysisV28(')]
+        analysis_start=js.index('function pantryAnalysisV28(')
+        analysis_end=js.index('\nfunction ',analysis_start+1)
+        script=js[start:end]+pantry+js[analysis_start:analysis_end]+'''
+const ensureMetaV28=()=>{};const categorize=()=>"Annet";
+const appMeta={pantryItems:[{name:"pasta"},{name:"melk"},{name:"basilikum"}]};
+console.log(JSON.stringify({
+ translated:translateIngredientWords("spring onion, licorice, rice"),
+ fresh:normalizeIngredientName("fersk basilikum"),
+ ingredients:ingredientObjectsV28({ingredientsText:"løk\\ngulrot\\nmelk\\n1 1/2 ss olje"}),
+ pantry:pantryAnalysisV28({structuredIngredients:[{item:"glutenfri pasta"},{item:"kokosmelk"},{item:"fersk basilikum"}]})
+}));'''
+        result=json.loads(subprocess.check_output(['node','-e',script],text=True))
+        self.assertEqual(result['translated'],'vårløk, licorice, ris')
+        self.assertEqual(result['fresh'],'fersk basilikum')
+        self.assertEqual([x['item'] for x in result['ingredients']],['løk','gulrot','melk','olje'])
+        self.assertEqual(result['ingredients'][3]['amount'],'1 1/2')
+        self.assertEqual(len(result['pantry']['missing']),3)

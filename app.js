@@ -1094,7 +1094,7 @@ function normalizeIngredientName(name){
   let s=String(name||"").toLowerCase().trim();
   s=translateIngredientWords(s);
   s=s.replace(/\([^)]*\)/g,"").replace(/[,].*$/,"").trim();
-  s=s.replace(/\b(chopped|finely|thinly|sliced|diced|minced|grated|fresh|freshly|large|medium|small|heaped|smooth|natural|drained|rinsed|optional|to serve|hakket|finhakket|skivet|revet|fersk|stor|liten|medium|valgfritt|til servering|i terninger|terninger)\b/g,"");
+  s=s.replace(/\b(chopped|finely|thinly|sliced|minced|grated|large|medium|small|heaped|drained|rinsed|optional|to serve|hakket|finhakket|skivet|revet|stor|liten|medium|valgfritt|til servering|i terninger|terninger)\b/g,"");
   s=s.replace(/\s+/g," ").trim();
   const aliases={"garlic":"hvitløk","onion":"løk","yellow onion":"løk","red onion":"rødløk","spring onion":"vårløk","carrot":"gulrot","carrots":"gulrot","celery":"stangselleri","celery stalk":"stangselleri","cucumber":"agurk","tomatoes":"tomat","tomato":"tomat","chickpeas":"kikerter","beans":"bønner","rice noodles":"risnudler","noodles":"nudler","soy sauce":"soyasaus","olive oil":"olivenolje","cornstarch":"maizena","corn starch":"maizena","bell pepper":"paprika"};
   return aliases[s]||s;
@@ -1103,7 +1103,7 @@ function normalizeIngredientName(name){
 function translateIngredientWords(s){
   const replacements=[
     [/celery stalks?/g,"stangselleri"],[/celery/g,"stangselleri"],[/garlic cloves?/g,"fedd hvitløk"],[/garlic/g,"hvitløk"],
-    [/yellow onion/g,"gul løk"],[/red onion/g,"rødløk"],[/onion/g,"løk"],[/spring onion/g,"vårløk"],
+    [/yellow onion/g,"gul løk"],[/red onion/g,"rødløk"],[/spring onions?/g,"vårløk"],[/onions?/g,"løk"],
     [/carrots?/g,"gulrot"],[/cucumber/g,"agurk"],[/tomatoes/g,"tomat"],[/tomato/g,"tomat"],
     [/bell pepper/g,"paprika"],[/mushrooms?/g,"sopp"],[/spinach/g,"spinat"],[/lettuce/g,"salat"],
     [/chickpeas/g,"kikerter"],[/beans/g,"bønner"],[/chicken/g,"kylling"],[/beef/g,"biff"],[/pork/g,"svin"],
@@ -1112,7 +1112,7 @@ function translateIngredientWords(s){
     [/coconut milk/g,"kokosmelk"],[/stock|broth/g,"kraft"],[/noodles/g,"nudler"],[/rice/g,"ris"]
   ];
   let out=String(s||"").toLowerCase();
-  for(const [from,to] of replacements)out=out.replace(from,to);
+  for(const [from,to] of replacements)out=out.replace(new RegExp(`\\b(?:${from.source})\\b`,"g"),to);
   return out;
 }
 
@@ -2649,7 +2649,7 @@ function ingredientObjectsV28(recipe) {
   return String(recipe?.ingredientsText || "").split(/\n+/).map(line => {
     const category = line.match(/\[([^\]]+)\]\s*$/)?.[1] || categorize(line);
     const clean = line.replace(/\s*\[[^\]]+\]\s*$/, "").trim();
-    const match = clean.match(/^([\d.,/½¼¾]+|etter smak)?\s*(kg|g|mg|l|dl|ml|ss|ts|stk|boks|pk|pakke|fedd|stilk)?\s*(.*)$/i);
+    const match = clean.match(/^(?:(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:[.,]\d+)?(?:\s*[–-]\s*\d+(?:[.,]\d+)?)?|[½¼¾⅓⅔⅛⅜⅝⅞]|etter smak)\s+)?(?:(kg|g|mg|l|dl|ml|ss|ts|stk|boks|pk|pakke|fedd|stilk|klype)\s+)?(.+)$/i);
     return {amount:match?.[1]||"",unit:match?.[2]||"",item:(match?.[3]||clean).trim(),shoppingCategory:category,original:line};
   }).filter(item => item.item);
 }
@@ -2661,7 +2661,7 @@ function pantryAnalysisV28(recipe) {
   const present=[], missing=[];
   for (const ingredient of ingredients) {
     const key = pantryKeyV28(ingredient.item);
-    const match = [...available].some(value => value===key || (value.length>3 && (value.includes(key)||key.includes(value))));
+    const match = available.has(key);
     (match ? present : missing).push(ingredient);
   }
   return {present,missing,total:ingredients.length,score:ingredients.length ? present.length/ingredients.length : 0};
