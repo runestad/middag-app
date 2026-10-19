@@ -22,6 +22,11 @@ class ShoppingIngredientsTests(unittest.TestCase):
  def test_string_recipe_ingredients_scale(self):
   self.assertEqual(run("console.log(JSON.stringify([m.scale('1/2 cup carrots',2),m.scale('1/2 cup carrots',1),m.scale('salt etter smak',2)]));"),['1 cup carrots','1/2 cup carrots','salt etter smak'])
 
+ def test_type_notes_affect_category_but_not_preparation_notes(self):
+  cases=['2 ss koriander (malt)','1 ts koriander (ground)','1 bunt basilikum (fersk)','brokkoli (bakt med olje og salt)']
+  self.assertEqual(run('console.log(JSON.stringify('+json.dumps(cases)+'.map(x=>m.category(x))));'),['Krydder','Krydder','Frukt og grønt','Frukt og grønt'])
+  self.assertEqual(run("console.log(JSON.stringify([m.mergeName('paprika (tynt skivet)'),m.mergeName('tomat (hermetisk, hakket)')]));"),['paprika','tomat (hermetisk, hakket)'])
+
  def test_legacy_repair_requires_exact_unambiguous_source_matches(self):
   result=run("const text='1/4,8 dl carrots + 1/4,8 dl beans';const candidates=[{legacy:'1/4,8 dl carrots',current:'1,2 dl carrots'},{legacy:'1/4,8 dl beans',current:'1,2 dl beans'}];console.log(JSON.stringify([m.recoverLegacyGroup(text,candidates),m.recoverLegacyGroup(text,candidates.slice(0,1)),m.recoverLegacyGroup(text,[...candidates,{legacy:candidates[0].legacy,current:'99 carrots'}]),m.recoverLegacyGroup('milk + butter',candidates)]));")
   self.assertEqual(result,[['1,2 dl carrots','1,2 dl beans'],None,None,None])
@@ -34,3 +39,17 @@ class ShoppingIngredientsTests(unittest.TestCase):
   result=run('console.log(JSON.stringify('+json.dumps(cases)+'.map(x=>m.mergeName(x))));')
   self.assertEqual(len(set(result)),len(cases))
   self.assertEqual(result[4],'tomater (hermetiske)')
+
+ def test_nested_preparation_and_usage_notes_are_idempotent(self):
+  cases=['hvitløk (finhakket (til saus))','vårløk (skivet (til saus))','lime (saften av (til saus))','tomat (hermetisk, hakket)']
+  result=run('console.log(JSON.stringify('+json.dumps(cases)+'.map(x=>[m.mergeName(x),m.mergeName(m.mergeName(x))])));')
+  self.assertEqual([r[0] for r in result],['hvitløk','vårløk','lime (saft)','tomat (hermetisk, hakket)'])
+  self.assertTrue(all(a==b for a,b in result))
+
+ def test_fresh_vegetables_are_not_classified_by_sugar_or_canned_beans(self):
+  cases=['sukkererter','grønne bønner','aspargesbønner','thai basilikum','frosne grønne bønner','hermetiske grønne bønner']
+  self.assertEqual(run('console.log(JSON.stringify('+json.dumps(cases)+'.map(x=>m.category(x))));'),['Frukt og grønt']*4+['Frysevarer','Hermetikk/halvfabrikat'])
+
+ def test_registry_keys_do_not_collapse_decimal_quantities(self):
+  cases=['0,5 ts spisskummen','0,25 ts chiliflak','0,8 dl yoghurt','2 ss koriander (malt)','fersk koriander']
+  self.assertEqual(run('console.log(JSON.stringify('+json.dumps(cases)+'.map(x=>m.registryKey(x))));'),['spisskummen','chiliflak','yoghurt','koriander (malt)','fersk koriander'])

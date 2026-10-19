@@ -51,6 +51,14 @@ class RecipeEditTests(unittest.TestCase):
         response,_=self.call_save({'id':'1','name':'Gammelt'}, {'id':'1','explicitNameEdit':True,'patch':{'name':'Nytt'}})
         self.assertEqual(response[1]['recipe']['name'],'Nytt')
 
+    def test_one_ingredient_edit_preserves_other_stored_ingredients(self):
+        untouched={'item':'Banza rigatoni','amount':'280','unit':'g','shoppingCategory':'Bakevarer'}
+        old={'id':'1','name':'Salat','structuredIngredients':[untouched,{'item':'hvitløk','amount':'2','unit':'stk'}]}
+        patch_ingredients=[copy.deepcopy(untouched),{'item':'hvitløk','amount':'2','unit':'fedd'}]
+        response,_=self.call_save(old,{'id':'1','explicitContentEdit':True,'patch':{'structuredIngredients':patch_ingredients}})
+        self.assertEqual(response[1]['recipe']['structuredIngredients'][0],untouched)
+        self.assertEqual(response[1]['recipe']['structuredIngredients'][1]['unit'],'fedd')
+
     def test_automatic_recovery_stays_fill_only(self):
         old={'name':'Min pasta','ingredientsText':'400 g pasta'}
         self.assertEqual(safe_recipe_merge(old,{'name':'AI','ingredientsText':'2 egg'})['ingredientsText'],'400 g pasta')

@@ -18,8 +18,14 @@
   }
 
   function recipeBaseServings(recipe) {
-    return parsePositiveServings(recipe?.baseServings) ??
-      parsePositiveServings(recipe?.servings);
+    const numeric = parsePositiveServings(recipe?.baseServings) ?? parsePositiveServings(recipe?.servings);
+    if (numeric) return numeric;
+    // Understand explicit serving labels, without treating yields (wraps,
+    // dumplings, grams) or serving ranges as a known number of people.
+    const label = String(recipe?.servings ?? "").trim().toLowerCase();
+    const match = label.match(/^(?:ca\.?\s*)?(\d+(?:[.,]\d+)?)\s*(?:(?:store|små|stor|liten)\s+)?(?:porsjon(?:er)?|person(?:er)?)(?:\s*\([^)]*\))?$/) ||
+      label.match(/^ca\.?\s*(\d+(?:[.,]\d+)?)$/);
+    return match ? parsePositiveServings(match[1]) : null;
   }
 
   function scaleFactorFor(recipe, selectedServings) {

@@ -59,6 +59,11 @@ def ingredient_category(name, fallback="Annet"):
         return "Tørrvarer"
     if key in ("bakepulver", "baking powder", "kakaopulver", "cocoa powder"):
         return "Bakevarer"
+    # Match the prepared product before words naming its raw ingredients.
+    if re.search(r"olje|\boil\b|oljespray|eddik|vinegar|soyasaus|soy sauce|hvitl[øo]kspasta|garlic paste|sennep|mustard|dijon|pesto|hoisin|tahini|majones|mayonnaise", key):
+        return "Tørrvarer"
+    if re.search(r"kraft|buljong|\bstock\b|\bbroth\b|kokosmelk|coconut milk|solt[øo]rkede tomater|sun.?dried tomatoes|tomatpure|tomato paste", key):
+        return "Hermetikk/halvfabrikat"
     if fallback == "Krydder" and re.search(r"\bpaprika\b", key):
         # Imported paprika can mean the spice; retain its explicit category.
         return "Krydder"
@@ -68,7 +73,7 @@ def ingredient_category(name, fallback="Annet"):
         return "Frukt og grønt"
     if canonical in CATEGORIES:
         return CATEGORIES[canonical]
-    if key in SPICE_WORDS or key.startswith(("malt ", "torket ", "ground ", "dried ")) or any(key.endswith(suffix) for suffix in SPICE_SUFFIXES):
+    if key in SPICE_WORDS or re.match(r"(?:malt|t[øo]rke(?:t|de)|ground|dried)\s+(?:koriander|coriander|ingef[æa]r|ginger|basil(?:ikum)?|oregano|timian|thyme|rosmarin|rosemary|dill|persille|parsley|kanel|cinnamon|spisskummen|cumin|urter|herbs)\b", key) or any(key.endswith(suffix) for suffix in SPICE_SUFFIXES):
         return "Krydder"
     matches = [(len(alias), CATEGORIES[target]) for alias, target in ALIASES.items()
                if len(alias) >= 4 and re.search(rf"(^|\s){re.escape(alias)}($|\s)", key)]

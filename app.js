@@ -2019,8 +2019,8 @@ saveParsedRecipe = async function() {
     resolvedSourceUrl: ai.sourceMetadata?.resolvedSourceUrl || base.resolvedSourceUrl || "",
     sourceLastChecked: ai.sourceMetadata?.sourceLastChecked || base.sourceLastChecked || "",
     importQuality: ai.importQuality || ai.sourceMetadata?.importQuality || base.importQuality || {},
-    status: ingredients.length && instructionsText ? "Fullført" : "Må sjekkes manuelt",
-    manualCheck: ingredients.length && instructionsText ? "Nei" : "Ja – mangler ingredienser eller fremgangsmåte.",
+    status: ingredients.length && instructionsText && !ai.uncertainties?.length ? "Fullført" : "Må sjekkes manuelt",
+    manualCheck: ai.uncertainties?.length ? `Ja – ${ai.uncertainties.length} felt bør kontrolleres.` : (ingredients.length && instructionsText ? "Nei" : "Ja – mangler ingredienser eller fremgangsmåte."),
     updatedAt: new Date().toISOString()
   };
   const patch = meaningfulPatch(candidatePatch);
@@ -2850,7 +2850,12 @@ function mergeExistingShoppingV47(){
 
 const categorizeBeforeV28=categorize;
 categorize=function(line){
-  ensureMetaV28(); const key=pantryKeyV28(line),override=appMeta.ingredientRegistryOverrides[key];
+  ensureMetaV28();
+  const key=ShoppingIngredients.registryKey(normalizeIngredientLineForDisplay(line));
+  const legacy=pantryKeyV28(line);
+  // Old comma stripping turned every decimal amount into a key such as "0".
+  // Keep named user overrides compatible; never use a quantity-only key.
+  const override=appMeta.ingredientRegistryOverrides[key]||(/[a-zæøå]/i.test(legacy)?appMeta.ingredientRegistryOverrides[legacy]:null);
   if(override&&CATEGORIES.includes(override))return override;
   const category=ShoppingIngredients.category(normalizeIngredientLineForDisplay(line));
   if(category)return CATEGORIES.includes(category)?category:"Annet";
@@ -2957,7 +2962,7 @@ bindAll=function(){
   $("structuredIngredientPreview")?.addEventListener("input",syncStructuredPreviewV28);
   $("parsedIngredients")?.addEventListener("input",structuredPreviewV28);
   $("structuredIngredientPreview")?.addEventListener("change",syncStructuredPreviewV28);
-  $("confirmShoppingCategoryBtn")?.addEventListener("click",()=>{const item=shoppingItems.find(entry=>entry.id===shoppingCategoryTargetV28);if(!item)return;const category=$("shoppingCategorySelect").value;item.category=category;item.manualCategory=true;item.updatedAt=nowIsoV25();const scope=document.querySelector('input[name="registryScope"]:checked')?.value;if(scope==="registry"){if(!confirm(`Oppdater Ingredient Registry slik at «${item.text}» alltid får kategorien ${category}?`))return;appMeta.ingredientRegistryOverrides[pantryKeyV28(item.text)]=category}savePlan();renderShoppingList(shoppingItems);$("shoppingCategoryDialog").close()});
+  $("confirmShoppingCategoryBtn")?.addEventListener("click",()=>{const item=shoppingItems.find(entry=>entry.id===shoppingCategoryTargetV28);if(!item)return;const category=$("shoppingCategorySelect").value;item.category=category;item.manualCategory=true;item.updatedAt=nowIsoV25();const scope=document.querySelector('input[name="registryScope"]:checked')?.value;if(scope==="registry"){if(!confirm(`Oppdater Ingredient Registry slik at «${item.text}» alltid får kategorien ${category}?`))return;appMeta.ingredientRegistryOverrides[ShoppingIngredients.registryKey(normalizeIngredientLineForDisplay(item.text))]=category}savePlan();renderShoppingList(shoppingItems);$("shoppingCategoryDialog").close()});
 };
 const initBeforeV28=init;
 init=async function(){await initBeforeV28();ensureMetaV28();randomOrderV28=new Map(recipes.map(recipe=>[String(recipe.id),Math.random()]));renderRecipeResults();renderPantryV28()};

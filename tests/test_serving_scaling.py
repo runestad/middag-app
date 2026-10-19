@@ -20,6 +20,10 @@ process.stdout.write(JSON.stringify(result));
 
 
 class ServingScalingTests(unittest.TestCase):
+    def test_explicit_serving_labels_work_but_ranges_and_item_yields_do_not(self):
+        labels=['2 store porsjoner','3 personer (6–8 tacos)','ca. 4','1 stor porsjon','4-6','2 tacos','200-250 g pasta','ca. 40 dumplings']
+        self.assertEqual(run_node('return '+json.dumps(labels)+'.map(servings=>S.recipeBaseServings({servings}));'),[2,3,4,1,None,None,None,None])
+
     def test_scales_four_to_eight_without_mutating_recipe(self):
         result = run_node("""
 const recipe = {id: 1, baseServings: 4, structuredIngredients: [

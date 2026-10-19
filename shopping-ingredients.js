@@ -3,7 +3,7 @@
   const fractions={'½':.5,'¼':.25,'¾':.75,'⅓':1/3,'⅔':2/3,'⅛':.125,'⅜':.375,'⅝':.625,'⅞':.875};
   const numberSource='(?:\\d+\\s+\\d+\\/\\d+|\\d+\\/\\d+|\\d*['+Object.keys(fractions).join('')+']|\\d+(?:[.,]\\d+)?)';
   const start=new RegExp('^('+numberSource+')(?![\\d/.,])\\s*(.*)$');
-  const units={cups:'cup',cup:'cup',tbsp:'ss',tablespoon:'ss',tablespoons:'ss',tsp:'ts',teaspoon:'ts',teaspoons:'ts',oz:'oz',ounce:'oz',ounces:'oz',lb:'lb',lbs:'lb',pound:'lb',pounds:'lb',kg:'kg',g:'g',gram:'g',grams:'g',ml:'ml',dl:'dl',l:'l',liter:'l',litre:'l',ss:'ss',ts:'ts',stk:'stk',pk:'pk',pakke:'pakke',pakker:'pakke',pose:'pose',poser:'pose',boks:'boks',bokser:'boks',fedd:'fedd',clove:'fedd',cloves:'fedd',stilk:'stilk',stilker:'stilk',bunt:'bunt',bunter:'bunt',potte:'potte',potter:'potte',skive:'skive',skiver:'skive',klype:'klype',klyper:'klype',håndfull:'håndfull',neve:'neve',hode:'hode'};
+  const units={cups:'cup',cup:'cup',tbsp:'ss',tablespoon:'ss',tablespoons:'ss',tsp:'ts',teaspoon:'ts',teaspoons:'ts',oz:'oz',ounce:'oz',ounces:'oz',lb:'lb',lbs:'lb',pound:'lb',pounds:'lb',kg:'kg',g:'g',gram:'g',grams:'g',ml:'ml',dl:'dl',l:'l',liter:'l',litre:'l',ss:'ss',ts:'ts',stk:'stk',pk:'pk',pakke:'pakke',pakker:'pakke',pose:'pose',poser:'pose',boks:'boks',bokser:'boks',fedd:'fedd',clove:'fedd',cloves:'fedd',stilk:'stilk',stilker:'stilk',bunt:'bunt',bunter:'bunt',potte:'potte',potter:'potte',skive:'skive',skiver:'skive',klype:'klype',klyper:'klype',håndfull:'håndfull',neve:'neve',hode:'hode',hoder:'hode',pint:'pint',pints:'pint',kvist:'kvist',kvister:'kvist',dash:'klype',handful:'håndfull',handfuls:'håndfull',håndfuller:'håndfull'};
   const unitPattern=new RegExp('^('+Object.keys(units).sort((a,b)=>b.length-a.length).join('|')+')(?=\\s|$)\\s*','i');
   function number(token){
     if(/[½¼¾⅓⅔⅛⅜⅝⅞]$/.test(token))return Number(token.slice(0,-1)||0)+fractions[token.slice(-1)];
@@ -32,7 +32,9 @@
   function scale(text,factor){const p=parse(text);return p.amount==null||!Number.isFinite(factor)||factor===1?clean(text):[fmt(p.amount*factor),p.unit,p.name].filter(Boolean).join(' ');}
   function heading(text){return /:\s*$/.test(text)||/^(?:for the|til)\s+(?:sauce|dressing|slaw|saus|marinade)\s*:?$/i.test(text);}
   function category(text){
-    const s=parse(text).name.toLowerCase().replace(/\([^)]*\)/g,'').trim();
+    const name=parse(text).name.toLowerCase();
+    const qualifiers=[...name.matchAll(/\((fersk|frisk|fresh|malt|ground|tørket|tørkede|dried|frossen|frosne)\)/g)].map(match=>match[1]);
+    const s=(qualifiers.join(' ')+' '+name.replace(/\([^)]*\)/g,'')).trim();
     // Prepared products must precede their vegetable/meat components.
     if(/glutenfri|gluten.free/.test(s))return 'Glutenfritt';
     if(/proteinpulver|protein powder/.test(s))return 'Tørrvarer';
@@ -40,7 +42,8 @@
     if(/olje|\boil\b|oljespray|\beddik\b|vinegar|soyasaus|soy sauce|tamari|fiskesaus|fish sauce|hoisin|worcestershire|sriracha|currypast[ae]|curry paste|hvitløkspasta|garlic paste|peanøttsmør|peanut butter|mandelsmør|sennep|mustard|dijon|miso|gochujang|tahini|pesto|østerssaus|oyster sauce|teriyaki|ketchup|kecap|mirin|hot sauce|bbq.saus|majones|mayonnaise/.test(s))return 'Tørrvarer';
     if(/kraft|buljong|\bstock\b|\bbroth\b|kokosmelk|coconut milk|kokoskrem|hakkede tomater|tomatpur[eé]|tomato paste|passata|salsa|artisjokk|soltørk|sun.?dried tomat/.test(s))return 'Hermetikk/halvfabrikat';
     if(/(?:havre|soya|mandel|ris)melk|(?:vegan|vegansk|plantebasert).*?(?:yoghurt|yogurt|ost|cheese)/.test(s))return 'Annet';
-    if(/(?:fersk|frisk|fresh|potte|bunt|kvist|håndfull|blad).*?(?:basil|timian|thyme|koriander|coriander|persille|parsley|rosmarin|rosemary|dill|mynte|mint)/.test(clean(text).toLowerCase().replace(/\([^)]*\)/g,'')))return 'Frukt og grønt';
+    if(!/frossen|frosne|frozen|fryste|hermetisk|canned|tørket|dried/.test(s)&&/sukkererter|sugar snap peas|grønne bønner|green beans|aspargesbønner|maiskolber|(?:thai|thailandsk) basilikum/.test(s))return 'Frukt og grønt';
+    if(/(?:fersk|frisk|fresh|potte|bunt|kvist|håndfull|blad).*?(?:basil|timian|thyme|koriander|coriander|persille|parsley|rosmarin|rosemary|dill|mynte|mint)/.test(qualifiers.join(' ')+' '+clean(text).toLowerCase().replace(/\([^)]*\)/g,'')))return 'Frukt og grønt';
     if(/\b(?:malt|ground)\s+(?:koriander|coriander|ingefær|ginger|kanel|cinnamon|spisskummen|cumin)|(?:tørke[td]e?|dried)\s+(?:urter|herbs|basil|oregano|timian|thyme|rosmarin|rosemary|dill|persille|parsley|ingefær|ginger)|(?:koriander|løk|hvitløk|ingefær|chili|paprika|mango)\s*pulver|paprikapulver|chilipulver|hvitløkspulver|løkpulver|ingefærpulver|chili powder|garlic powder|onion powder|smoked paprika|røkt paprika|chili flakes|chiliflak|korianderfrø|coriander seeds|knuste røde pepperflak|røde? pepperflak|red pepper flakes|spisskummen|cumin|gurkemeie|turmeric|gochugaru|krydder|seasoning|masala|muskatnøtt|cayenne|chipotle.pulver|curry pulver|spisskumin|sumak|zaatar|dukkah|stjerneanis|nellikspiker|kardemommefrø|fennikelfrø|sennepsfrø|flaksalt|\b(?:salt|pepper|oregano|timian|basilikum|kanel|muskat|karri|kardemomme|kajenne|laurbær)\b/.test(s)&&!/bell pepper|red pepper|green pepper|yellow pepper/.test(s))return 'Krydder';
     if(/sukker|sugar|honning|honey|sirup|syrup|sesamfrø|sesame seeds/.test(s))return 'Tørrvarer';
     if(/frossen|frosne|frozen|fryste/.test(s))return 'Frysevarer';
@@ -56,19 +59,26 @@
   }
   // Preparation is not a different product. Unknown/type notes remain distinct.
   function mergeName(value){
-    const preparation=/^(?:(?:finely|roughly|thinly|freshly|grovt|fint)\s+)?(?:chopped|minced|diced|grated|sliced|shredded|hakket|finhakket|grovhakket|revet|finrevet|skivet|finsnittet|strimlet|presset|knust|i terninger|kuttet i terninger|skåret i terninger|skjært i terninger)$/i;
+    const preparation=/^(?:(?:finely|roughly|thinly|freshly|grovt|fint|tynt)\s+)?(?:chopped|minced|diced|grated|sliced|shredded|hakket|finhakket|grovhakket|revet|finrevet|skivet|finsnittet|strimlet|presset|knust|i terninger|kuttet i terninger|skåret i terninger|skjært i terninger)$/i;
     const note=value=>{
       const text=value.trim();
       if(text.split(/\s+(?:og|and)\s+|,\s*/).every(part=>preparation.test(part)))return '';
       if(/^(?:til|for) (?:pynt|servering|saus|sausen|dressing|dressingen|marinade|marinaden|topping|garnish|serving)$/i.test(text))return '';
-      if(/^(?:saft(?:en)?(?: av (?:en halv|en|halv) lime)?|juiced|juice)$/i.test(text))return '(saft)';
+      if(/^(?:saft(?:en)?(?: av(?: (?:en halv|en|halv) lime)?)?|juiced|juice)$/i.test(text))return '(saft)';
       if(/^(?:revet skall|skall(?:et)?|zest|zested)$/i.test(text))return '(skall)';
       return '('+text+')';
     };
-    let name=String(value).toLowerCase().replace(/\(([^()]*)\)/g,(_,text)=>note(text));
+    let name=String(value).toLowerCase();
+    // Nested usage notes can expose a preparation note on the next pass.
+    // Normalize fully now so a second merge never changes product identity.
+    for(let depth=0;depth<10;depth++){
+      const next=name.replace(/\(([^()]*)\)/g,(_,text)=>note(text));
+      if(next===name)break;
+      name=next;
+    }
     // A trailing comma often introduces preparation; do not discard product types.
     name=name.replace(/,\s*([^,()]*)$/,(_,text)=>' '+note(text));
-    name=name.replace(/\b(?:finhakket|grovhakket|finrevet|finsnittet|chopped|minced|diced|grated|sliced|shredded|hakket|revet|skivet)\b/g,'');
+    name=name.replace(/\([^)]*\)|\b(?:finhakket|grovhakket|finrevet|finsnittet|chopped|minced|diced|grated|sliced|shredded|hakket|revet|skivet)\b/g,part=>part.startsWith('(')?part:'');
     return name.replace(/\s+/g,' ').trim();
   }
   function recoverLegacyGroup(text,candidates){
@@ -82,5 +92,9 @@
     }
     return restored;
   }
-  return {parse,convert,scale,clean,heading,category,fmt,mergeName,recoverLegacyGroup};
+  function registryKey(text){
+    const key=mergeName(parse(text).name);
+    return /[a-zæøå]/i.test(key)?key:'';
+  }
+  return {parse,convert,scale,clean,heading,category,fmt,mergeName,registryKey,recoverLegacyGroup};
 });

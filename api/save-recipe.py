@@ -33,12 +33,17 @@ class handler(BaseHTTPRequestHandler):
                 if not image_path.startswith(expected_prefix) or ".." in image_path:
                     return send_json(self, {"ok": False, "error": "Ugyldig bildesti."}, 400)
                 ownership_patch["userImagePath"] = image_path
-            if "structuredIngredients" in patch:
-                patch["structuredIngredients"] = normalize_structured_ingredients(patch["structuredIngredients"])
-
             query = urllib.parse.urlencode({"id": f"eq.{recipe_id}", "app_id": f"eq.{APP_ID}", "select": "*"})
             rows = supabase_request("GET", "recipes", query=query) or []
             current = row_to_recipe(rows[0]) if rows else {"id": recipe_id}
+            if "structuredIngredients" in patch:
+                existing = current.get("structuredIngredients") if isinstance(current.get("structuredIngredients"), list) else []
+                incoming = patch["structuredIngredients"] if isinstance(patch["structuredIngredients"], list) else []
+                # Editing one row must not silently rewrite every other row.
+                patch["structuredIngredients"] = [
+                    item if item in existing else normalize_structured_ingredients([item])[0]
+                    for item in incoming
+                ]
             # Existing user names are immutable through import/recovery patches.
             # A name may only be set on a new recipe or by an explicit name edit.
             explicit_name_edit = bool(payload.get("explicitNameEdit"))

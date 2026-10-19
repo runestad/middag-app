@@ -6,12 +6,13 @@ from http.server import BaseHTTPRequestHandler
 
 from ._common import get_ssl_context, read_body, send_json
 from .ingredient_normalization import CATALOG, normalize_structured_ingredients
+from .import_validation import validate_import
 
 
 RECIPE_CATEGORIES = ["Vegetar", "Salat", "Pasta", "Kjøtt", "Kylling", "Fisk", "Airfryer", "Snacks", "Annet"]
 
 
-def finalize_parsed_recipe(parsed):
+def finalize_parsed_recipe(parsed, caption=None):
     parsed = parsed if isinstance(parsed, dict) else {}
     parsed["ingredients"] = normalize_structured_ingredients(parsed.get("ingredients"))
     parsed["instructions"] = [str(step).strip() for step in parsed.get("instructions", []) if str(step).strip()]
@@ -23,6 +24,9 @@ def finalize_parsed_recipe(parsed):
         and uncertainty.get("field")
         and uncertainty.get("reason")
     ]
+    if caption is not None:
+        parsed["ingredients"], validation_warnings = validate_import(parsed["ingredients"], caption)
+        parsed["uncertainties"].extend(validation_warnings)
     nutrition = parsed.get("nutrition") if isinstance(parsed.get("nutrition"), dict) else {}
     def positive_number(value):
         try:
@@ -53,7 +57,10 @@ class handler(BaseHTTPRequestHandler):
             category_list = ", ".join(CATALOG["categories"])
             system = f"""Du er en presis norsk oppskriftsparser.
 Returner kun JSON. Behold alle oppgitte mengder og ingredienser; aldri gjett manglende data.
-Oversett navn, noter og fremgangsmåte til naturlig norsk. Bruk norske måleenheter (ss, ts, dl, ml, g, kg, stk).
+Oversett navn, noter og fremgangsmåte til naturlig norsk. original skal alltid være et ordrett utdrag fra kildeteksten, uten oversettelse eller omregning.
+Behold kildens mengde og måleenhet. cups kan lagres som cup; appen omregner ved visning.
+En garlic clove er ett fedd hvitløk. Et helt garlic head er ett hvitløkshode. Black pepper er sort pepper.
+Ikke erstatt cup med dl uten omregning, og ikke gjør volum om til vekt eller antall uten kildegrunnlag.
 Hver ingrediens må ha én handlelistekategori fra: {category_list}.
 Kategoriser krydder etter ingrediensens funksjon, ikke om ordet også kan være en grønnsak.
 Salt, pepper, tørkede urter, krydderblandinger og ord som slutter på -pulver, -flak, -pepper,
@@ -110,6 +117,6 @@ Bruk nullbasert indeks N. uncertainties skal være tom når alt er tydelig."""
                 return send_json(self, {"ok": False, "error": f"OpenAI API-feil {error.code}: {detail}"}, 500)
 
             parsed = json.loads(api_result["choices"][0]["message"]["content"])
-            return send_json(self, {"ok": True, "parsed": finalize_parsed_recipe(parsed)})
+            return send_json(self, {"ok": True, "parsed": finalize_parsed_recipe(parsed, caption)})
         except Exception as exc:
             send_json(self, {"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
