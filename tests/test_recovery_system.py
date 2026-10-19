@@ -96,9 +96,14 @@ class RecoverySystemTests(unittest.TestCase):
         self.assertEqual(result["method"], "oembed-resolved-shortlink")
 
     def test_recovered_high_items_are_removed_from_queue(self):
-        javascript = (ROOT / "app.js").read_text(encoding="utf-8")
-        self.assertIn("function highQueueV27()", javascript)
-        self.assertIn('status !== "recovered"', javascript)
+        manifest = {'high': [{'id': '1'}, {'id': '2'}]}
+        current = [
+            {'id': '1', 'ingredientsText': '1 løk', 'instructions': 'Stek løken.'},
+            {'id': '2', 'ingredientsText': '1 løk', 'instructions': ''},
+        ]
+        queues, health = recovery.current_dashboard(manifest, current)
+        self.assertEqual([item['id'] for item in queues['high']], ['2'])
+        self.assertEqual(health['missingContent'], 1)
 
     def test_cancelled_import_clears_recovery_context(self):
         javascript = (ROOT / "app.js").read_text(encoding="utf-8")

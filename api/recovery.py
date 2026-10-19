@@ -17,6 +17,7 @@ from ._common import (
 )
 from .ingredient_normalization import normalize_structured_ingredients
 from .data_merge import merge_preserving_existing_data
+from .recipe_health import stored_completeness
 
 
 MANIFEST_PATH = Path(__file__).resolve().parents[1] / "recovery-manifest.json"
@@ -35,6 +36,38 @@ def now_iso():
 
 def load_manifest():
     return json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+
+
+def current_dashboard(manifest, recipes):
+    """Project the historical recovery candidates onto current stored content."""
+    current = {str(recipe['id']): recipe for recipe in recipes}
+    health = {rid: stored_completeness(recipe) for rid, recipe in current.items()}
+    missing = {rid for rid, value in health.items() if value['needsManualRecovery']}
+    projected = {**manifest, **{kind: [] for kind in ('high', 'medium', 'url', 'manual')}}
+    assigned = set()
+    for kind in ('high', 'medium', 'url', 'manual'):
+        for item in manifest.get(kind, []):
+            rid = str(item['id'])
+            if rid not in missing or rid in assigned:
+                continue
+            recipe = current[rid]
+            projected[kind].append({**item, 'name': recipe.get('name', ''),
+                                    'link': recipe.get('link') or item.get('link', ''),
+                                    'missingFields': health[rid]['issues']})
+            assigned.add(rid)
+    # Newly incomplete recipes must not disappear just because the old manifest
+    # did not know about them. No recipe or historical recovery state is changed.
+    for rid in sorted(missing - assigned):
+        recipe = current[rid]
+        link = next((recipe.get(key) for key in ('originalSourceUrl', 'sourceUrl', 'link') if recipe.get(key)), '')
+        kind = 'url' if str(link).startswith(('https://', 'http://')) else 'manual'
+        projected[kind].append({'id': rid, 'name': recipe.get('name', ''), 'link': link,
+                                'source': recipe.get('source', ''), 'missingFields': health[rid]['issues']})
+    projected['counts'] = {kind: len(projected[kind]) for kind in ('high', 'medium', 'url', 'manual')}
+    summary = {'total': len(current), 'withContent': len(current) - len(missing), 'missingContent': len(missing),
+               'missingIngredients': sum('missing_ingredients' in value['issues'] for value in health.values()),
+               'missingInstructions': sum('missing_instructions' in value['issues'] for value in health.values())}
+    return projected, summary
 
 
 def canonical(value):
@@ -267,7 +300,10 @@ class handler(BaseHTTPRequestHandler):
                     return send_json(self, {"ok": False, "error": "Oppskriften eller kandidaten finnes ikke."}, 404)
                 return send_json(self, {"ok": True, "item": item, "production": row_to_recipe(row)})
             state = get_state(STATE_KEY, {"items": {}, "paused": False})
-            return send_json(self, {"ok": True, "manifest": manifest, "state": state})
+            query = urllib.parse.urlencode({"app_id": f"eq.{APP_ID}", "select": "*"})
+            rows = supabase_request("GET", "recipes", query=query) or []
+            manifest, health = current_dashboard(manifest, [row_to_recipe(row) for row in rows])
+            return send_json(self, {"ok": True, "manifest": manifest, "state": state, "contentHealth": health})
         except Exception as exc:
             return send_json(self, {"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
 

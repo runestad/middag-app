@@ -132,7 +132,7 @@ class ShoppingUxContractTests(unittest.TestCase):
         self.assertIn('completedIds.has(item.id) ? {...item, deleted: true', active)
 
     def test_shopping_categories_are_complete_and_canonical(self):
-        expected = '["Frukt og grønt","Kjøtt","Frysevarer","Meieri","Hermetikk/halvfabrikat","Tørrvarer","Krydder","Glutenfritt","Bakevarer","Annet"]'
+        expected = '["Frukt og grønt","Kjøtt og fisk","Frysevarer","Meieri","Kjølevarer","Hermetikk/halvfabrikat","Tørrvarer","Krydder","Glutenfritt","Bakevarer","Drikke","Annet"]'
         self.assertIn(f"const CATEGORIES={expected}", self.js)
         final_render = self.js[self.js.rindex("renderShoppingList=function(items)"):]
         self.assertIn("new Map(CATEGORIES.map(category=>[category,[]]))", final_render)

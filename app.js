@@ -1,6 +1,6 @@
 
 const DAYS=["mandag","tirsdag","onsdag","torsdag","fredag","lørdag","søndag"];
-const CATEGORIES=["Frukt og grønt","Kjøtt","Frysevarer","Meieri","Hermetikk/halvfabrikat","Tørrvarer","Krydder","Glutenfritt","Bakevarer","Annet"];
+const CATEGORIES=["Frukt og grønt","Kjøtt og fisk","Frysevarer","Meieri","Kjølevarer","Hermetikk/halvfabrikat","Tørrvarer","Krydder","Glutenfritt","Bakevarer","Drikke","Annet"];
 let recipes=[],plan={},shoppingItems=[],customRecipes=JSON.parse(localStorage.getItem("middag_custom_recipes")||"{}"),activeImportId=null,activePickerDay=null,pendingAddRecipeId=null;
 let appMeta={favorites:[],usageCounts:{},lastUsed:{},updatedAt:""},lastRemoteUpdatedAt="",syncTimer=null;
 let freezerItems=[];
@@ -47,7 +47,7 @@ function mergeShoppingItems(items){const map=new Map(),pass=[];for(const it of i
 function parseAmount(text){let s=convertIngredientLine(String(text||"").replace(/\s*\[[^\]]+\]\s*$/,"").trim());const m=s.match(/^(\d+(?:[.,]\d+)?)\s*(g|kg|dl|l|ml|ss|ts|stk|pk|boks|fedd)?\s+(.+)$/i);if(!m)return{amount:null,unit:"",name:normalizeIngredientName(s),original:s};let amount=parseFloat(m[1].replace(",",".")),unit=(m[2]||"stk").toLowerCase(),name=normalizeIngredientName(m[3]);if(unit==="kg"){amount*=1000;unit="g"}if(unit==="l"){amount*=10;unit="dl"}return{amount,unit,name,original:s}}
 function normalizeIngredientName(name){let s=String(name||"").toLowerCase().trim();s=s.replace(/\([^)]*\)/g,"").replace(/[,].*$/,"").trim();s=s.replace(/\b(chopped|finely|thinly|sliced|diced|minced|grated|fresh|freshly|large|medium|small|heaped|smooth|natural|drained|rinsed|optional|to serve|hakket|finhakket|skivet|revet|fersk|stor|liten|medium|valgfritt|til servering)\b/g,"").replace(/\s+/g," ").trim();const aliases={"garlic":"hvitløk","onion":"løk","carrot":"gulrot","carrots":"gulrot","cucumber":"agurk","tomatoes":"tomat","tomato":"tomat","chickpeas":"kikerter","beans":"bønner","rice noodles":"risnudler","noodles":"nudler","soy sauce":"soyasaus","olive oil":"olivenolje"};return aliases[s]||s}
 function formatMergedItem(p){if(p.amount==null)return p.original;return`${(Math.round(p.amount*1000)/1000).toString().replace(".",",")} ${p.unit} ${p.name}`.trim()}
-function bestCategory(a,b){if(a===b)return a;const pr=["Krydder","Kjøtt","Meieri","Frys","Hermetikk/halvfabrikat","Tørrvarer","Glutenfritt","Bakevarer","Frukt og grønt","Kjølevarer","Annet"];return pr.indexOf(a)<=pr.indexOf(b)?a:b}
+function bestCategory(a,b){if(a===b)return a;const pr=["Krydder","Kjøtt og fisk","Kjøtt","Meieri","Frys","Hermetikk/halvfabrikat","Tørrvarer","Glutenfritt","Bakevarer","Frukt og grønt","Kjølevarer","Drikke","Annet"];return pr.indexOf(a)<=pr.indexOf(b)?a:b}
 function renderShoppingList(items){const grouped=Object.fromEntries(CATEGORIES.map(c=>[c,[]]));for(const item of items){if(!grouped[item.category])grouped[item.category]=[];grouped[item.category].push(item)}const total=items.length,merged=items.filter(x=>x.merged).length;$("shoppingList").innerHTML=`<p class="shopping-summary">${total} varer${merged?` · ${merged} slått sammen`:""}</p>`+CATEGORIES.map(cat=>{const arr=grouped[cat]||[];return`<div class="category" data-category="${escapeAttr(cat)}"><div class="category-head"><h3>${cat}</h3><button class="tiny-add" onclick="addCustomShoppingItem('${escapeAttr(cat)}')">+ Legg til</button></div><div class="category-items">${arr.length?arr.map(it=>shoppingItemHtml(it)).join(""):`<p class="hint small-hint">Ingen varer enda.</p>`}</div></div>`}).join("")}
 function shoppingItemHtml(it){return`<div class="item"><input type="checkbox" ${it.done?"checked":""} onchange="this.closest('.item').classList.toggle('done', this.checked)"><input type="text" value="${escapeAttr(it.text)}" title="Fra: ${escapeAttr(it.recipe||'Egen vare')}">${it.merged?`<span class="merged-badge">slått sammen</span>`:""}<button class="remove-btn" title="Fjern" onclick="this.closest('.item').remove()">×</button></div>`}
 window.addCustomShoppingItem=function(category){const text=prompt(`Legg til vare i ${category}:`);if(!text||!text.trim())return;shoppingItems.push({text:text.trim(),category,recipe:"Egen vare",done:false});renderShoppingList(shoppingItems);savePlan()}
@@ -1464,7 +1464,7 @@ function addShoppingItemV25(text, preferredCategory = ""){
   let cleaned = normalizeIngredientLineForDisplay(String(text || "").trim());
   if (/^[a-zæøå]/i.test(cleaned)) cleaned = capitalize(cleaned);
   if (!cleaned) return false;
-  const category = preferredCategory || categorize(cleaned);
+  const category = ShoppingIngredients.categoryName(preferredCategory) || categorize(cleaned);
   const duplicate = findDuplicateShoppingItemV25(cleaned, category);
   if (duplicate) {
     if (duplicate.done) {
@@ -1601,13 +1601,20 @@ window.clearCompletedShoppingV25 = function(){
   renderShoppingWithoutViewportJumpV31();
   savePlan();
 };
+const pendingShoppingCompletionV49=new Map();
+function shoppingCompletionPendingV49(item){return item.done&&pendingShoppingCompletionV49.has(String(item.id))}
 window.toggleShoppingDoneV25 = function(id, checked){
   const item = getShoppingItem(id);
   if (!item) return;
+  const key=String(id);
+  clearTimeout(pendingShoppingCompletionV49.get(key));
+  pendingShoppingCompletionV49.delete(key);
   item.done = Boolean(checked);
   item.updatedAt = nowIsoV25();
-  const row = document.querySelector(`[data-shopping-id="${CSS.escape(String(id))}"]`);
-  if (row) row.classList.toggle("done", item.done);
+  if(item.done)pendingShoppingCompletionV49.set(key,setTimeout(()=>{
+    pendingShoppingCompletionV49.delete(key);
+    renderShoppingWithoutViewportJumpV31();
+  },1800));
   updateShoppingRemainingV25();
   savePlan();
   renderShoppingWithoutViewportJumpV31();
@@ -2096,35 +2103,41 @@ async function loadRecoveryV27(force=false) {
   return result;
 }
 
+function currentRecoveryQueueV49(type){
+  const items=recoveryDataV27?.manifest?.[type]||[];
+  if(recoveryDataV27?.contentHealth)return items;
+  // Offline fallback is a historical manifest, not current evidence of damage.
+  return items.filter(item=>{const recipe=recipeById(item.id);return recipe&&!recipeCompletenessV35(recipe).complete});
+}
 function recoveryQueueCountsV27() {
-  const manifest = recoveryDataV27?.manifest || {};
-  const state = recoveryDataV27?.state?.items || {};
-  const outstanding = type => (manifest[type] || []).filter(item => state[String(item.id)]?.status !== "recovered").length;
+  const outstanding = type => currentRecoveryQueueV49(type).length;
   return {high: outstanding("high"), medium: outstanding("medium"), url: outstanding("url"), manual: outstanding("manual")};
 }
 
 function renderRecoveryDashboardV27() {
   if (!recoveryDataV27) return;
   const counts = recoveryQueueCountsV27();
-  const total = counts.high + counts.medium + counts.url + counts.manual;
-  $("recoverySummary").textContent = `${total} oppskrifter trenger oppfølging`;
+  const missing=recipes.filter(recipe=>!recipeCompletenessV35(recipe).complete).length;
+  const health=recoveryDataV27.contentHealth||{total:recipes.length,missingContent:missing,withContent:recipes.length-missing};
+  $("recoverySummary").textContent = health.missingContent?`${health.missingContent} oppskrifter mangler innhold.`:`Alle ${health.total} oppskrifter har ingredienser og fremgangsmåte.`;
+  $("recoverySourceStatus").textContent = `${recoveryDataV27.readOnly?'Viser sist innlastede oppskrifter. ':''}Dette kontrollerer lagret innhold, ikke om originalens nettside eller video fortsatt er tilgjengelig.`;
   $("recoveryStats").innerHTML = [
-    ["Høy", counts.high], ["Middels", counts.medium], ["URL", counts.url], ["Manuell", counts.manual]
+    ["med innhold", health.withContent], ["mangler innhold", health.missingContent]
   ].map(([label, count]) => `<span class="recovery-stat">${count} ${label}</span>`).join("");
   const cards = [
-    {type:"high", icon:"✓", title:"High Confidence", count:counts.high, text:"Historisk kopi funnet", action:"Review"},
-    {type:"medium", icon:"?", title:"Medium Confidence", count:counts.medium, text:"Krever manuell vurdering", action:"Review"},
+    {type:"high", icon:"✓", title:"Historisk kopi", count:counts.high, text:"Manglende innhold kan gjenopprettes", action:"Se gjennom"},
+    {type:"medium", icon:"?", title:"Usikker historisk kopi", count:counts.medium, text:"Krever manuell vurdering", action:"Se gjennom"},
     {type:"url", icon:"↗", title:"Sjekk kilde på nytt", count:counts.url, text:"Instagram · TikTok · nettsider", action:"Start kildesjekk"},
-    {type:"manual", icon:"⋯", title:"Manual Queue", count:counts.manual, text:"Ingen kjent kilde", action:"Open"}
+    {type:"manual", icon:"⋯", title:"Fyll inn manuelt", count:counts.manual, text:"Ingen kjent kilde", action:"Åpne"}
   ];
-  $("recoveryDashboard").innerHTML = cards.map(card => `
+  $("recoveryDashboard").innerHTML = cards.filter(card=>card.count).map(card => `
     <article class="recovery-card ${card.type}">
       <span class="recovery-card-icon" aria-hidden="true">${card.icon}</span>
       <h3>${card.title}</h3>
       <p><strong>${card.count}</strong> ${card.count === 1 ? "oppskrift" : "oppskrifter"}</p>
       <p>${card.text}</p>
       <button type="button" class="${card.type === "high" || card.type === "url" ? "primary" : "ghost"}" onclick="openRecoveryQueueV27('${card.type}')">${card.action}</button>
-    </article>`).join("");
+    </article>`).join("")||'<div class="empty-state">Ingen oppskrifter mangler lagrede ingredienser eller fremgangsmåte. Dette sier ikke om alle mengder og detaljer er kildeverifisert.</div>';
 }
 
 function showRecoveryPanelV27(panel) {
@@ -2148,8 +2161,7 @@ window.openRecoveryQueueV27 = async function(type) {
 };
 
 function highQueueV27() {
-  const state = recoveryDataV27?.state?.items || {};
-  return (recoveryDataV27?.manifest?.high || []).filter(item => state[String(item.id)]?.status !== "recovered");
+  return currentRecoveryQueueV49("high");
 }
 
 async function renderHighRecoveryV27() {
@@ -2276,8 +2288,7 @@ async function refreshRecipesV27() {
 }
 
 function urlQueueV27() {
-  const state = recoveryDataV27?.state?.items || {};
-  return (recoveryDataV27?.manifest?.url || []).filter(item => state[String(item.id)]?.status !== "recovered");
+  return currentRecoveryQueueV49("url");
 }
 
 function renderUrlRecoveryV27() {
@@ -2410,7 +2421,7 @@ async function autoFetchRecipeUrlV27(url, automatic=false) {
 }
 
 function renderSimpleRecoveryQueueV27(type) {
-  const queue = recoveryDataV27.manifest[type] || [];
+  const queue = currentRecoveryQueueV49(type);
   $("recoveryEyebrow").textContent = type === "medium" ? "Medium Confidence" : "Manuell kø";
   $("recoveryWorkspaceTitle").textContent = type === "medium" ? "Krever manuell vurdering" : "Ingen kjent kilde";
   $("recoveryWorkspaceBody").innerHTML = queue.map(item => `
@@ -2484,7 +2495,7 @@ showView = function(view) {
   if (window.location.pathname !== path) history.pushState({view}, "", path);
   if (view === "viewRecovery") {
     showRecoveryPanelV27("dashboard");
-    loadRecoveryV27().catch(error => {
+    loadRecoveryV27(true).catch(error => {
       $("recoverySummary").textContent = error.message;
     });
   }
@@ -2766,12 +2777,12 @@ function populateRecipeControlsV28() {
     box.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>{button.classList.toggle("active");renderRecipeResultsV28(scope)}));
   }
 }
+const suggestionSeenV49=new Set();
+let lastSuggestionsV49=[];
 function variedSuggestionsV28(count=5) {
   const candidates=recipes.filter(recipe=>recipeMatchesV28(recipe,"recipes")&&recipeHasIngredientsV23(recipe));
-  const ranked=candidates.map(recipe=>({recipe,pantry:pantryAnalysisV28(recipe),recent:recipeFlagsV28(recipe).avoidRecent14?0:1,random:Math.random()}))
-    .sort((a,b)=>b.pantry.score-a.pantry.score||a.recent-b.recent||a.random-b.random);
-  const selected=[],categories=new Set();
-  for(const item of ranked){if(selected.length>=count)break;if(!categories.has(item.recipe.category)||ranked.length-selected.length<=count-selected.length){selected.push(item.recipe);categories.add(item.recipe.category)}}
+  const selected=RecipeSuggestions.choose(candidates.map(recipe=>({recipe,pantryScore:pantryAnalysisV28(recipe).score,recent:!recipeFlagsV28(recipe).avoidRecent14})),count,{seen:suggestionSeenV49,last:lastSuggestionsV49});
+  lastSuggestionsV49=selected.map(recipe=>String(recipe.id));
   return selected;
 }
 function showSuggestionsV28(count=5){
@@ -2855,17 +2866,24 @@ categorize=function(line){
   const legacy=pantryKeyV28(line);
   // Old comma stripping turned every decimal amount into a key such as "0".
   // Keep named user overrides compatible; never use a quantity-only key.
-  const override=appMeta.ingredientRegistryOverrides[key]||(/[a-zæøå]/i.test(legacy)?appMeta.ingredientRegistryOverrides[legacy]:null);
+  const override=ShoppingIngredients.categoryName(appMeta.ingredientRegistryOverrides[key]||(/[a-zæøå]/i.test(legacy)?appMeta.ingredientRegistryOverrides[legacy]:null));
   if(override&&CATEGORIES.includes(override))return override;
   const category=ShoppingIngredients.category(normalizeIngredientLineForDisplay(line));
   if(category)return CATEGORIES.includes(category)?category:"Annet";
-  return categorizeBeforeV28(ShoppingIngredients.parse(normalizeIngredientLineForDisplay(line)).name.replace(/\([^)]*\)/g,""));
+  return ShoppingIngredients.categoryName(categorizeBeforeV28(ShoppingIngredients.parse(normalizeIngredientLineForDisplay(line)).name.replace(/\([^)]*\)/g,"")));
 };
+function shoppingCategoryV49(item){
+  const legacy=ShoppingIngredients.categoryName(item.category);
+  const stored=CATEGORIES.includes(legacy)?legacy:"Annet";
+  if(item.manualCategory)return stored;
+  const predicted=categorize(item.text);
+  return predicted!=="Annet"?predicted:stored;
+}
 shoppingRowHtmlV25=function(item){
   const source=item.recipe&&item.recipe!=="Egen vare"?item.recipe:"";
   return `<div class="shopping-row${item.done?" done":""}" data-shopping-id="${escapeAttr(item.id)}">
-    <input class="shopping-check" type="checkbox" ${item.done?"checked":""} onchange="toggleShoppingDoneV25('${escapeAttr(item.id)}',this.checked)">
-    <div class="shopping-item-main"><button type="button" class="shopping-item-text" onclick="editShoppingItemV25('${escapeAttr(item.id)}')">${escapeHtml(ShoppingIngredients.clean(item.text))}</button>${source?`<span class="shopping-source">Fra ${escapeHtml(source)}</span>`:""}</div>
+    <input class="shopping-check" type="checkbox" aria-label="${item.done?'Angre kjøpt':'Marker som kjøpt'}: ${escapeAttr(item.text)}" ${item.done?"checked":""} onchange="toggleShoppingDoneV25('${escapeAttr(item.id)}',this.checked)">
+    <div class="shopping-item-main"><button type="button" class="shopping-item-text" onclick="editShoppingItemV25('${escapeAttr(item.id)}')">${escapeHtml(ShoppingIngredients.clean(item.text))}</button>${shoppingCompletionPendingV49(item)?'<span class="shopping-undo-hint" role="status">Trykk på haken igjen for å angre</span>':source?`<span class="shopping-source">Fra ${escapeHtml(source)}</span>`:""}</div>
     ${legacyShoppingRecoveryV46(item)?`<button type="button" class="text-button" onclick="repairLegacyShoppingItemV46('${escapeAttr(item.id)}')">Rett sammenslåing</button>`:""}
     <button type="button" class="shopping-more" onclick="toggleShoppingActionsV25('${escapeAttr(item.id)}',this)">•••</button>
     <div class="shopping-actions"><button type="button" class="shopping-delete category-action" onclick="openShoppingCategoryV28('${escapeAttr(item.id)}')">Endre kategori</button><button type="button" class="shopping-delete" onclick="removeShoppingItemV25('${escapeAttr(item.id)}')">Slett vare</button></div></div>`;
@@ -2878,7 +2896,7 @@ renderShoppingList=function(items){
 };
 window.openShoppingCategoryV28=function(id){
   const item=shoppingItems.find(entry=>entry.id===id);if(!item)return;shoppingCategoryTargetV28=id;
-  $("shoppingCategoryItemName").textContent=item.text;$("shoppingCategorySelect").innerHTML=CATEGORIES.map(cat=>`<option>${cat}</option>`).join("");$("shoppingCategorySelect").value=item.category||"Annet";
+  $("shoppingCategoryItemName").textContent=item.text;$("shoppingCategorySelect").innerHTML=CATEGORIES.map(cat=>`<option>${cat}</option>`).join("");$("shoppingCategorySelect").value=shoppingCategoryV49(item);
   $("registryUpdateChoice").hidden=categorizeBeforeV28(item.text)==="Annet";$("shoppingCategoryDialog").showModal();
 };
 
@@ -2890,7 +2908,7 @@ function structuredPreviewV28(){
     <input data-field="amount" value="${escapeAttr(ingredient.amount||"")}" aria-label="Mengde">
     <input data-field="unit" value="${escapeAttr(ingredient.unit||"")}" aria-label="Enhet">
     <input data-field="item" value="${escapeAttr(ingredient.item||"")}" aria-label="Ingrediens">
-    <select data-field="shoppingCategory">${CATEGORIES.map(category=>`<option${category===(ingredient.shoppingCategory||categorize(ingredient.item))?" selected":""}>${category}</option>`).join("")}</select>
+    <select data-field="shoppingCategory">${CATEGORIES.map(category=>`<option${category===ShoppingIngredients.categoryName(ingredient.shoppingCategory||categorize(ingredient.item))?" selected":""}>${category}</option>`).join("")}</select>
     ${warning?`<p class="ingredient-warning">Kontroller: ${escapeHtml(warning.reason)}</p>`:""}</div>`}).join("")||`<p class="hint">Ingrediensene vises her etter analyse.</p>`;
 }
 function syncStructuredPreviewV28(){
@@ -3442,8 +3460,8 @@ $("openRecipeHelpBtn")?.addEventListener("click",openRecipeHelpV42);
 
 renderShoppingList=function(items){
   shoppingItems=ensureShoppingMetadataV25(items||[]);const box=$("shoppingList");if(!box)return;
-  const visible=visibleShoppingItemsV25(),active=visible.filter(item=>!item.done),done=visible.filter(item=>item.done),grouped=new Map(CATEGORIES.map(category=>[category,[]]));
-  for(const item of active){const legacyCategory=item.category==="Frys"?"Frysevarer":item.category==="Kjølevarer"?"Annet":item.category;const predicted=item.manualCategory?legacyCategory:categorize(item.text);const category=item.manualCategory?(CATEGORIES.includes(legacyCategory)?legacyCategory:"Annet"):(predicted!=="Annet"?predicted:(CATEGORIES.includes(legacyCategory)?legacyCategory:"Annet"));item.category=category;grouped.get(category).push(item)}
+  const visible=visibleShoppingItemsV25(),active=visible.filter(item=>!item.done||shoppingCompletionPendingV49(item)),done=visible.filter(item=>item.done&&!shoppingCompletionPendingV49(item)),grouped=new Map(CATEGORIES.map(category=>[category,[]]));
+  for(const item of active){const category=shoppingCategoryV49(item);grouped.get(category).push({...item,category})}
   const categories=CATEGORIES.map(category=>renderShoppingCategoryV25(category,grouped.get(category))).join("");
   box.innerHTML=`<p class="shopping-summary"><strong>${active.length}</strong> igjen · ${done.length} fullført</p>${shoppingMergeProposalV47().length?'<button type="button" class="text-button" onclick="mergeExistingShoppingV47()">Slå sammen like varer</button>':""}${categories}${done.length?`<section class="completed-section"><div class="completed-head"><button type="button" class="completed-toggle" aria-expanded="false" onclick="toggleCompletedShoppingV25(this)">Fullført (${done.length})</button><button type="button" class="text-button danger-subtle clear-completed" onclick="clearCompletedShoppingV25()">Fjern fullførte</button></div><div class="completed-items" hidden>${done.map(shoppingRowHtmlV25).join("")}</div></section>`:""}`;
   updateShoppingRemainingV25();

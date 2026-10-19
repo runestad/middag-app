@@ -31,6 +31,7 @@
   }
   function scale(text,factor){const p=parse(text);return p.amount==null||!Number.isFinite(factor)||factor===1?clean(text):[fmt(p.amount*factor),p.unit,p.name].filter(Boolean).join(' ');}
   function heading(text){return /:\s*$/.test(text)||/^(?:for the|til)\s+(?:sauce|dressing|slaw|saus|marinade)\s*:?$/i.test(text);}
+  function categoryName(value){return ({'Kjøtt':'Kjøtt og fisk','Frys':'Frysevarer'})[value]||value;}
   function category(text){
     const name=parse(text).name.toLowerCase();
     const qualifiers=[...name.matchAll(/\((fersk|frisk|fresh|malt|ground|tørket|tørkede|dried|frossen|frosne)\)/g)].map(match=>match[1]);
@@ -39,17 +40,21 @@
     if(/glutenfri|gluten.free/.test(s))return 'Glutenfritt';
     if(/proteinpulver|protein powder/.test(s))return 'Tørrvarer';
     if(/bakepulver|baking powder|kakaopulver|cocoa powder/.test(s))return 'Bakevarer';
-    if(/olje|\boil\b|oljespray|\beddik\b|vinegar|soyasaus|soy sauce|tamari|fiskesaus|fish sauce|hoisin|worcestershire|sriracha|currypast[ae]|curry paste|hvitløkspasta|garlic paste|peanøttsmør|peanut butter|mandelsmør|sennep|mustard|dijon|miso|gochujang|tahini|pesto|østerssaus|oyster sauce|teriyaki|ketchup|kecap|mirin|hot sauce|bbq.saus|majones|mayonnaise/.test(s))return 'Tørrvarer';
+    if(/olje|\boil\b|oljespray|\beddik\b|vinegar|soyasaus|soy sauce|tamari|fiskesaus|fish sauce|hoisin|worcestershire|worcestersaus|sriracha|currypast[ae]|curry paste|hvitløkspasta|garlic paste|peanøttsmør|peanut butter|mandelsmør|sennep|mustard|dijon|miso|gochujang|tahini|pesto|østerssaus|oyster sauce|teriyaki|ketchup|kecap|mirin|hot sauce|bbq.saus|majones|mayonnaise/.test(s))return 'Tørrvarer';
     if(/kraft|buljong|\bstock\b|\bbroth\b|kokosmelk|coconut milk|kokoskrem|hakkede tomater|tomatpur[eé]|tomato paste|passata|salsa|artisjokk|soltørk|sun.?dried tomat/.test(s))return 'Hermetikk/halvfabrikat';
-    if(/(?:havre|soya|mandel|ris)melk|(?:vegan|vegansk|plantebasert).*?(?:yoghurt|yogurt|ost|cheese)/.test(s))return 'Annet';
+    if(/(?:havre|soya|mandel|ris)melk|(?:vegan|vegansk|plantebasert).*?(?:yoghurt|yogurt|ost|cheese)/.test(s))return 'Kjølevarer';
+    if(/\b(?:tofu|tempeh)\b/.test(s))return 'Kjølevarer';
     if(!/frossen|frosne|frozen|fryste|hermetisk|canned|tørket|dried/.test(s)&&/sukkererter|sugar snap peas|grønne bønner|green beans|aspargesbønner|maiskolber|(?:thai|thailandsk) basilikum/.test(s))return 'Frukt og grønt';
     if(/(?:fersk|frisk|fresh|potte|bunt|kvist|håndfull|blad).*?(?:basil|timian|thyme|koriander|coriander|persille|parsley|rosmarin|rosemary|dill|mynte|mint)/.test(qualifiers.join(' ')+' '+clean(text).toLowerCase().replace(/\([^)]*\)/g,'')))return 'Frukt og grønt';
     if(/\b(?:malt|ground)\s+(?:koriander|coriander|ingefær|ginger|kanel|cinnamon|spisskummen|cumin)|(?:tørke[td]e?|dried)\s+(?:urter|herbs|basil|oregano|timian|thyme|rosmarin|rosemary|dill|persille|parsley|ingefær|ginger)|(?:koriander|løk|hvitløk|ingefær|chili|paprika|mango)\s*pulver|paprikapulver|chilipulver|hvitløkspulver|løkpulver|ingefærpulver|chili powder|garlic powder|onion powder|smoked paprika|røkt paprika|chili flakes|chiliflak|korianderfrø|coriander seeds|knuste røde pepperflak|røde? pepperflak|red pepper flakes|spisskummen|cumin|gurkemeie|turmeric|gochugaru|krydder|seasoning|masala|muskatnøtt|cayenne|chipotle.pulver|curry pulver|spisskumin|sumak|zaatar|dukkah|stjerneanis|nellikspiker|kardemommefrø|fennikelfrø|sennepsfrø|flaksalt|\b(?:salt|pepper|oregano|timian|basilikum|kanel|muskat|karri|kardemomme|kajenne|laurbær)\b/.test(s)&&!/bell pepper|red pepper|green pepper|yellow pepper/.test(s))return 'Krydder';
     if(/sukker|sugar|honning|honey|sirup|syrup|sesamfrø|sesame seeds/.test(s))return 'Tørrvarer';
     if(/frossen|frosne|frozen|fryste/.test(s))return 'Frysevarer';
-    if(/ansjos|blåskjell|krabbeklor|scampi|reker|shrimp|prawn|laks|salmon|torsk|cod|tunfisk|tuna|fisk|fish/.test(s))return 'Annet';
+    if(/hermetisk|canned|på boks/.test(s))return 'Hermetikk/halvfabrikat';
+    if(/\b(?:oliven|kalamata|olives|kapers|capers)\b/.test(s))return 'Hermetikk/halvfabrikat';
+    if(/(?:^|[^a-zæøå])(?:rødvin|hvitvin|vin|red wine|white wine|wine|øl|beer|juice|kaffe|coffee|te|tea|mineralvann)(?=$|[^a-zæøå])/.test(s))return 'Drikke';
+    if(/ansjos|blåskjell|krabbeklor|scampi|reker|shrimp|prawn|laks|salmon|ørret|trout|torsk|cod|tunfisk|tuna|sardiner|fisk|fish/.test(s))return 'Kjøtt og fisk';
     if(/\begg\b|\beggs\b|eggehvit|cr[eè]me fra[iî]che|kesam|keso|halloumi|melk|milk|fløte|cream|rømme|parmesan|feta|cottage cheese|yoghurt|yogurt|smør|butter|mozzarella|cheddar|\bost\b/.test(s))return 'Meieri';
-    if(/kylling|chicken|biff|flankstek|høyrygg|short rib|indrefilet|storfe|sirloin|beef|okse|kjøttdeig|karbonadedeig|svin|pork|pølse|kalkun|bacon|\blam\b|skinke/.test(s))return 'Kjøtt';
+    if(/kylling|chicken|biff|flankstek|høyrygg|short rib|indrefilet|storfe|sirloin|beef|okse|kjøttdeig|karbonadedeig|svin|pork|pølse|kalkun|bacon|\blam\b|skinke/.test(s))return 'Kjøtt og fisk';
     if(/frossen|frosne|frozen|fryste|edamame/.test(s))return 'Frysevarer';
     if(/bønner|beans|kikerter|chickpeas|hermetisk|mais/.test(s))return 'Hermetikk/halvfabrikat';
     if(/pasta|linguine|fettuccine|rigatoni|lasagneplater|tortellini|havregryn|panko|brødsmuler|nudler|noodles|\bris\b|\brice\b|quinoa|couscous|linser|lentils|bulgur|orzo|maizena|mel\b|flour|nøtter|nuts|mandler|almonds|cashew/.test(s))return 'Tørrvarer';
@@ -96,5 +101,5 @@
     const key=mergeName(parse(text).name);
     return /[a-zæøå]/i.test(key)?key:'';
   }
-  return {parse,convert,scale,clean,heading,category,fmt,mergeName,registryKey,recoverLegacyGroup};
+  return {parse,convert,scale,clean,heading,category,categoryName,fmt,mergeName,registryKey,recoverLegacyGroup};
 });

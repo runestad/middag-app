@@ -24,7 +24,8 @@ class FocusedMobileFixTests(unittest.TestCase):
         self.assertIn("createDaysBtn:createDayRows", self.js)
 
     def test_manual_meal_input_stays_visible_on_mobile(self):
-        final_mobile = self.css[self.css.rindex("@media(max-width:560px)"):]
+        rule = self.css.rindex(".day-manual-row{display:")
+        final_mobile = self.css[self.css.rfind("@media(max-width:560px)", 0, rule):]
         self.assertIn(".day-manual-row{display:grid}", final_mobile)
         self.assertNotIn(".day-manual-row{display:none}", final_mobile)
 

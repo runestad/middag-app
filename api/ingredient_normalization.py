@@ -51,6 +51,7 @@ def normalize_ingredient_name(value):
 
 
 def ingredient_category(name, fallback="Annet"):
+    fallback = "Kjøtt og fisk" if fallback == "Kjøtt" else fallback
     canonical = normalize_ingredient_name(name)
     key = _key(canonical)
     if re.search(r"\b(glutenfri\w*|gluten.free)\b", key):
@@ -60,7 +61,7 @@ def ingredient_category(name, fallback="Annet"):
     if key in ("bakepulver", "baking powder", "kakaopulver", "cocoa powder"):
         return "Bakevarer"
     # Match the prepared product before words naming its raw ingredients.
-    if re.search(r"olje|\boil\b|oljespray|eddik|vinegar|soyasaus|soy sauce|hvitl[øo]kspasta|garlic paste|sennep|mustard|dijon|pesto|hoisin|tahini|majones|mayonnaise", key):
+    if re.search(r"olje|\boil\b|oljespray|eddik|vinegar|soyasaus|soy sauce|hvitl[øo]kspasta|garlic paste|sennep|mustard|dijon|pesto|hoisin|tahini|majones|mayonnaise|worcestersaus|worcestershire", key):
         return "Tørrvarer"
     if re.search(r"kraft|buljong|\bstock\b|\bbroth\b|kokosmelk|coconut milk|solt[øo]rkede tomater|sun.?dried tomatoes|tomatpure|tomato paste", key):
         return "Hermetikk/halvfabrikat"
@@ -71,10 +72,18 @@ def ingredient_category(name, fallback="Annet"):
         return "Kjølevarer"
     if key.startswith(("fersk ", "fresh ")) and any(herb in key for herb in ("basil", "persille", "parsley", "timian", "thyme", "koriander", "cilantro", "dill")):
         return "Frukt og grønt"
+    if re.search(r"frossen|frosne|frozen|fryste", key):
+        return "Frys"
+    if re.search(r"hermetisk|canned|på boks|\b(oliven|kalamata|olives|kapers|capers)\b", key):
+        return "Hermetikk/halvfabrikat"
+    if re.search(r"\b(rødvin|hvitvin|vin|red wine|white wine|wine|øl|beer|juice|kaffe|coffee|te|tea|mineralvann)\b", key):
+        return "Drikke"
     if canonical in CATEGORIES:
         return CATEGORIES[canonical]
     if key in SPICE_WORDS or re.match(r"(?:malt|t[øo]rke(?:t|de)|ground|dried)\s+(?:koriander|coriander|ingef[æa]r|ginger|basil(?:ikum)?|oregano|timian|thyme|rosmarin|rosemary|dill|persille|parsley|kanel|cinnamon|spisskummen|cumin|urter|herbs)\b", key) or any(key.endswith(suffix) for suffix in SPICE_SUFFIXES):
         return "Krydder"
+    if re.search(r"scampi|reker|shrimp|prawn|laks|salmon|ørret|trout|torsk|tunfisk|tuna|sardiner|ansjos|blåskjell", key):
+        return "Kjøtt og fisk"
     matches = [(len(alias), CATEGORIES[target]) for alias, target in ALIASES.items()
                if len(alias) >= 4 and re.search(rf"(^|\s){re.escape(alias)}($|\s)", key)]
     return max(matches)[1] if matches else (fallback if fallback in CATALOG["categories"] else "Annet")

@@ -10,9 +10,9 @@ from .data_merge import has_meaningful_data_value
 APP_ID = os.environ.get("APP_ID", "oyvind-melanie")
 
 SHOPPING_CATEGORIES = [
-    "Frukt og grønt", "Kjøtt", "Kjølevarer", "Meieri", "Frys",
+    "Frukt og grønt", "Kjøtt og fisk", "Kjølevarer", "Meieri", "Frys",
     "Hermetikk/halvfabrikat", "Tørrvarer", "Krydder",
-    "Glutenfritt", "Bakevarer", "Annet"
+    "Glutenfritt", "Bakevarer", "Drikke", "Annet"
 ]
 
 

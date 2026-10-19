@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png?v=39" />
   <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=39" />
   <meta name="theme-color" content="#FAFAF7" />
-  <link rel="stylesheet" href="styles.css?v=47" />
+  <link rel="stylesheet" href="styles.css?v=49" />
 </head>
 <body>
   <header class="app-header">
@@ -222,8 +222,9 @@
       <section class="screen-intro recovery-heading">
         <div class="section-title">
           <div>
-            <h2>Kildehelse</h2>
+            <h2>Kilder</h2>
             <p id="recoverySummary" class="hint">Sjekker oppskrifter som kan trenge hjelp …</p>
+            <p id="recoverySourceStatus" class="hint"></p>
           </div>
           <button id="recoveryHistoryBtn" class="ghost" type="button">Historikk</button>
         </div>
@@ -260,7 +261,7 @@
     <button type="button" class="nav-btn" data-view="viewRecipes" aria-label="Oppskrifter"><svg class="nav-icon" aria-hidden="true"><use href="assets/sult-icons.svg#book" /></svg><span>Oppskrifter</span></button>
     <button type="button" class="nav-btn" data-view="viewFreezer" aria-label="Fryser"><svg class="nav-icon" aria-hidden="true"><use href="assets/sult-icons.svg#snow" /></svg><span>Fryser</span></button>
     <button type="button" class="nav-btn" data-view="viewPantry" aria-label="Pantry"><svg class="nav-icon" aria-hidden="true"><use href="assets/sult-icons.svg#archive" /></svg><span>Pantry</span></button>
-    <button type="button" class="nav-btn" data-view="viewRecovery" aria-label="Kildehelse"><svg class="nav-icon" aria-hidden="true"><use href="assets/sult-icons.svg#refresh" /></svg><span>Kilder</span></button>
+    <button type="button" class="nav-btn" data-view="viewRecovery" aria-label="Kilder"><svg class="nav-icon" aria-hidden="true"><use href="assets/sult-icons.svg#refresh" /></svg><span>Kilder</span></button>
   </nav>
 
   <dialog id="importDialog">
@@ -554,7 +555,8 @@
   <script src="data-safety.js?v=29"></script>
   <script src="serving-scaling.js?v=31"></script>
   <script src="shopping-list-model.js?v=40"></script>
-  <script src="shopping-ingredients.js?v=3"></script>
-  <script src="app.js?v=48"></script>
+  <script src="shopping-ingredients.js?v=4"></script>
+  <script src="recipe-suggestions.js?v=1"></script>
+  <script src="app.js?v=49"></script>
 </body>
 </html>
