@@ -4,6 +4,10 @@ from ._common import *
 SHOPPING_EPOCH = "2000-01-01T00:00:00.000Z"
 
 
+class PlanChangedError(RuntimeError):
+    pass
+
+
 def _merge_shopping_items(stored_items, incoming_items):
     """Item-level last-write-wins; missing items never mean deletion."""
     merged = {}
@@ -21,7 +25,7 @@ def _merge_shopping_items(stored_items, incoming_items):
     return list(merged.values())
 
 
-def _persist_plan_with_retry(key, incoming_data, attempts=5):
+def _persist_plan_with_retry(key, incoming_data, attempts=5, expected_revision=None):
     """CAS retry prevents concurrent full-document requests from losing items."""
     last_error = None
     candidate_data = dict(incoming_data)
@@ -29,6 +33,8 @@ def _persist_plan_with_retry(key, incoming_data, attempts=5):
         q = urllib.parse.urlencode({"key": f"eq.{key}", "select": "*"})
         rows = supabase_request("GET", "app_state", query=q) or []
         stored_data = rows[0].get("data") if rows and isinstance(rows[0].get("data"), dict) else {}
+        if expected_revision is not None and stored_data.get("updatedAt") != expected_revision:
+            raise PlanChangedError("Handlelisten er endret siden gjennomgangen. Hent en ny forhåndsvisning.")
         merged_data = dict(candidate_data)
         merged_data["shoppingItems"] = _merge_shopping_items(
             stored_data.get("shoppingItems"), candidate_data.get("shoppingItems")
@@ -77,7 +83,9 @@ class handler(BaseHTTPRequestHandler):
             data = payload.get("plan") if isinstance(payload.get("plan"), dict) else payload
             key = f"plan:{APP_ID}"
 
-            merged_data = _persist_plan_with_retry(key, data)
+            merged_data = _persist_plan_with_retry(key, data, expected_revision=payload.get("expectedUpdatedAt"))
             send_json(self, {"ok": True, "storage": "supabase", "plan": merged_data})
+        except PlanChangedError as exc:
+            send_json(self, {"ok": False, "error": str(exc)}, 409)
         except Exception as exc:
             send_json(self, {"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)

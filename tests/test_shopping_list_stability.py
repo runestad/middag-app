@@ -63,6 +63,22 @@ class ShoppingListModelTests(unittest.TestCase):
 
 
 class ShoppingPersistenceTests(unittest.TestCase):
+    def test_reviewed_cleanup_rejects_a_changed_list_without_writing(self):
+        plan_api = importlib.import_module("api.plan")
+        with patch.object(plan_api, "supabase_request", return_value=[{"data":{"updatedAt":"newer"}}]) as request:
+            with self.assertRaises(plan_api.PlanChangedError):
+                plan_api._persist_plan_with_retry("plan:test", {"updatedAt":"next"}, expected_revision="reviewed")
+        self.assertEqual(request.call_count, 1)
+        self.assertEqual(request.call_args[0][0], "GET")
+
+    def test_reviewed_cleanup_does_not_retry_over_a_concurrent_edit(self):
+        plan_api = importlib.import_module("api.plan")
+        calls = [[{"data":{"updatedAt":"reviewed"}}], [], [{"data":{"updatedAt":"concurrent"}}]]
+        with patch.object(plan_api, "supabase_request", side_effect=calls) as request:
+            with self.assertRaises(plan_api.PlanChangedError):
+                plan_api._persist_plan_with_retry("plan:test", {"updatedAt":"next"}, expected_revision="reviewed")
+        self.assertEqual(request.call_count, 3)
+
     def test_server_merges_concurrent_item_level_changes(self):
         plan_api = importlib.import_module("api.plan")
         stored = [{"id": "milk", "text": "Melk", "updatedAt": "2026-01-01T00:00:01Z"}]
