@@ -675,7 +675,7 @@ function renderRecipeImageEditorV43(){
   const preview=$("recipeImageEditorPreview"),choose=$("chooseRecipeImageBtn"),remove=$("removeRecipeImageBtn");if(!preview)return;
   preview.innerHTML=recipeImageTagV43(recipe,`Nåværende bilde for ${recipe.name}`,false);
   choose.textContent=recipe.userImagePath?"Bytt bilde":"Last opp bilde";remove.hidden=!recipe.userImagePath;
-  $("recipeImageStatus").textContent=importImageMethodV50==="illustration"?"Illustrasjonsbilde av en lignende rett. Du kan velge ditt eget bilde.":importImageMethodV50==="user-draft"?"Ditt valgte bilde. Lagres sammen med oppskriften.":recipe.userImagePath?"Eget bilde er i bruk.":importSourceMediaV27?"Bilde fra originalkilden.":"Bildet vises her etter import.";
+  $("recipeImageStatus").textContent=importImageMethodV50==="illustration"?"Illustrasjonsbilde av en lignende rett. Du kan velge ditt eget bilde.":importImageMethodV50==="video"?"Bilde fra videoen. Du kan velge et annet bilde.":importImageMethodV50==="user-draft"?"Ditt valgte bilde. Lagres sammen med oppskriften.":recipe.userImagePath?"Eget bilde er i bruk.":importSourceMediaV27?"Bilde fra originalkilden.":"Bildet vises her etter import.";
 }
 const openImportBeforeV43=openImport;
 openImport=function(id){const result=openImportBeforeV43(id);renderRecipeImageEditorV43();return result};
@@ -2107,6 +2107,7 @@ saveParsedRecipe = async function() {
     aiUncertainties: ai.uncertainties || [],
     prepMinutes: Number(ai.prepMinutes || base.prepMinutes || 0),
     nutrition: ai.nutrition || base.nutrition || {},
+    mediaEvidence: (typeof mediaEvidenceV52!=="undefined" ? mediaEvidenceV52 : null) || base.mediaEvidence || null,
     imageMethod: importImageMethodV50 || ai.imageMethod || base.imageMethod || "",
     verifiedFallbackImage: importFallbackV50 || base.verifiedFallbackImage || "",
     imageIsIllustration: importImageMethodV50 ? importImageMethodV50 === "illustration" : Boolean(base.imageIsIllustration),
@@ -3081,6 +3082,8 @@ function originalRecipeSourceUrlV31(recipe){
 }
 function resetNewRecipeImportV31(){
   importRunV26++;
+  if(typeof mediaEvidenceV52!=="undefined")mediaEvidenceV52=null;
+  if($("mediaImportStatus"))$("mediaImportStatus").textContent="";
   importControllerV50?.abort();
   activeImportId=`custom-${(crypto.randomUUID?.() || Array.from(crypto.getRandomValues(new Uint32Array(4))).join("-"))}`;
   importImageMethodV50="";importFallbackV50="";clearImportWarningsV26();setImportBusyV50(false);
@@ -3560,7 +3563,7 @@ recipeImageV39=getRecipeDisplayImage;
 imageForRecipeV28=recipe=>recipeImageTagV43(recipe,`Bilde av ${recipe.name}`);
 recipeHelpRowV42=recipeHelpRowV43;
 const openImportActiveBeforeV43=openImport;
-openImport=function(id){importRunV26++;importControllerV50?.abort();importImageMethodV50="";importFallbackV50="";setImportBusyV50(false);clearImportWarningsV26();setImportProgressV26("",0,false);$("aiStatus").textContent="Se over og juster før du lagrer.";$("importSourceDetails").open=false;const result=openImportActiveBeforeV43(id);structuredPreviewV28();$("aiParseCaptionBtn").disabled=false;renderRecipeImageEditorV43();return result};
+openImport=function(id){importRunV26++;if(typeof mediaEvidenceV52!=="undefined")mediaEvidenceV52=null;if($("mediaImportStatus"))$("mediaImportStatus").textContent="";importControllerV50?.abort();importImageMethodV50="";importFallbackV50="";setImportBusyV50(false);clearImportWarningsV26();setImportProgressV26("",0,false);$("aiStatus").textContent="Se over og juster før du lagrer.";$("importSourceDetails").open=false;const result=openImportActiveBeforeV43(id);structuredPreviewV28();$("aiParseCaptionBtn").disabled=false;renderRecipeImageEditorV43();return result};
 const openRecipeDetailsActiveBeforeV43=window.openRecipeDetails;
 window.openRecipeDetails=function(id){
   openRecipeDetailsActiveBeforeV43(id);const recipe=recipeById(id),body=$("recipeDialogBody");if(!recipe||!body)return;

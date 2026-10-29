@@ -287,6 +287,12 @@
           <div class="recipe-image-editor-actions"><button id="chooseRecipeImageBtn" type="button" class="ghost">Velg bilde</button><button id="removeRecipeImageBtn" type="button" class="text-button danger-subtle" hidden>Fjern eget bilde</button></div>
           <p id="recipeImageStatus" class="hint" role="status" aria-live="polite"></p>
         </section>
+        <section class="media-import-section">
+          <button type="button" id="chooseRecipeMediaBtn">Hent fra video eller lyd</button>
+          <input id="recipeMediaInput" type="file" accept="video/*,audio/*,.mp4,.mov,.m4a,.mp3,.wav" hidden />
+          <p class="hint">Velg en video eller et skjermopptak med lyd. Maks 3 minutter / 150 MB. Lyd og utvalgte bilder sendes til AI-analyse. Kontroller resultatet før lagring.</p>
+          <p id="mediaImportStatus" role="status"></p>
+        </section>
         <section class="ingredient-preview-section">
           <div class="section-title"><div><h3>Ingredienser og kategorier</h3><p class="hint">Juster mengde, enhet, ingrediens og handlelistekategori.</p></div></div>
           <div id="structuredIngredientPreview" class="structured-ingredient-preview"></div>
@@ -324,6 +330,7 @@
       <p id="duplicateRecipeWarning" class="field-warning" role="status" aria-live="polite" hidden></p>
       <div class="add-recipe-choices">
         <button type="button" class="primary" id="startUrlImportBtn">Importer</button>
+        <button type="button" class="ghost" id="newRecipeVideoBtn">Hent fra video eller lyd</button>
         <button type="button" class="ghost" data-add-recipe-mode="images">Hent oppskrift fra bilder</button>
         <button type="button" class="ghost" data-add-recipe-mode="manual">Lag manuelt</button>
       </div>
@@ -505,6 +512,7 @@
   <script src="shopping-list-model.js?v=40"></script>
   <script src="shopping-ingredients.js?v=4"></script>
   <script src="recipe-suggestions.js?v=1"></script>
-  <script src="app.js?v=51"></script>
+  <script src="app.js?v=52"></script>
+  <script src="media-import.js?v=1"></script>
 </body>
 </html>
