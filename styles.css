@@ -207,3 +207,56 @@ dialog{width:min(92vw,760px);max-height:min(90vh,900px);padding:0;border:1px sol
 
 #importDialog [hidden]{display:none!important}
 #importDialog .dialog-form{overflow:visible}
+
+/* iPhone: native dates must fit their grid track; import choices need spacing. */
+.field-warning[hidden],.serving-warning[hidden]{display:none!important}
+#duplicateRecipeWarning:empty{display:none}
+.add-recipe-choices{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.add-recipe-choices>button{width:100%;min-width:0;min-height:48px;white-space:normal}
+#addRecipeDialog .dialog-form{max-width:none}
+@media(max-width:560px){
+  .period-grid{grid-template-columns:minmax(0,1fr)}
+  .period-grid input[type="date"]{appearance:none;-webkit-appearance:none;width:100%;min-width:0;font-size:16px;text-align:left}
+  .period-grid input[type="date"]::-webkit-date-and-time-value{text-align:left;min-width:0}
+  .period-grid>button{width:100%;justify-self:stretch}
+  .dialog-form input,.dialog-form select,.dialog-form textarea{font-size:16px;max-width:100%;min-width:0}
+  .dialog-form .section-title{align-items:flex-start;gap:12px}
+  .dialog-form .section-title>h2{min-width:0;overflow-wrap:anywhere}
+  .dialog-form .section-title>[data-dialog-close]{flex-shrink:0}
+  #addRecipeDialog .dialog-form{gap:12px}
+  #addRecipeDialog label:not(:first-child){margin-top:4px}
+  #addRecipeDialog .hint{margin-bottom:4px}
+  #addRecipeDialog .add-recipe-choices{margin-top:8px}
+  .day-head-v16{flex-wrap:wrap}
+  .plan-item{flex-wrap:wrap}
+  .plan-item>div:first-child{min-width:0;overflow-wrap:anywhere}
+}
+
+/* Shared mobile form and sheet rules, including landscape iPhones. */
+@media (max-width:900px) and (pointer:coarse), (max-width:560px){
+  input:not([type="checkbox"]):not([type="radio"]),select,textarea{
+    font-size:16px!important;
+    min-width:0;
+    max-width:100%;
+    scroll-margin-block:80px;
+  }
+  .dialog-form{min-width:0;overflow:visible;gap:16px}
+  dialog{overflow-y:auto;overscroll-behavior-y:contain;max-height:calc(var(--sheet-viewport-height,100dvh) - 16px)}
+  .dialog-form .section-title{position:static;margin:0;padding:0;background:var(--surface);align-items:flex-start}
+  .dialog-form .section-title h2{font-size:24px;line-height:1.2}
+  .dialog-actions,.ocr-actions,.recipe-image-editor-actions{gap:10px}
+  .dialog-actions>button,.ocr-actions>button,.recipe-image-editor-actions>button{min-height:44px;white-space:normal}
+  .dialog-actions>button,.ocr-actions>button{flex:1 1 140px}
+  .import-save-bar{position:static;gap:12px;flex-wrap:wrap;padding-bottom:0}
+  .import-save-bar>button{flex:1 0 110px;min-height:48px}
+  .section-title{flex-wrap:wrap;gap:12px}
+  .section-title>div{flex:1 1 180px}
+  .pantry-row{flex-wrap:wrap;gap:12px}
+  .pantry-row .inline-actions{flex-wrap:wrap}
+  .freezer-item{grid-template-columns:minmax(0,1fr);gap:10px}
+  .freezer-item-actions{justify-content:space-between}
+}
+@media(max-width:560px){
+  dialog{top:auto;bottom:var(--sheet-keyboard-inset,0px);margin:0;width:100%;max-width:100%;padding-bottom:0}
+  .dialog-form{padding-bottom:calc(24px + var(--safe-bottom))}
+}
