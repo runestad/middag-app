@@ -68,3 +68,20 @@ class AutomaticRecipeImportTests(unittest.TestCase):
         helper=test_recipe_edit_persistence.RecipeEditTests()
         response,_=helper.call_save({'id':'1','name':'Pasta'},{'id':'1','explicitContentEdit':True,'patch':{'structuredIngredients':[{'amount':'200','unit':'g','item':'pasta','shoppingCategory':'Frysevarer'}]}})
         self.assertEqual(response[1]['recipe']['structuredIngredients'][0]['shoppingCategory'],'Frys')
+
+
+class TikTokCaptionTests(unittest.TestCase):
+    def test_only_requested_video_is_extracted(self):
+        import json
+        payload={'items':[{'id':'99','desc':'Wrong recipe'}, {'id':'123','desc':'1 cup rice\nBoil rice.','video':{'cover':'https://example.org/cover.jpg'}}]}
+        html='<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__" type="application/json">'+json.dumps(payload)+'</script>'
+        result=extractor.tiktok_embedded_recipe(html,'https://www.tiktok.com/@cook/video/123')
+        self.assertEqual(result['caption'],'1 cup rice\nBoil rice.')
+        self.assertEqual(result['image'],'https://example.org/cover.jpg')
+        self.assertIsNone(extractor.tiktok_embedded_recipe(html,'https://www.tiktok.com/@cook/video/456'))
+
+    def test_oembed_strips_share_tracking(self):
+        import urllib.parse
+        with patch.object(extractor,'fetch_text',return_value=('{"title":"Recipe"}','application/json','https://www.tiktok.com/oembed')) as fetch:
+            extractor.tiktok_oembed('https://www.tiktok.com/@cook/video/123?_r=1&_t=share')
+        self.assertEqual(urllib.parse.parse_qs(urllib.parse.urlparse(fetch.call_args.args[0]).query)['url'],['https://www.tiktok.com/@cook/video/123'])

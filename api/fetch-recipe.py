@@ -189,7 +189,9 @@ def safe_resolved_source_url(original_url, candidate_url):
 
 
 def tiktok_oembed(url):
-    endpoint = "https://www.tiktok.com/oembed?" + urllib.parse.urlencode({"url": url})
+    parsed = urllib.parse.urlsplit(url)
+    canonical = urllib.parse.urlunsplit((parsed.scheme, parsed.netloc, parsed.path, "", ""))
+    endpoint = "https://www.tiktok.com/oembed?" + urllib.parse.urlencode({"url": canonical})
     raw, _, _ = fetch_text(endpoint)
     payload = json.loads(raw)
     return {
@@ -204,12 +206,39 @@ def tiktok_oembed(url):
     }
 
 
+def tiktok_embedded_recipe(html, url):
+    """Read public page JSON for this video only, never recommended videos."""
+    match = re.search(r"/video/(\d+)", url)
+    if not match:
+        return None
+    video_id = match.group(1)
+    for raw in re.findall(r'<script\b[^>]*>([\s\S]*?)</script>', html, re.I):
+        try:
+            payload = json.loads(raw.strip())
+        except (ValueError, TypeError):
+            continue
+        stack = [payload]
+        while stack:
+            item = stack.pop()
+            if isinstance(item, list):
+                stack.extend(item)
+            elif isinstance(item, dict):
+                if str(item.get("id") or item.get("itemId") or "") == video_id and item.get("desc"):
+                    video = item.get("video") or {}
+                    return {"caption": str(item["desc"]), "title": "", "image": video.get("cover") or video.get("originCover") or "", "sourceType": "TikTok", "method": "embedded-video-caption", "resolvedUrl": url}
+                stack.extend(v for v in item.values() if isinstance(v, (dict, list)))
+    return None
+
+
 def extract(url):
     host = urllib.parse.urlparse(url).hostname or ""
     if "tiktok.com" in host:
         if host.startswith("vm."):
             try:
-                _, _, resolved_short = fetch_text(url)
+                short_html, _, resolved_short = fetch_text(url)
+                embedded = tiktok_embedded_recipe(short_html, resolved_short)
+                if embedded:
+                    return embedded
                 result = tiktok_oembed(resolved_short)
                 result.update({"resolvedUrl": safe_resolved_source_url(url, resolved_short), "sourceType": "TikTok", "method": "oembed-resolved-shortlink"})
                 return result
@@ -221,6 +250,11 @@ def extract(url):
             pass
 
     html, content_type, resolved = fetch_text(url)
+    if host == "tiktok.com" or host.endswith(".tiktok.com"):
+        embedded = tiktok_embedded_recipe(html, resolved)
+        if embedded:
+            return embedded
+        print("TikTok source diagnostics", json.dumps({"htmlBytes": len(html), "hasVideoUrl": bool(re.search(r"/video/\d+", resolved)), "scripts": len(re.findall(r"<script\b", html, re.I)), "hasDescription": bool(meta_value(html, "og:description") or meta_value(html, "description"))}))
     if "tiktok.com" in host and resolved != url:
         try:
             result = tiktok_oembed(resolved)
