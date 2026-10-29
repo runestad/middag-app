@@ -7,7 +7,6 @@ import urllib.request
 import urllib.error
 import uuid
 import wave
-from http.server import BaseHTTPRequestHandler
 from ._common import get_ssl_context, send_json
 
 MAX_BODY = 3_900_000
@@ -67,36 +66,35 @@ def frames_body(payload):
     return json.dumps({'model':os.environ.get('OPENAI_MODEL','gpt-4.1-mini'),'messages':[{'role':'system','content':prompt},{'role':'user','content':content}], 'temperature':0,'response_format':{'type':'json_object'}}).encode()
 
 
-class handler(BaseHTTPRequestHandler):
-    def do_POST(self):
-        try:
-            length = int(self.headers.get('Content-Length', '0'))
-            if not 0 < length <= MAX_BODY:
-                return send_json(self, {'ok':False,'error':'Mediedelen er for stor.'}, 413)
-            payload = json.loads(self.rfile.read(length))
-            kind = payload.get('kind')
-            if kind == 'audio':
-                body, content_type = audio_body(payload)
-                endpoint = 'audio/transcriptions'
-            elif kind == 'frames':
-                body, content_type = frames_body(payload), 'application/json'
-                endpoint = 'chat/completions'
-            else:
-                raise ValueError('Ukjent medietype.')
-            key = os.environ.get('OPENAI_API_KEY','').strip()
-            if not key:
-                return send_json(self, {'ok':False,'error':'Medieanalyse er ikke konfigurert.'}, 503)
-            request = urllib.request.Request('https://api.openai.com/v1/' + endpoint, data=body, headers={'Authorization':'Bearer '+key,'Content-Type':content_type}, method='POST')
-            with urllib.request.urlopen(request, timeout=85, context=get_ssl_context()) as response:
-                result = json.loads(response.read())
-            if kind == 'frames':
-                result = json.loads(result['choices'][0]['message']['content'])
-            text = str(result.get('text') or '').strip()[:40000]
-            send_json(self, {'ok':True,'text':text})
-        except (ValueError, TypeError, KeyError):
-            send_json(self, {'ok':False,'error':'Mediedelen kunne ikke leses. Prøv en annen video eller lydfil.'}, 400)
-        except urllib.error.HTTPError as error:
-            print("Media analysis upstream status", error.code)
-            send_json(self, {"ok":False,"error":"AI-tjenesten kunne ikke analysere mediet. Prøv igjen."}, 502)
-        except Exception:
-            send_json(self, {'ok':False,'error':'Medieanalysen kunne ikke fullføres. Prøv igjen eller bruk skjermbilder/tekst.'}, 502)
+def analyze_media_request(self):
+    try:
+        length = int(self.headers.get('Content-Length', '0'))
+        if not 0 < length <= MAX_BODY:
+            return send_json(self, {'ok':False,'error':'Mediedelen er for stor.'}, 413)
+        payload = json.loads(self.rfile.read(length))
+        kind = payload.get('kind')
+        if kind == 'audio':
+            body, content_type = audio_body(payload)
+            endpoint = 'audio/transcriptions'
+        elif kind == 'frames':
+            body, content_type = frames_body(payload), 'application/json'
+            endpoint = 'chat/completions'
+        else:
+            raise ValueError('Ukjent medietype.')
+        key = os.environ.get('OPENAI_API_KEY','').strip()
+        if not key:
+            return send_json(self, {'ok':False,'error':'Medieanalyse er ikke konfigurert.'}, 503)
+        request = urllib.request.Request('https://api.openai.com/v1/' + endpoint, data=body, headers={'Authorization':'Bearer '+key,'Content-Type':content_type}, method='POST')
+        with urllib.request.urlopen(request, timeout=85, context=get_ssl_context()) as response:
+            result = json.loads(response.read())
+        if kind == 'frames':
+            result = json.loads(result['choices'][0]['message']['content'])
+        text = str(result.get('text') or '').strip()[:40000]
+        send_json(self, {'ok':True,'text':text})
+    except (ValueError, TypeError, KeyError):
+        send_json(self, {'ok':False,'error':'Mediedelen kunne ikke leses. Prøv en annen video eller lydfil.'}, 400)
+    except urllib.error.HTTPError as error:
+        print("Media analysis upstream status", error.code)
+        send_json(self, {"ok":False,"error":"AI-tjenesten kunne ikke analysere mediet. Prøv igjen."}, 502)
+    except Exception:
+        send_json(self, {'ok':False,'error':'Medieanalysen kunne ikke fullføres. Prøv igjen eller bruk skjermbilder/tekst.'}, 502)

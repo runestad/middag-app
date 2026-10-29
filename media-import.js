@@ -23,7 +23,7 @@ async function importMediaV52(file){
       const mono=(await offline.startRendering()).getChannelData(0);check();
       for(let start=0;start<mono.length;start+=16000*60){
         check();setImportProgressV26('Leser lyden …',15+30*start/mono.length);
-        const result=await importRequestV50('/api/analyze-media',{kind:'audio',audio:await mediaDataURLV52(mediaWavV52(mono.slice(start,start+16000*60)))});check();
+        const result=await importRequestV50('/api/parse-caption?media=1',{kind:'audio',audio:await mediaDataURLV52(mediaWavV52(mono.slice(start,start+16000*60)))});check();
         if(result.text)evidence.push(`LYD ved ${start/16000} sekunder:\n${result.text}`);
       }
     }catch(error){check();if(error.message==='TOO_LONG')throw new Error('Videoen må være kortere enn tre minutter. Klipp opptaket og prøv igjen.');warnings.push('Lyden kunne ikke analyseres. Kontroller oppskriften mot lyden selv.');}
@@ -36,7 +36,7 @@ async function importMediaV52(file){
         for(let second=0.1;second<video.duration;second+=2){
           check();await mediaEventV52(video,'seeked',()=>{video.currentTime=Math.min(second,video.duration-0.05)});check();ctx.drawImage(video,0,0,canvas.width,canvas.height);
           const image=canvas.toDataURL('image/jpeg',0.65);if(!thumbnail)thumbnail=image;frames.push({seconds:second,image});
-          if(frames.length===8||second+2>=video.duration){setImportProgressV26('Leser tekst og handlinger i videoen …',45+35*second/video.duration);const result=await importRequestV50('/api/analyze-media',{kind:'frames',frames});check();if(result.text)evidence.push('VIDEOBILDER:\n'+result.text);frames=[];}
+          if(frames.length===8||second+2>=video.duration){setImportProgressV26('Leser tekst og handlinger i videoen …',45+35*second/video.duration);const result=await importRequestV50('/api/parse-caption?media=1',{kind:'frames',frames});check();if(result.text)evidence.push('VIDEOBILDER:\n'+result.text);frames=[];}
         }
       }catch(error){check();warnings.push(error.message+' Videobildene ble ikke fullstendig analysert.');}
     }

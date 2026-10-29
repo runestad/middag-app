@@ -5,7 +5,7 @@ import json
 import unittest
 import wave
 
-M = importlib.import_module('api.analyze-media')
+M = importlib.import_module('api.media_analysis')
 
 class MediaImportTests(unittest.TestCase):
     def audio(self,channels=1,seconds=1):

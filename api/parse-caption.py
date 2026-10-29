@@ -54,6 +54,9 @@ def finalize_parsed_recipe(parsed, caption=None):
 
 class handler(BaseHTTPRequestHandler):
     def do_POST(self):
+        if self.path.split("?", 1)[-1] == "media=1":
+            from .media_analysis import analyze_media_request
+            return analyze_media_request(self)
         try:
             api_key = os.environ.get("OPENAI_API_KEY", "").strip()
             if not api_key:
