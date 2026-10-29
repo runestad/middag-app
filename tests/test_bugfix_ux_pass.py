@@ -50,7 +50,8 @@ class BugfixUxPassTests(unittest.TestCase):
         self.assertNotIn(".trim()||", source_helper[:700])
 
     def test_direct_url_import_does_not_create_shell_recipe(self):
-        self.assertIn('data-add-recipe-mode="url"', self.html)
+        self.assertIn('id="startUrlImportBtn"', self.html)
+        self.assertNotIn('id="startUrlImportBtn" data-add-recipe-mode=', self.html)
         start = self.javascript.index("function beginNewRecipeImportV31")
         end = self.javascript.index("/* ===== v30", start)
         flow = self.javascript[start:end]

@@ -30,7 +30,7 @@ class V28UxQualityTests(unittest.TestCase):
         self.assertEqual(result["nutrition"]["calories"], 0)
         self.assertEqual(result["nutrition"]["fiber"], 0)
         self.assertEqual(result["prepMinutes"], 25)
-        self.assertEqual(len(result["uncertainties"]), 1)
+        self.assertTrue(any(item["field"] == "ingredients.0" for item in result["uncertainties"]))
 
     def test_ui_has_shared_picker_pantry_and_editable_categories(self):
         html = (ROOT / "index.html").read_text(encoding="utf-8")

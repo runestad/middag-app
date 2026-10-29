@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png?v=39" />
   <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=39" />
   <meta name="theme-color" content="#FAFAF7" />
-  <link rel="stylesheet" href="styles.css?v=49" />
+  <link rel="stylesheet" href="styles.css?v=50" />
 </head>
 <body>
   <header class="app-header">
@@ -131,7 +131,7 @@
       <section class="card">
         <div class="section-title">
           <h2>Oppskrifter</h2>
-          <button id="addRecipeBtn" class="primary">Lag oppskrift</button>
+          <button id="addRecipeBtn" class="primary">Legg til oppskrift</button>
         </div>
         <div class="recipe-toolbar">
           <input id="recipeSearch" placeholder="Søk etter rett, kategori, tag eller kilde …" />
@@ -264,118 +264,66 @@
     <button type="button" class="nav-btn" data-view="viewRecovery" aria-label="Kilder"><svg class="nav-icon" aria-hidden="true"><use href="assets/sult-icons.svg#refresh" /></svg><span>Kilder</span></button>
   </nav>
 
-  <dialog id="importDialog">
-    <form method="dialog" class="dialog-form">
-      <div class="section-title">
-        <h2>Importer / legg til oppskrift</h2>
-        <button type="button" class="ghost" data-dialog-close>Lukk</button>
-      </div>
-
+  <dialog id="importDialog" aria-labelledby="importDialogTitle">
+    <form method="dialog" class="dialog-form import-review-form">
+      <div class="section-title"><div><p class="eyebrow">OPPSKRIFTSUTKAST</p><h2 id="importDialogTitle">Se over oppskriften</h2></div><button type="button" class="ghost" data-dialog-close>Lukk</button></div>
       <p id="importTarget" class="hint"></p>
       <p id="importLinkWrap" class="hint"></p>
-
-      <label id="importNameField">Tittel / navn
-        <input id="importName" />
-        <span id="nameWarning" class="field-warning" hidden></span>
-      </label>
-
-      <label>Kildelenke
-        <input id="importLink" placeholder="Instagram/TikTok/nettside …" />
-      </label>
-
-      <label id="importCategoryField">Kategori
-        <select id="importCategory">
-          <option>Vegetar</option>
-          <option>Salat</option>
-          <option>Pasta</option>
-          <option>Kjøtt</option>
-          <option>Kylling</option>
-          <option>Fisk</option>
-          <option>Airfryer</option>
-          <option>Snacks</option>
-          <option>Annet</option>
-        </select>
-        <span id="categoryWarning" class="field-warning" hidden></span>
-      </label>
-
-      <label>Grunnporsjoner
-        <input id="importServings" type="text" inputmode="decimal" placeholder="f.eks. 2 eller 4" />
-      </label>
-
-      <section class="recipe-image-editor" aria-labelledby="recipeImageEditorTitle">
-        <div><h3 id="recipeImageEditorTitle">Oppskriftsbilde</h3><p class="hint">Eget bilde vises foran bildet fra kilden.</p></div>
-        <div id="recipeImageEditorPreview" class="recipe-image-editor-preview"></div>
-        <input id="recipeImageInput" class="visually-hidden" type="file" accept="image/*" />
-        <div class="recipe-image-editor-actions">
-          <button id="chooseRecipeImageBtn" type="button" class="ghost">Last opp bilde</button>
-          <button id="removeRecipeImageBtn" type="button" class="text-button danger-subtle" hidden>Fjern eget bilde</button>
-        </div>
-        <p id="recipeImageStatus" class="hint" role="status" aria-live="polite"></p>
-      </section>
-
-      <label>Lim inn Instagram/TikTok-caption
-        <textarea id="captionInput" rows="12" placeholder="Ingredients:\n- ...\nInstructions:\n1. ..."></textarea>
-      </label>
-
-      <label>Skjermbilder av caption / oppskrift
-        <input id="screenshotInput" type="file" accept="image/*" multiple />
-      </label>
-
-      <div class="ocr-actions">
-        <button type="button" id="clearCaptionBtn" class="ghost">Tøm caption-felt</button>
-      </div>
-
-      <div id="importProgress" class="import-progress" hidden>
-        <div class="import-progress-head"><span id="importProgressLabel">Forbereder analyse …</span><strong id="importProgressPercent">0 %</strong></div>
+      <div id="importProgress" class="import-progress" role="status" aria-live="polite" hidden>
+        <div class="import-progress-head"><span id="importProgressLabel">Henter oppskriften …</span><strong id="importProgressPercent">0 %</strong></div>
         <div class="import-progress-track"><span id="importProgressBar"></span></div>
       </div>
-      <p id="ocrStatus" class="hint ocr-status-box">Velg ett eller flere bilder. Tekstlesing og AI-analyse starter automatisk.</p>
-      <div id="ocrPreview" class="ocr-preview"></div>
-
-      <div class="dialog-actions">
-        <button type="button" id="aiParseCaptionBtn" class="primary">Analyser tekst på nytt</button>
-        <button type="button" id="parseCaptionBtn">Lokal parse caption</button>
-        <button type="button" id="saveParsedBtn" class="primary">Lagre i oppskrift</button>
-      </div>
-
-      <p id="aiStatus" class="hint ai-status-box">Automatisk analyse hjelper deg å strukturere oppskriften. Kontroller alltid resultatet før lagring.</p>
-
-      <div class="parsed-grid">
-        <label id="ingredientsPreviewField">Ingredienser
-          <textarea id="parsedIngredients" rows="8"></textarea>
-          <span id="ingredientsWarning" class="field-warning" hidden></span>
-        </label>
-        <label id="instructionsPreviewField">Fremgangsmåte
-          <textarea id="parsedInstructions" rows="8"></textarea>
-          <span id="instructionsWarning" class="field-warning" hidden></span>
-        </label>
-      </div>
-      <section class="ingredient-preview-section">
-        <div class="section-title">
-          <div>
-            <h3>Ingredienser og kategorier</h3>
-            <p class="hint">Kontroller AI-forslaget. Alle felter kan redigeres før lagring.</p>
-          </div>
+      <p id="aiStatus" class="hint ai-status-box" role="status" aria-live="polite">Se over og juster før du lagrer.</p>
+      <fieldset id="importEditor" class="import-editor">
+        <label id="importNameField">Navn<input id="importName" autocomplete="off" /><span id="nameWarning" class="field-warning" hidden></span></label>
+        <div class="import-metadata-grid">
+          <label id="importCategoryField">Kategori<select id="importCategory"><option>Vegetar</option><option>Salat</option><option>Pasta</option><option>Kjøtt</option><option>Kylling</option><option>Fisk</option><option>Airfryer</option><option>Snacks</option><option>Annet</option></select><span id="categoryWarning" class="field-warning" hidden></span></label>
+          <label id="importServingsField">Antall porsjoner<input id="importServings" type="text" inputmode="decimal" placeholder="For eksempel 4" /><span id="servingsWarning" class="field-warning" hidden></span></label>
         </div>
-        <div id="structuredIngredientPreview" class="structured-ingredient-preview"></div>
-      </section>
+        <section class="recipe-image-editor" aria-labelledby="recipeImageEditorTitle">
+          <h3 id="recipeImageEditorTitle">Bilde</h3>
+          <div id="recipeImageEditorPreview" class="recipe-image-editor-preview"></div>
+          <input id="recipeImageInput" class="visually-hidden" type="file" accept="image/*" />
+          <div class="recipe-image-editor-actions"><button id="chooseRecipeImageBtn" type="button" class="ghost">Velg bilde</button><button id="removeRecipeImageBtn" type="button" class="text-button danger-subtle" hidden>Fjern eget bilde</button></div>
+          <p id="recipeImageStatus" class="hint" role="status" aria-live="polite"></p>
+        </section>
+        <section class="ingredient-preview-section">
+          <div class="section-title"><div><h3>Ingredienser og kategorier</h3><p class="hint">Juster mengde, enhet, ingrediens og handlelistekategori.</p></div></div>
+          <div id="structuredIngredientPreview" class="structured-ingredient-preview"></div>
+          <button id="addIngredientBtn" type="button" class="ghost">+ Ingrediens</button>
+          <details class="import-source-details"><summary>Rediger ingredienser som tekst</summary><label id="ingredientsPreviewField">Én ingrediens per linje<textarea id="parsedIngredients" rows="8"></textarea><span id="ingredientsWarning" class="field-warning" hidden></span></label></details>
+        </section>
+        <label id="instructionsPreviewField">Fremgangsmåte<textarea id="parsedInstructions" rows="8" placeholder="1. …"></textarea><span id="instructionsWarning" class="field-warning" hidden></span></label>
+        <details id="importSourceDetails" class="import-source-details">
+          <summary>Kilde og ny analyse</summary>
+          <label>Kildelenke<input id="importLink" type="url" inputmode="url" placeholder="https://…" /></label>
+          <button id="retryUrlImportBtn" type="button" class="ghost">Importer fra lenken på nytt</button>
+          <label>Oppskriftstekst fra kilden<textarea id="captionInput" rows="10" placeholder="Lim inn ingredienser og fremgangsmåte dersom kilden ikke kan leses automatisk."></textarea></label>
+          <label>Skjermbilder av oppskriften<input id="screenshotInput" type="file" accept="image/*" multiple /></label>
+          <div class="ocr-actions"><button type="button" id="clearCaptionBtn" class="ghost">Tøm kildetekst</button></div>
+          <p id="ocrStatus" class="hint ocr-status-box">Velger du bilder, leses og analyseres teksten automatisk.</p>
+          <div id="ocrPreview" class="ocr-preview"></div>
+          <div class="dialog-actions"><button type="button" id="aiParseCaptionBtn" class="primary">Analyser teksten</button><button type="button" id="parseCaptionBtn">Bruk teksten uten AI</button></div>
+        </details>
+      </fieldset>
+      <div class="import-save-bar"><p class="hint">Lagres først når du trykker «Lagre».</p><button type="button" id="saveParsedBtn" class="primary">Lagre</button></div>
     </form>
   </dialog>
 
   <dialog id="addRecipeDialog">
     <form method="dialog" class="dialog-form small-dialog">
       <div class="section-title">
-        <h2>Lag oppskrift</h2>
+        <h2>Legg til oppskrift</h2>
         <button type="button" class="ghost" data-dialog-close>Lukk</button>
       </div>
       <p class="hint">Gi oppskriften ditt eget navn og lim inn lenken. Ingenting lagres før du har sett over resultatet.</p>
       <label for="newRecipeName">Navn på oppskrift</label>
-      <input id="newRecipeName" autocomplete="off" placeholder="For eksempel Fredagspasta" />
+      <input id="newRecipeName" required autocomplete="off" placeholder="For eksempel Fredagspasta" />
       <label for="newRecipeUrl">Lenke til oppskrift</label>
-      <input id="newRecipeUrl" type="url" inputmode="url" autocomplete="url" placeholder="https://…" />
+      <input id="newRecipeUrl" required type="url" inputmode="url" autocomplete="url" placeholder="https://…" />
       <p id="duplicateRecipeWarning" class="field-warning" role="status" aria-live="polite" hidden></p>
       <div class="add-recipe-choices">
-        <button type="button" class="primary" id="startUrlImportBtn" data-add-recipe-mode="url">Importer</button>
+        <button type="button" class="primary" id="startUrlImportBtn">Importer</button>
         <button type="button" class="ghost" data-add-recipe-mode="images">Hent oppskrift fra bilder</button>
         <button type="button" class="ghost" data-add-recipe-mode="manual">Lag manuelt</button>
       </div>
@@ -557,6 +505,6 @@
   <script src="shopping-list-model.js?v=40"></script>
   <script src="shopping-ingredients.js?v=4"></script>
   <script src="recipe-suggestions.js?v=1"></script>
-  <script src="app.js?v=49"></script>
+  <script src="app.js?v=50"></script>
 </body>
 </html>

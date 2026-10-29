@@ -10,7 +10,7 @@ from html.parser import HTMLParser
 from http.server import BaseHTTPRequestHandler
 
 from ._common import get_ssl_context, read_body, send_json
-from .recipe_import import assess_import_quality, choose_resolved_url, structured_recipe
+from .recipe_import import assess_import_quality, choose_resolved_url, structured_recipe, instruction_lines
 
 
 MAX_BYTES = 2_000_000
@@ -96,6 +96,7 @@ def image_candidates(html, recipe, base_url):
             if url and not any(item["url"] == url for item in candidates):
                 candidates.append({"url": url, "method": method})
 
+    add(recipe.get("image"), "recipe-image")
     add(meta_value(html, "og:image"), "opengraph-image")
     add(meta_value(html, "twitter:image"), "metadata-thumbnail")
     add(meta_value(html, "twitter:image:src"), "metadata-thumbnail")
@@ -171,18 +172,15 @@ def json_ld_recipes(html):
 
 def recipe_text(recipe):
     ingredients = recipe.get("recipeIngredient") or []
-    instructions = recipe.get("recipeInstructions") or []
-    steps = []
-    for item in instructions:
-        if isinstance(item, str):
-            steps.append(item)
-        elif isinstance(item, dict):
-            steps.append(item.get("text") or item.get("name") or "")
+    ingredients = ingredients if isinstance(ingredients, list) else [ingredients]
+    steps = instruction_lines(recipe.get("recipeInstructions") or [])
     sections = []
+    if recipe.get("recipeYield"):
+        sections.append("Oppgitt utbytte / porsjoner: " + str(recipe["recipeYield"]))
     if ingredients:
-        sections.append("Ingredienser:\n" + "\n".join(f"- {item}" for item in ingredients))
+        sections.append("Ingredienser:\n" + "\n".join(str(item) for item in ingredients))
     if steps:
-        sections.append("Fremgangsmåte:\n" + "\n".join(f"{index + 1}. {text}" for index, text in enumerate(steps) if text))
+        sections.append("Fremgangsmåte:\n" + "\n".join(steps))
     return "\n\n".join(sections)
 
 

@@ -58,7 +58,7 @@ def choose_resolved_url(original, resolved):
 
 def instruction_lines(value):
     result = []
-    stack = value if isinstance(value, list) else [value]
+    stack = list(value) if isinstance(value, list) else [value]
     while stack:
         item = stack.pop(0)
         if isinstance(item, str):

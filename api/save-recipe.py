@@ -3,7 +3,7 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler
 
 from ._common import APP_ID, read_body, recipe_to_row, row_to_recipe, send_json, supabase_request
-from .ingredient_normalization import normalize_structured_ingredients
+from .ingredient_normalization import CATALOG, normalize_structured_ingredients
 from .recipe_import import safe_recipe_merge, merge_reviewed_recipe
 
 
@@ -39,9 +39,16 @@ class handler(BaseHTTPRequestHandler):
             if "structuredIngredients" in patch:
                 existing = current.get("structuredIngredients") if isinstance(current.get("structuredIngredients"), list) else []
                 incoming = patch["structuredIngredients"] if isinstance(patch["structuredIngredients"], list) else []
+                def reviewed_ingredient(item):
+                    normalized = normalize_structured_ingredients([item])[0]
+                    category = item.get("shoppingCategory") if isinstance(item, dict) else None
+                    category = "Frys" if category == "Frysevarer" else category
+                    if payload.get("explicitContentEdit") is True and category in CATALOG["categories"]:
+                        normalized["shoppingCategory"] = category
+                    return normalized
                 # Editing one row must not silently rewrite every other row.
                 patch["structuredIngredients"] = [
-                    item if item in existing else normalize_structured_ingredients([item])[0]
+                    item if item in existing else reviewed_ingredient(item)
                     for item in incoming
                 ]
             # Existing user names are immutable through import/recovery patches.

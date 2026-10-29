@@ -187,3 +187,23 @@ dialog{width:min(92vw,760px);max-height:min(90vh,900px);padding:0;border:1px sol
   .recovery-heading .section-title{display:block}
   .recovery-heading .section-title>button{margin-top:12px}
 }
+
+/* Reviewable recipe import */
+.import-editor{border:0;padding:0;margin:0;min-width:0;display:grid;gap:22px}
+.import-editor:disabled{opacity:.55}
+.import-metadata-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.import-source-details{padding:14px;border:1px solid var(--border);border-radius:var(--radius-sm)}
+.import-source-details summary{cursor:pointer;font-weight:600;min-height:28px}
+.import-source-details[open]>:not(summary){margin-top:14px}
+.import-save-bar{position:sticky;bottom:-32px;background:var(--surface);border-top:1px solid var(--border);padding:16px 0;display:flex;align-items:center;justify-content:space-between;gap:16px;z-index:2}
+.import-save-bar .hint{margin:0}.import-save-bar button{min-width:110px}
+#importDialog .ingredient-preview-section .section-title{position:static;margin:0;padding:0}
+#importDialog .structured-ingredient-row{border:1px solid var(--border);border-radius:8px;padding:12px;grid-template-columns:70px 70px minmax(120px,1fr) 155px}
+#importDialog .ingredient-note{grid-column:1/4}
+#importDialog .structured-ingredient-row button{justify-self:end}
+#importDialog input,#importDialog select{min-width:0;width:100%}
+#importDialog .recipe-image-editor-preview img{width:100%;max-height:240px;object-fit:cover}
+@media(max-width:560px){.import-save-bar{bottom:calc(-24px - var(--safe-bottom));padding:14px 0 calc(14px + var(--safe-bottom));align-items:center}.import-save-bar .hint{font-size:11px}#importDialog .structured-ingredient-row{grid-template-columns:1fr 1fr}#importDialog .ingredient-note{grid-column:1/-1}#importDialog .structured-ingredient-row button{grid-column:2}.import-metadata-grid{gap:10px}}
+
+#importDialog [hidden]{display:none!important}
+#importDialog .dialog-form{overflow:visible}

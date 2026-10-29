@@ -101,7 +101,7 @@ class RecipeEditTests(unittest.TestCase):
         js=(ROOT/'app.js').read_text()
         start=js.index('function previewIngredientsV26()')
         end=js.index('parseCaptionAI = async function(options={})',start)
-        script='const window={};const $=()=>({value:"løk\\ngulrot\\nmelk\\n1 1/2 ss olje\\n1/2 ts salt"});\n'+js[start:end]+'\nconsole.log(JSON.stringify(previewIngredientsV26()));'
+        script='const window={};const categorize=()=>"Annet";const $=()=>({value:"løk\\ngulrot\\nmelk\\n1 1/2 ss olje\\n1/2 ts salt"});\n'+js[start:end]+'\nconsole.log(JSON.stringify(previewIngredientsV26()));'
         result=json.loads(subprocess.check_output(['node','-e',script],text=True))
         self.assertEqual([r['item'] for r in result],['løk','gulrot','melk','olje','salt'])
         self.assertEqual(result[3]['amount'],'1 1/2')
