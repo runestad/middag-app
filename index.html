@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png?v=39" />
   <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=39" />
   <meta name="theme-color" content="#FAFAF7" />
-  <link rel="stylesheet" href="styles.css?v=53" />
+  <link rel="stylesheet" href="styles.css?v=54" />
 </head>
 <body>
   <header class="app-header">
@@ -143,7 +143,7 @@
             <option value="random">Tilfeldig</option>
             <option value="newest">Nyeste</option>
             <option value="oldest">Eldste</option>
-            <option value="protein">Proteinrik først</option>
+            <option value="caloriesAsc">Minst kalorier per porsjon</option><option value="protein">Proteinrik først</option>
             <option value="glutenfree">Glutenfri først</option>
             <option value="vegetarian">Vegetar først</option>
             <option value="shortest">Kortest tilberedning</option>
@@ -436,7 +436,7 @@
         <select id="pickerCategoryFilter" aria-label="Kategori"><option value="">Alle kategorier</option></select>
         <select id="pickerSort" aria-label="Sortering">
           <option value="az">Alfabetisk</option><option value="random">Tilfeldig</option>
-          <option value="favorites">Favoritter</option><option value="protein">Proteinrik først</option>
+          <option value="favorites">Favoritter</option><option value="caloriesAsc">Minst kalorier per porsjon</option><option value="protein">Proteinrik først</option>
           <option value="shortest">Kortest tilberedning</option><option value="lastCooked">Sist laget</option>
         </select>
       </div>
@@ -512,8 +512,9 @@
   <script src="shopping-list-model.js?v=40"></script>
   <script src="shopping-ingredients.js?v=4"></script>
   <script src="recipe-suggestions.js?v=1"></script>
-  <script src="app.js?v=52"></script>
+  <script src="app.js?v=54"></script>
   <script src="media-import.js?v=1"></script>
   <script src="mobile-ui.js?v=1"></script>
+  <script src="recipe-video.js?v=1"></script>
 </body>
 </html>

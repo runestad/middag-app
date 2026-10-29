@@ -260,3 +260,10 @@ dialog{width:min(92vw,760px);max-height:min(90vh,900px);padding:0;border:1px sol
   dialog{top:auto;bottom:var(--sheet-keyboard-inset,0px);margin:0;width:100%;max-width:100%;padding-bottom:0}
   .dialog-form{padding-bottom:calc(24px + var(--safe-bottom))}
 }
+
+.recipe-video{display:grid;gap:12px;margin:0 0 24px;padding:16px;border:1px solid var(--border);border-radius:var(--radius-card);background:var(--surface)}
+.recipe-video>button{justify-self:start;min-height:44px}
+.recipe-video .hint:empty{display:none}
+.recipe-video iframe{display:block;width:100%;border:0;border-radius:12px;background:var(--surface-soft)}
+.recipe-video iframe.portrait{height:min(70dvh,680px);min-height:350px}
+.recipe-video iframe.landscape{aspect-ratio:16/9}

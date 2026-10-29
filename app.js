@@ -2770,6 +2770,10 @@ function sortRecipesV28(items, sort) {
   if(sort==="random") return list.sort((a,b)=>(randomOrderV28.get(String(a.id))||0)-(randomOrderV28.get(String(b.id))||0));
   if(sort==="newest") return list.sort((a,b)=>date(b.createdAt||b.created_at)-date(a.createdAt||a.created_at));
   if(sort==="oldest") return list.sort((a,b)=>date(a.createdAt||a.created_at)-date(b.createdAt||b.created_at));
+  if(sort==="caloriesAsc") {
+    const calories = recipe => { const n=recipeNutritionV28(recipe).calories; return Number.isFinite(n)&&n>0?n:Infinity; };
+    return list.sort((a,b)=>calories(a)-calories(b)||a.name.localeCompare(b.name,"no"));
+  }
   if(sort==="protein") return list.sort((a,b)=>recipeNutritionV28(b).protein-recipeNutritionV28(a).protein);
   if(sort==="glutenfree") return list.sort((a,b)=>Number(recipeFlagsV28(b).glutenfree)-Number(recipeFlagsV28(a).glutenfree));
   if(sort==="vegetarian") return list.sort((a,b)=>Number(recipeFlagsV28(b).vegetarian)-Number(recipeFlagsV28(a).vegetarian));
