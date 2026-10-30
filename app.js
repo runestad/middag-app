@@ -1764,13 +1764,29 @@ generateShoppingList = function(){
   }
 };
 
+let syncInFlightV55 = false;
+let syncLastAttemptV55 = 0;
+let syncEtagV55 = "";
+let syncEventsBoundV55 = false;
 syncFromServer = async function(){
+  if (document.hidden || navigator.onLine === false || syncInFlightV55 || Date.now() - syncLastAttemptV55 < 5000) return;
+  if (isSavingPlan || saveRevisionV25 > savedRevisionV25 || Date.now() - lastLocalSaveAt < 1800) return;
+  syncInFlightV55 = true;
+  syncLastAttemptV55 = Date.now();
+  const localRevision = saveRevisionV25;
   try {
     if (isSavingPlan || saveRevisionV25 > savedRevisionV25 || Date.now() - lastLocalSaveAt < 1800) return;
     setLiveStatus("Synkroniserer", "syncing");
-    const response = await fetch(`/api/plan?ts=${Date.now()}`, {cache: "no-store"});
+    const response = await fetch('/api/plan', {
+      cache: "no-store", headers: syncEtagV55 ? {"If-None-Match": syncEtagV55} : {},
+      signal: AbortSignal.timeout(20000)
+    });
+    if (response.status === 304) { setLiveStatus("Live"); return; }
     if (!response.ok) throw new Error("Kunne ikke hente fellesdata");
     const result = await response.json();
+    // Do not apply a response that raced with a local edit or save.
+    if (localRevision !== saveRevisionV25 || isSavingPlan || saveRevisionV25 > savedRevisionV25) return;
+    syncEtagV55 = response.headers.get("ETag") || "";
     const remoteState = result.plan || {};
     const remoteUpdatedAt = remoteState.updatedAt || "";
     if (remoteUpdatedAt && remoteUpdatedAt !== lastRemoteUpdatedAt && remoteUpdatedAt !== appMeta.updatedAt) {
@@ -1793,11 +1809,17 @@ syncFromServer = async function(){
     console.warn("Synkronisering feilet", error);
     setLiveStatus("Frakoblet", "error");
     setShoppingStatusV25("Frakoblet – endringer lagres lokalt", "error");
-  }
+  } finally { syncInFlightV55 = false; }
 };
 startRealtimeSync = function(){
   if (syncTimer) clearInterval(syncTimer);
-  syncTimer = setInterval(syncFromServer, 2500);
+  syncTimer = setInterval(syncFromServer, 30000);
+  if (!syncEventsBoundV55) {
+    syncEventsBoundV55 = true;
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) syncFromServer(); });
+    window.addEventListener("online", syncFromServer);
+    window.addEventListener("focus", syncFromServer);
+  }
   setLiveStatus("Live");
 };
 

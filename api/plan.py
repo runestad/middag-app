@@ -1,3 +1,4 @@
+import hashlib
 from http.server import BaseHTTPRequestHandler
 from ._common import *
 
@@ -73,7 +74,18 @@ class handler(BaseHTTPRequestHandler):
             q = urllib.parse.urlencode({"key": f"eq.plan:{APP_ID}", "select": "*"})
             rows = supabase_request("GET", "app_state", query=q) or []
             data = rows[0].get("data") if rows else {}
-            send_json(self, {"ok": True, "plan": data or {}, "storage": "supabase"})
+            body = json.dumps({"ok": True, "plan": data or {}, "storage": "supabase"}, ensure_ascii=False, sort_keys=True).encode("utf-8")
+            etag = '"' + hashlib.sha256(body).hexdigest() + '"'
+            unchanged = self.headers.get("If-None-Match") == etag
+            self.send_response(304 if unchanged else 200)
+            self.send_header("ETag", etag)
+            self.send_header("Cache-Control", "private, no-cache")
+            if not unchanged:
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            if not unchanged:
+                self.wfile.write(body)
         except Exception as exc:
             send_json(self, {"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
 
