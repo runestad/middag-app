@@ -4,6 +4,7 @@ import re
 import uuid
 from http.server import BaseHTTPRequestHandler
 from ._common import *
+from .nutrition_estimates import with_nutrition_estimate
 
 MEDIA_MANIFEST_PATH = pathlib.Path(__file__).resolve().parents[1] / "recipe-media-manifest.json"
 IMAGE_BUCKET = "recipe-images"
@@ -84,7 +85,7 @@ class handler(BaseHTTPRequestHandler):
             })
             rows = supabase_request("GET", "recipes", query=query) or []
             manifest = load_media_manifest()
-            recipes = [add_verified_media(row_to_recipe(row), manifest) for row in rows]
+            recipes = [with_nutrition_estimate(add_verified_media(row_to_recipe(row), manifest)) for row in rows]
             send_json(self, {"ok": True, "recipes": recipes, "storage": "supabase"})
         except Exception as exc:
             send_json(self, {"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
