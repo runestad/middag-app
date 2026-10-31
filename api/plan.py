@@ -30,7 +30,11 @@ def _etag_matches(header, etag):
                for value in (header or "").split(","))
 
 
-def _send_not_modified(handler, etag):
+def _send_not_modified(handler, etag, explicit_poll=False):
+    if explicit_poll:
+        # Application-level validation also works when an intermediary does not
+        # forward conditional HTTP headers. Never put the large plan in here.
+        return send_json(handler, {"ok": True, "unchanged": True, "revision": etag})
     handler.send_response(304)
     handler.send_header("ETag", etag)
     handler.send_header("Cache-Control", "private, no-cache")
@@ -108,7 +112,9 @@ class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             key = f"eq.plan:{APP_ID}"
-            validator = self.headers.get("If-None-Match", "")
+            params = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            known_revision = params.get("since", [""])[0]
+            validator = known_revision or self.headers.get("If-None-Match", "")
             if validator:
                 # Check a tiny revision BEFORE fetching the document. An HTTP
                 # 304 alone only saves Vercel egress if Supabase already sent it.
@@ -116,7 +122,7 @@ class handler(BaseHTTPRequestHandler):
                 revisions = supabase_request("GET", "app_state", query=q) or []
                 etag = _revision_etag(revisions[0]) if revisions else None
                 if etag and _etag_matches(validator, etag):
-                    return _send_not_modified(self, etag)
+                    return _send_not_modified(self, etag, explicit_poll=bool(known_revision))
 
             q = urllib.parse.urlencode({"key": key, "select": "data,updated_at", "limit": "1"})
             rows = supabase_request("GET", "app_state", query=q) or []
@@ -126,7 +132,9 @@ class handler(BaseHTTPRequestHandler):
             # rather than the earlier probe (a save may happen between reads).
             etag = (_revision_etag(rows[0]) if rows else None) or ('W/"' + hashlib.sha256(body).hexdigest() + '"')
             if _etag_matches(validator, etag):
-                return _send_not_modified(self, etag)
+                return _send_not_modified(self, etag, explicit_poll=bool(known_revision))
+            body = json.dumps({"ok": True, "plan": data or {}, "storage": "supabase", "revision": etag},
+                              ensure_ascii=False, sort_keys=True).encode("utf-8")
             self.send_response(200)
             self.send_header("ETag", etag)
             self.send_header("Cache-Control", "private, no-cache")

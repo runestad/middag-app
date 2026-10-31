@@ -56,11 +56,12 @@ class PlanEgressTests(unittest.TestCase):
             self.after_probe()
         return result
 
-    def get(self, etag=None):
+    def get(self, etag=None, since=None):
         connection = http.client.HTTPConnection(*self.server.server_address, timeout=5)
         headers = {"If-None-Match": etag} if etag else {}
         try:
-            connection.request("GET", "/api/plan", headers=headers)
+            path = "/api/plan" + ("?" + urllib.parse.urlencode({"since": since}) if since else "")
+            connection.request("GET", path, headers=headers)
             response = connection.getresponse()
             return response.status, dict(response.getheaders()), response.read()
         finally:
@@ -92,6 +93,30 @@ class PlanEgressTests(unittest.TestCase):
                 self.reads.clear()
                 self.assertEqual(self.get(validator)[0], 304)
                 self.assertEqual(self.reads, [["updated_at"]])
+
+    def test_explicit_revision_works_without_any_http_validator_headers(self):
+        _, _, initial = self.get()
+        revision = json.loads(initial)["revision"]
+        self.reads.clear()
+        self.bytes_received = 0
+        status, _, body = self.get(since=revision)
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(body), {"ok": True, "unchanged": True, "revision": revision})
+        self.assertLess(len(body), 200)
+        self.assertLess(self.bytes_received, 100)
+        self.assertEqual(self.reads, [["updated_at"]])
+
+    def test_explicit_revision_detects_another_device_update(self):
+        _, _, initial = self.get()
+        revision = json.loads(initial)["revision"]
+        self.row["updated_at"] = "2026-10-31T21:03:00.000004+00:00"
+        self.row["data"]["shoppingItems"] = [{"id": "new-item"}]
+        status, _, body = self.get(since=revision)
+        result = json.loads(body)
+        self.assertEqual(status, 200)
+        self.assertEqual(result["plan"], self.row["data"])
+        self.assertNotEqual(result["revision"], revision)
+        self.assertNotIn("unchanged", result)
 
     def test_other_phone_update_is_returned_even_with_same_client_timestamp(self):
         _, headers, _ = self.get()

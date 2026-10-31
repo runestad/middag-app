@@ -1778,16 +1778,18 @@ syncFromServer = async function(){
   try {
     if (isSavingPlan || saveRevisionV25 > savedRevisionV25 || Date.now() - lastLocalSaveAt < 1800) return;
     setLiveStatus("Synkroniserer", "syncing");
-    const response = await fetch('/api/plan', {
+    const syncUrl = '/api/plan' + (syncEtagV55 ? '?since=' + encodeURIComponent(syncEtagV55) : '');
+    const response = await fetch(syncUrl, {
       cache: "no-store", headers: syncEtagV55 ? {"If-None-Match": syncEtagV55} : {},
       signal: AbortSignal.timeout(20000)
     });
     if (response.status === 304) { setLiveStatus("Live"); return; }
     if (!response.ok) throw new Error("Kunne ikke hente fellesdata");
     const result = await response.json();
+    if (result.unchanged === true) { setLiveStatus("Live"); return; }
     // Do not apply a response that raced with a local edit or save.
     if (localRevision !== saveRevisionV25 || isSavingPlan || saveRevisionV25 > savedRevisionV25) return;
-    syncEtagV55 = response.headers.get("ETag") || "";
+    syncEtagV55 = result.revision || response.headers.get("ETag") || "";
     const remoteState = result.plan || {};
     const remoteUpdatedAt = remoteState.updatedAt || "";
     if (remoteUpdatedAt && remoteUpdatedAt !== lastRemoteUpdatedAt && remoteUpdatedAt !== appMeta.updatedAt) {
@@ -1859,6 +1861,7 @@ init = async function(){
     if (!recipeResponse.ok || !planResponse.ok) throw new Error("Tjenesten svarte ikke");
     const recipeResult = await recipeResponse.json();
     const planResult = await planResponse.json();
+    syncEtagV55 = planResult.revision || planResponse.headers.get("ETag") || "";
     recipes = recipeResult.recipes || [];
     mergeCustomData();
     const remoteState = planResult.plan || {};
