@@ -78,7 +78,7 @@ function extractIngredientLines(r){return ingredientsToText(r).split(/;|\n/).map
 function categorize(line){const s=normalize(line);const spice=["salt","pepper","oregano","basilikum","basil","gochugaru","paprika","spisskummen","cumin","kanel","chili flakes","chiliflak","curry powder","karri","garam masala","laurbær","sesamfrø","sesame seeds","sukker","sugar","honning","honey"];if(spice.some(w=>s.includes(normalize(w))))return"Krydder";const dry=["soy sauce","soyasaus","soya","tamari","sesamolje","sesame oil","olivenolje","olive oil","olje","oil","riseddik","rice vinegar","vinegar","eddik","sriracha","hot sauce","fish sauce","fiskesaus","stock","kraft","broth","buljong","peanøttsmør","peanut butter","tomatpure","tomato paste"];if(dry.some(w=>s.includes(normalize(w))))return"Tørrvarer";const map=[["Kjøtt",["kylling","chicken","biff","beef","okse","kjøttdeig","svin","pork","kotelett","pølse","sausage","kalkun","bacon"]],["Meieri",["melk","milk","fløte","cream","rømme","ost","cheese","parmesan","feta","cottage cheese","yoghurt","smør","butter"]],["Frys",["frossen","frosne","frozen","edamame"]],["Hermetikk/halvfabrikat",["boks","can ","canned","kokosmelk","coconut milk","kidney","kikerter","chickpeas","diced tomatoes","hakkede tomater","bønner","beans"]],["Tørrvarer",["pasta","nudler","noodles","ris","rice","orzo","bulgur","quinoa","mel","flour","breadcrumbs"]],["Glutenfritt",["glutenfri","gluten free"]],["Bakevarer",["brød","bread","pita","tortilla","burgerbrød","wrap"]],["Frukt og grønt",["agurk","cucumber","gulrot","carrot","løk","onion","hvitløk","garlic","ingefær","ginger","potet","potato","søtpotet","sweet potato","squash","zucchini","tomat","tomato","paprika","pepper","sopp","mushroom","brokkoli","broccoli","blomkål","cauliflower","kål","cabbage","spinat","spinach","salat","lettuce","lime","sitron","lemon","koriander","cilantro","persille","parsley","selleri","celery","avokado","avocado","aubergine","eggplant","chili","vårløk","spring onion"]]];for(const[cat,words]of map)if(words.some(w=>s.includes(normalize(w))))return cat;if(s.includes("tofu"))return"Kjølevarer";return"Annet"}
 function convertIngredientLine(line){let s=String(line||"").trim();s=s.replace(/(\d+(?:[.,]\d+)?)\s*cups?\b/gi,(_,n)=>`${String(Math.round(parseFloat(n.replace(",","."))*24)/10).replace(".",",")} dl`);s=s.replace(/(\d+(?:[.,]\d+)?)\s*(tbsp|tablespoons?)\b/gi,"$1 ss");s=s.replace(/(\d+(?:[.,]\d+)?)\s*(tsp|teaspoons?)\b/gi,"$1 ts");s=s.replace(/(\d+(?:[.,]\d+)?)\s*(oz|ounces?)\b/gi,(_,n)=>`${Math.round(parseFloat(n.replace(",","."))*28.35)} g`);return s}
 async function cleanupVisibleRecipes(){if(!confirm("Rydde tags, emoji og norske mål for oppskriftene?"))return;const btn=$("cleanupRecipesBtn");if(btn){btn.disabled=true;btn.textContent="Rydder …"}let updated=0;for(const r of recipes){const patch=meaningfulPatch({tags:enrichTags(r),emoji:emojiForRecipe(r),ingredientsText:ingredientsToText(r).split(/\n/).map(convertIngredientLine).join("\n"),updatedAt:new Date().toISOString()});try{const response=await fetch("/api/save-recipe",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:r.id,patch})});const data=await response.json().catch(()=>({}));if(response.ok&&data.ok!==false){Object.assign(r,mergePreservingExistingData(r,patch));updated++}}catch(e){console.warn("rydd feilet",r.name,e)}}renderRecipeResults();createDayRows();if(btn){btn.disabled=false;btn.textContent="Rydd tags/mål"}alert(`Ryddet ${updated} oppskrifter. Kategorisering av handleliste er forbedret.`)}
-async function readScreenshotsWithOCR(){const input=$("screenshotInput"),files=Array.from(input?.files||[]),status=$("ocrStatus");if(!files.length)return alert("Velg ett eller flere skjermbilder først.");if(!window.Tesseract)return alert("OCR-biblioteket ble ikke lastet.");status.textContent=`Leser ${files.length} bilde(r) …`;const chunks=[];for(let i=0;i<files.length;i++){status.textContent=`OCR bilde ${i+1}/${files.length}`;const result=await Tesseract.recognize(files[i],"eng");if(result?.data?.text)chunks.push(result.data.text.trim())}$("captionInput").value=[$("captionInput").value.trim(),chunks.join("\n\n")].filter(Boolean).join("\n\n");status.textContent="Ferdig. Se over teksten og trykk AI-parse caption."}
+async function readScreenshotsWithOCR(){return processScreenshotsV26()}
 function escapeHtml(s){return String(s??"").replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]))}
 function escapeAttr(s){return escapeHtml(s).replace(/'/g,"&#39;")}
 
@@ -2072,35 +2072,39 @@ parseCaptionAI = async function(options={}) {
 
 async function processScreenshotsV26() {
   const files = Array.from($("screenshotInput")?.files || []);
-  if (!files.length) return;
-  if (!window.Tesseract) return alert("Tekstleseren kunne ikke lastes.");
-  const run = ++importRunV26, chunks = [];
-  clearImportWarningsV26();
-  $("saveParsedBtn").disabled = true;
+  if (!files.length || importBusyV50 || importSavingV50) return;
+  const run = ++importRunV26, targetId = activeImportId, chunks = [], unread = [];
+  const active = () => run === importRunV26 && currentImportV50(targetId);
+  const previousCaption = $("captionInput").value.trim();
+  setImportBusyV50(true);
+  $("ocrStatus").textContent = `Leser ${files.length} bilde${files.length === 1 ? "" : "r"} … Hold appen åpen.`;
   try {
     for (let index = 0; index < files.length; index++) {
-      if (run !== importRunV26) return;
-      const base = index / files.length;
-      const result = await Tesseract.recognize(files[index], "eng", {
-        logger: message => {
-          if (message.status === "recognizing text") {
-            const progress = 5 + (base + (message.progress || 0) / files.length) * 72;
-            setImportProgressV26(`Leser bilde ${index + 1} av ${files.length} …`, progress);
-          }
-        }
-      });
-      if (result?.data?.text?.trim()) chunks.push(result.data.text.trim());
+      if (!active()) return;
+      setImportProgressV26(`Leser bilde ${index + 1} av ${files.length} …`, 5 + index / files.length * 45);
+      // Compress on the phone before upload; send every image to vision, not lossy OCR text.
+      const image = await mediaDataURLV52(await RecipeImage.prepare(files[index]));
+      if (!active()) return;
+      const result = await importRequestV50("/api/parse-caption?media=1", {kind: "screenshot", image});
+      if (!active()) return;
+      const text = result.text?.trim();
+      if (text) chunks.push(`BILDE ${index + 1}:\n${text}`);
+      else unread.push(index + 1);
     }
-    if (run !== importRunV26) return;
-    $("captionInput").value = chunks.join("\n\n");
-    $("ocrStatus").textContent = `Tekst lest fra ${files.length} bilde${files.length === 1 ? "" : "r"}. AI-analyse startet automatisk.`;
-    setImportProgressV26("Teksten er lest – starter AI-analyse …", 80);
+    if (!chunks.length) throw new Error("Fant ingen lesbar oppskriftstekst i bildene. Prøv tydeligere skjermbilder eller lim inn teksten.");
+    // Only update the draft after every selected image has been processed successfully.
+    $("captionInput").value = [previousCaption, ...chunks].filter(Boolean).join("\n\n");
+    const warning = unread.length ? `Bilde ${unread.join(", ")} ga ingen lesbar oppskriftstekst. Kontroller om noe mangler.` : "";
+    mediaEvidenceV52 = {method: "uploaded-screenshots", imageCount: files.length, warnings: warning ? [warning] : []};
+    $("ocrStatus").textContent = [`${files.length - unread.length} av ${files.length} bilder lest. Samler ingredienser og fremgangsmåte.`, warning].filter(Boolean).join(" ");
     await parseCaptionAI({automatic: true});
   } catch (error) {
+    if (!active()) return;
     setImportProgressV26("Kunne ikke lese bildene", 100);
     $("ocrStatus").textContent = `Feil under tekstlesing: ${error?.message || error}`;
   } finally {
-    if (run === importRunV26) $("saveParsedBtn").disabled = false;
+    // parseCaptionAI owns the busy state after it starts its own generation.
+    if (active()) setImportBusyV50(false);
   }
 }
 
@@ -3171,7 +3175,7 @@ function beginNewRecipeImportV31(mode){
     $("importLinkWrap").textContent="Lim inn lenken. Eksisterende importmotor henter og analyserer innholdet automatisk.";
     setTimeout(()=>$("importLink")?.focus({preventScroll:true}),0);
   }else if(mode==="images"){
-    $("importLinkWrap").textContent="Velg ett eller flere bilder. OCR og AI-analyse starter automatisk.";
+    $("importLinkWrap").textContent="Velg ett eller flere bilder. AI leser alle bildene og samler oppskriften automatisk.";
     setTimeout(()=>$("screenshotInput")?.click(),0);
   }else{
     $("importLinkWrap").textContent="Fyll inn oppskriften manuelt og lagre når du er ferdig.";

@@ -312,7 +312,7 @@
           <label>Oppskriftstekst fra kilden<textarea id="captionInput" rows="10" placeholder="Lim inn ingredienser og fremgangsmåte dersom kilden ikke kan leses automatisk."></textarea></label>
           <label>Skjermbilder av oppskriften<input id="screenshotInput" type="file" accept="image/*" multiple /></label>
           <div class="ocr-actions"><button type="button" id="clearCaptionBtn" class="ghost">Tøm kildetekst</button></div>
-          <p id="ocrStatus" class="hint ocr-status-box">Velger du bilder, leses og analyseres teksten automatisk.</p>
+          <p id="ocrStatus" class="hint ocr-status-box">Bildene sendes til AI som leser og samler ingredienser og fremgangsmåte. Kontroller resultatet før lagring.</p>
           <div id="ocrPreview" class="ocr-preview"></div>
           <div class="dialog-actions"><button type="button" id="aiParseCaptionBtn" class="primary">Analyser teksten</button><button type="button" id="parseCaptionBtn">Bruk teksten uten AI</button></div>
         </details>
@@ -511,7 +511,6 @@
     </form>
   </dialog>
 
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="data-safety.js?v=29"></script>
   <script src="serving-scaling.js?v=31"></script>
   <script src="shopping-list-model.js?v=40"></script>
@@ -521,7 +520,7 @@
   <script src="shopping-order.js?v=1"></script>
   <script src="loyalty-card.js?v=1"></script>
   <script src="recipe-image.js?v=1"></script>
-  <script src="app.js?v=57"></script>
+  <script src="app.js?v=59"></script>
   <script src="media-import.js?v=1"></script>
   <script src="mobile-ui.js?v=2"></script>
   <script src="recipe-video.js?v=1"></script>
