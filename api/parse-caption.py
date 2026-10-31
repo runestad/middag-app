@@ -11,7 +11,7 @@ from .import_units import metric_ingredient
 from .recipe_import import instruction_lines
 
 
-RECIPE_CATEGORIES = ["Vegetar", "Salat", "Pasta", "Kjøtt", "Kylling", "Fisk", "Airfryer", "Snacks", "Annet"]
+RECIPE_CATEGORIES = ["Vegetar", "Salat", "Pasta", "Kjøtt", "Kylling", "Fisk", "Airfryer", "Snacks", "Dessert", "Babymat", "Frokost", "Bakst", "Suppe", "Tilbehør", "Annet"]
 
 
 def finalize_parsed_recipe(parsed, caption=None):
@@ -93,7 +93,7 @@ Marker usikkerhet på det konkrete feltet, ikke på hele oppskriften. Et ellers 
             schema = """Format:
 {
   "title":"string",
-  "category":"Vegetar|Salat|Pasta|Kjøtt|Kylling|Fisk|Airfryer|Snacks|Annet",
+  "category":"Vegetar|Salat|Pasta|Kjøtt|Kylling|Fisk|Airfryer|Snacks|Dessert|Babymat|Frokost|Bakst|Suppe|Tilbehør|Annet",
   "servings":"string",
   "ingredients":[
     {"amount":"string","unit":"string","item":"string","note":"string","shoppingCategory":"string","original":"string"}

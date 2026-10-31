@@ -1,5 +1,6 @@
 
 const DAYS=["mandag","tirsdag","onsdag","torsdag","fredag","lørdag","søndag"];
+const RECIPE_CATEGORIES=["Vegetar","Salat","Pasta","Kjøtt","Kylling","Fisk","Airfryer","Snacks","Dessert","Babymat","Frokost","Bakst","Suppe","Tilbehør","Annet"];
 const CATEGORIES=["Frukt og grønt","Kjøtt og fisk","Frysevarer","Meieri","Kjølevarer","Hermetikk/halvfabrikat","Tørrvarer","Krydder","Glutenfritt","Bakevarer","Drikke","Annet"];
 let recipes=[],plan={},shoppingItems=[],customRecipes=JSON.parse(localStorage.getItem("middag_custom_recipes")||"{}"),activeImportId=null,activePickerDay=null,pendingAddRecipeId=null;
 let appMeta={favorites:[],usageCounts:{},lastUsed:{},updatedAt:""},lastRemoteUpdatedAt="",syncTimer=null;
@@ -1476,7 +1477,12 @@ function renderShoppingWithoutViewportJumpV31(){
   const restoreFocus=document.activeElement===input;
   renderShoppingList(shoppingItems);
   requestAnimationFrame(()=>{
-    window.scrollTo({top:scrollTop,left:window.scrollX,behavior:"instant"});
+    // A completed row can shorten the page below the previous scroll offset.
+    // Never restore an out-of-range position (iOS can strand its fixed layer).
+    const maxScroll=Math.max(0,document.documentElement.scrollHeight-window.innerHeight);
+    const target=Math.max(0,Math.min(scrollTop,maxScroll));
+    if($("viewShopping")?.classList.contains("active") && Math.abs(window.scrollY-target)>1)
+      window.scrollTo({top:target,left:window.scrollX,behavior:"instant"});
     if(restoreFocus&&document.activeElement!==input)input?.focus({preventScroll:true});
   });
 }
@@ -1552,7 +1558,7 @@ function renderShoppingCategoryV25(category, items){
     <button type="button" class="category-toggle" aria-expanded="${!collapsed}" onclick="toggleShoppingCategoryV25('${escapeAttr(category)}')">
       <span>${escapeHtml(category)}</span><span class="category-count">${items.length}</span>
     </button>
-    <div class="category-items" ${collapsed ? "hidden" : ""}>${items.map(shoppingRowHtmlV25).join("")}
+    <div class="category-items" ${collapsed ? "hidden" : ""}>${ShoppingOrder.group(items,category).map(group=>`<div class="shopping-shelf"><p class="shopping-shelf-title">${escapeHtml(group.label)}</p>${group.items.map(shoppingRowHtmlV25).join("")}</div>`).join("")}
       <div class="category-inline-add" data-inline-category="${escapeAttr(category)}">
         <button type="button" class="category-add-trigger" onclick="openCategoryAddV40('${escapeAttr(category)}')">+ Legg til vare</button>
       </div>
@@ -2689,10 +2695,11 @@ function ensureMetaV28() {
 function recipeMetaV28(id) { ensureMetaV28(); return appMeta.recipeMeta[String(id)] || {}; }
 function recipeNutritionV28(recipe) {
   const value = recipe?.nutrition || recipe?.nutritionEstimate || {};
-  return {
-    protein:Number(value.protein||0), calories:Number(value.calories||0), fat:Number(value.fat||0),
-    carbohydrates:Number(value.carbohydrates||value.carbs||0), fiber:Number(value.fiber||0)
-  };
+  const number = value => value === null || value === undefined || value === "" || !Number.isFinite(Number(value)) || Number(value)<0 ? null : Number(value);
+  return {protein:number(value.protein),calories:number(value.calories),fat:number(value.fat),carbohydrates:number(value.carbohydrates??value.carbs),fiber:number(value.fiber)};
+}
+function completeNutritionV56(value) {
+  return value && ["calories","protein","fat","carbohydrates","fiber"].every(key=>typeof value[key]==="number"&&Number.isFinite(value[key])&&value[key]>=0) && value.calories>0;
 }
 function recipeMinutesV28(recipe) { return Number(recipe?.prepMinutes || recipe?.totalMinutes || recipe?.cookTimeMinutes || 0); }
 function recipeLastCookedV28(recipe) { return recipeMetaV28(recipe.id).lastCooked || recipe.lastCooked || appMeta.lastUsed?.[recipe.id] || ""; }
@@ -2827,9 +2834,9 @@ renderPickerResults=()=>renderRecipeResultsV28("picker");
 
 function nutritionHtmlV28(recipe) {
   const n=recipeNutritionV28(recipe);
-  if(!Object.values(n).some(Boolean)) return "";
+  if(!Object.values(n).some(value=>value!==null)) return `<section class="nutrition-panel"><h3>Næring per porsjon</h3><p class="hint">Næringsestimat mangler. Åpne Rediger og lagre for å beregne.</p></section>`;
   return `<section class="nutrition-panel"><h3>Omtrentlig næring per porsjon</h3><div class="nutrition-grid">
-    ${[["Protein",n.protein,"g"],["Kalorier",n.calories,"kcal"],["Fett",n.fat,"g"],["Karbohydrater",n.carbohydrates,"g"],["Fiber",n.fiber,"g"]].map(([label,value,unit])=>`<div><strong>${value||"–"} ${unit}</strong><span>${label}</span></div>`).join("")}
+    ${[["Protein",n.protein,"g"],["Kalorier",n.calories,"kcal"],["Fett",n.fat,"g"],["Karbohydrater",n.carbohydrates,"g"],["Fiber",n.fiber,"g"]].map(([label,value,unit])=>`<div><strong>${value??"–"} ${unit}</strong><span>${label}</span></div>`).join("")}
   </div><p class="hint">AI-estimat basert på ingrediensene.</p></section>`;
 }
 window.openRecipeDetails=function(id){
@@ -2861,7 +2868,7 @@ window.recoverRecipeFromUrlV28=async function(id){
 };
 
 function populateRecipeControlsV28() {
-  const categories=[...new Set(recipes.map(recipe=>recipe.category).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"no"));
+  const categories=[...new Set([...RECIPE_CATEGORIES,...recipes.map(recipe=>recipe.category).filter(Boolean)])].sort((a,b)=>a.localeCompare(b,"no"));
   for(const id of ["recipeCategoryFilter","pickerCategoryFilter"]){
     const select=$(id); if(!select)continue;
     const selected=select.value; select.innerHTML=`<option value="">Alle kategorier</option>`+categories.map(category=>`<option>${escapeHtml(category)}</option>`).join(""); select.value=selected;
@@ -3036,10 +3043,12 @@ saveParsedRecipe=async function(){
   importSavingV50=true;setImportBusyV50(false);$("saveParsedBtn").textContent="Lagrer …";
   try {
   const targetId=activeImportId, run=importRunV26;
-  const ai=window.lastAiParsedRecipe||{};
-  if(!ai.nutrition&&previewIngredientsV26().length){
+  const ai=window.lastAiParsedRecipe=window.lastAiParsedRecipe||{};
+  const base=recipeById(targetId)||{};
+  const changed=$("parsedIngredients").value.trim()!==ingredientsToText(base).trim() || $("importServings").value.trim()!==String(base.servings||"").trim();
+  if((changed || !completeNutritionV56(ai.nutrition||base.nutrition))&&previewIngredientsV26().length){
     $("aiStatus").textContent="Estimerer næringsinnhold …";
-    try{const response=await fetch("/api/nutrition",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ingredients:previewIngredientsV26(),servings:$("importServings").value})});const result=await response.json();if(result.ok)ai.nutrition=result.nutrition}catch(error){console.warn("Næringsestimat kunne ikke beregnes",error)}
+    try{const response=await fetch("/api/nutrition",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ingredients:previewIngredientsV26(),servings:$("importServings").value})});const result=await response.json();if(!response.ok||!result.ok||!completeNutritionV56(result.nutrition))throw new Error("Ufullstendig næringsestimat");ai.nutrition=result.nutrition}catch(error){$("aiStatus").textContent="Kunne ikke beregne næring. Prøv å lagre igjen.";console.warn("Næringsestimat kunne ikke beregnes",error);return}
   }
   if(targetId!==activeImportId||run!==importRunV26||!$("importDialog").open)return;
   return await saveParsedRecipeBeforeV28();
@@ -3575,6 +3584,7 @@ renderShoppingList=function(items){
   const categories=CATEGORIES.map(category=>renderShoppingCategoryV25(category,grouped.get(category))).join("");
   box.innerHTML=`<p class="shopping-summary"><strong>${active.length}</strong> igjen · ${done.length} fullført</p>${shoppingMergeProposalV47().length?'<button type="button" class="text-button" onclick="mergeExistingShoppingV47()">Slå sammen like varer</button>':""}${categories}${done.length?`<section class="completed-section"><div class="completed-head"><button type="button" class="completed-toggle" aria-expanded="false" onclick="toggleCompletedShoppingV25(this)">Fullført (${done.length})</button><button type="button" class="text-button danger-subtle clear-completed" onclick="clearCompletedShoppingV25()">Fjern fullførte</button></div><div class="completed-items" hidden>${done.map(shoppingRowHtmlV25).join("")}</div></section>`:""}`;
   updateShoppingRemainingV25();
+  window.renderLoyaltyCard?.(appMeta.remaCustomerCode);
 };
 
 renderDayItems=function(card,day){

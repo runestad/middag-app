@@ -13,7 +13,7 @@
   --ease:180ms cubic-bezier(.2,.8,.2,1);
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue","Segoe UI",sans-serif;
 }
-*{box-sizing:border-box} html{background:var(--canvas);scroll-behavior:smooth} body{margin:0;min-width:320px;min-height:100vh;background:var(--canvas);color:var(--ink);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+*{box-sizing:border-box} html{background:var(--canvas);scroll-behavior:smooth} body{margin:0;min-width:320px;min-height:100svh;background:var(--canvas);color:var(--ink);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:clip}
 .visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
 button,input,textarea,select{font:inherit} button,a,input,textarea,select{-webkit-tap-highlight-color:transparent} button{touch-action:manipulation} img{max-width:100%}
 h1,h2,h3,p{margin-top:0} h1{margin:0;font-size:20px;line-height:1;letter-spacing:.26em;font-weight:680} h2{margin-bottom:6px;font-size:clamp(26px,5vw,34px);line-height:1.08;letter-spacing:-.035em;font-weight:640} h3{margin-bottom:0;font-size:17px;line-height:1.25;letter-spacing:-.015em;font-weight:630}
@@ -267,3 +267,18 @@ dialog{width:min(92vw,760px);max-height:min(90vh,900px);padding:0;border:1px sol
 .recipe-video iframe{display:block;width:100%;border:0;border-radius:12px;background:var(--surface-soft)}
 .recipe-video iframe.portrait{height:min(70dvh,680px);min-height:350px}
 .recipe-video iframe.landscape{aspect-ratio:16/9}
+
+/* Keep the iOS fixed layer independent of transforms and backdrop compositing. */
+#appBottomNav{left:0;right:0;margin-inline:auto;transform:none;backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--surface);overflow:visible}
+@media(max-width:800px){.keyboard-open #appBottomNav{visibility:hidden;pointer-events:none}}
+.shopping-shelf-title{margin:12px 4px 3px;color:var(--muted);font-size:11px;font-weight:650;letter-spacing:.03em}
+.shopping-shelf+.shopping-shelf{margin-top:12px}
+.loyalty-card{margin-top:28px;padding:22px;border:1px solid var(--border);border-radius:var(--radius-card);background:var(--surface)}
+.loyalty-card[hidden]{display:none}
+.loyalty-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px}
+.loyalty-heading h3{margin:3px 0 0;font-size:22px}
+.loyalty-heading .eyebrow{font-size:10px;color:var(--muted);letter-spacing:.12em}
+.loyalty-barcode{padding:10px 8px;background:#fff;color:#000;text-align:center;border-radius:10px}
+.loyalty-barcode svg{display:block;width:100%;height:auto;max-height:190px}
+.loyalty-number{display:block;font-size:14px;font-variant-numeric:tabular-nums;letter-spacing:.12em}
+.loyalty-card>.hint{margin:12px 0 0;text-align:center;font-size:12px}

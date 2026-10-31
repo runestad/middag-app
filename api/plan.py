@@ -1,4 +1,6 @@
 import hashlib
+import re
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler
 from ._common import *
 
@@ -37,6 +39,11 @@ def _persist_plan_with_retry(key, incoming_data, attempts=5, expected_revision=N
         if expected_revision is not None and stored_data.get("updatedAt") != expected_revision:
             raise PlanChangedError("Handlelisten er endret siden gjennomgangen. Hent en ny forhåndsvisning.")
         merged_data = dict(candidate_data)
+        # Older clients do not know about the card; their routine saves must
+        # not erase it. An explicit card update can still replace the value.
+        stored_code = (stored_data.get("meta") or {}).get("remaCustomerCode")
+        if stored_code and "remaCustomerCode" not in (merged_data.get("meta") or {}):
+            merged_data["meta"] = {**(merged_data.get("meta") or {}), "remaCustomerCode": stored_code}
         merged_data["shoppingItems"] = _merge_shopping_items(
             stored_data.get("shoppingItems"), candidate_data.get("shoppingItems")
         )
@@ -92,6 +99,22 @@ class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
             payload = read_body(self)
+            if payload.get("action") == "setRemaCustomerCode":
+                code = str(payload.get("code") or "")
+                if not re.fullmatch(r"\d{6,30}", code, flags=re.ASCII):
+                    return send_json(self, {"ok": False, "error": "Ugyldig kundenummer."}, 400)
+                key = f"plan:{APP_ID}"
+                query = urllib.parse.urlencode({"key": f"eq.{key}", "select": "*"})
+                rows = supabase_request("GET", "app_state", query=query) or []
+                if not rows:
+                    return send_json(self, {"ok": False, "error": "Fant ikke appdata."}, 404)
+                current = rows[0].get("data") or {}
+                revision = current.get("updatedAt")
+                if not revision:
+                    return send_json(self, {"ok": False, "error": "Last appen før du lagrer kundekort."}, 409)
+                updated = {**current, "meta": {**(current.get("meta") or {}), "remaCustomerCode": code}, "updatedAt": datetime.now(timezone.utc).isoformat()}
+                _persist_plan_with_retry(key, updated, expected_revision=revision)
+                return send_json(self, {"ok": True})
             data = payload.get("plan") if isinstance(payload.get("plan"), dict) else payload
             key = f"plan:{APP_ID}"
 

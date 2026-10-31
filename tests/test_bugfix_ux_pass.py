@@ -66,10 +66,10 @@ class BugfixUxPassTests(unittest.TestCase):
 
     def test_rapid_shopping_add_preserves_focus_and_viewport(self):
         self.assertNotIn("scrollIntoView", self.javascript)
-        helper = self.javascript[self.javascript.index("function renderShoppingWithoutViewportJumpV31"):]
-        self.assertIn("window.scrollY", helper[:600])
-        self.assertIn("window.scrollTo", helper[:600])
-        self.assertIn("focus({preventScroll:true})", helper[:600])
+        helper = self.javascript.split("function renderShoppingWithoutViewportJumpV31", 1)[1].split("function addShoppingItemV25", 1)[0]
+        self.assertIn("window.scrollY", helper)
+        self.assertIn("window.scrollTo", helper)
+        self.assertIn("focus({preventScroll:true})", helper)
         self.assertGreaterEqual(self.javascript.count("renderShoppingWithoutViewportJumpV31()"), 3)
 
 

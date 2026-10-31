@@ -14,7 +14,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png?v=39" />
   <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png?v=39" />
   <meta name="theme-color" content="#FAFAF7" />
-  <link rel="stylesheet" href="styles.css?v=54" />
+  <link rel="stylesheet" href="styles.css?v=56" />
 </head>
 <body>
   <header class="app-header">
@@ -91,6 +91,11 @@
           <button id="resetShoppingBtn" class="text-button danger-subtle" type="button">Tøm listen</button>
         </div>
         <div id="shoppingList" class="shopping-list"></div>
+        <section id="remaCustomerCard" class="loyalty-card" aria-label="REMA 1000 kundekort" hidden>
+          <div class="loyalty-heading"><div><span class="eyebrow">KLAR FOR KASSEN</span><h3>REMA 1000</h3></div><button type="button" class="ghost" id="expandRemaCard">Vis stort</button></div>
+          <div id="remaBarcode" class="loyalty-barcode"></div>
+          <p class="hint">Skann strekkoden for å registrere handleturen.</p>
+        </section>
       </section>
       <section class="card smart-card shopping-smart-card" hidden>
         <div class="section-title">
@@ -277,7 +282,7 @@
       <fieldset id="importEditor" class="import-editor">
         <label id="importNameField">Navn<input id="importName" autocomplete="off" /><span id="nameWarning" class="field-warning" hidden></span></label>
         <div class="import-metadata-grid">
-          <label id="importCategoryField">Kategori<select id="importCategory"><option>Vegetar</option><option>Salat</option><option>Pasta</option><option>Kjøtt</option><option>Kylling</option><option>Fisk</option><option>Airfryer</option><option>Snacks</option><option>Annet</option></select><span id="categoryWarning" class="field-warning" hidden></span></label>
+          <label id="importCategoryField">Kategori<select id="importCategory"><option>Vegetar</option><option>Salat</option><option>Pasta</option><option>Kjøtt</option><option>Kylling</option><option>Fisk</option><option>Airfryer</option><option>Snacks</option><option>Dessert</option><option>Babymat</option><option>Frokost</option><option>Bakst</option><option>Suppe</option><option>Tilbehør</option><option>Annet</option></select><span id="categoryWarning" class="field-warning" hidden></span></label>
           <label id="importServingsField">Antall porsjoner<input id="importServings" type="text" inputmode="decimal" placeholder="For eksempel 4" /><span id="servingsWarning" class="field-warning" hidden></span></label>
         </div>
         <section class="recipe-image-editor" aria-labelledby="recipeImageEditorTitle">
@@ -512,9 +517,12 @@
   <script src="shopping-list-model.js?v=40"></script>
   <script src="shopping-ingredients.js?v=4"></script>
   <script src="recipe-suggestions.js?v=1"></script>
-  <script src="app.js?v=55"></script>
+  <dialog id="remaCardDialog" class="small-dialog" aria-labelledby="remaCardTitle"><div class="dialog-form"><div class="section-title"><h2 id="remaCardTitle">REMA 1000</h2><button type="button" class="ghost" onclick="this.closest('dialog').close()">Lukk</button></div><div id="remaBarcodeLarge" class="loyalty-barcode"></div><p class="hint">Øk lysstyrken på skjermen ved behov.</p></div></dialog>
+  <script src="shopping-order.js?v=1"></script>
+  <script src="loyalty-card.js?v=1"></script>
+  <script src="app.js?v=56"></script>
   <script src="media-import.js?v=1"></script>
-  <script src="mobile-ui.js?v=1"></script>
+  <script src="mobile-ui.js?v=2"></script>
   <script src="recipe-video.js?v=1"></script>
 </body>
 </html>
