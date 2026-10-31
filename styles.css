@@ -232,6 +232,18 @@ dialog{width:min(92vw,760px);max-height:min(90vh,900px);padding:0;border:1px sol
   .plan-item>div:first-child{min-width:0;overflow-wrap:anywhere}
 }
 
+/* A large recipe image must not set the minimum width of the sheet's grid. */
+dialog{min-width:0;overflow-x:hidden;overscroll-behavior-x:none}
+.dialog-form{min-width:0;grid-template-columns:minmax(0,1fr)}
+.dialog-form>*{min-width:0;max-width:100%}
+.dialog-form .section-title{flex-wrap:nowrap}
+.dialog-form .section-title>h2{flex:1;min-width:0;overflow-wrap:anywhere}
+.dialog-form .section-title>[data-dialog-close]{flex:none}
+.recipe-detail-section{min-width:0;overflow-wrap:anywhere}
+.recipe-video,.serving-picker{min-width:0;grid-template-columns:minmax(0,1fr)}
+dialog .inline-actions>:not(.favorite-btn){max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.nutrition-grid>div{min-width:0;overflow-wrap:anywhere}
+
 /* Shared mobile form and sheet rules, including landscape iPhones. */
 @media (max-width:900px) and (pointer:coarse), (max-width:560px){
   input:not([type="checkbox"]):not([type="radio"]),select,textarea{
@@ -257,7 +269,7 @@ dialog{width:min(92vw,760px);max-height:min(90vh,900px);padding:0;border:1px sol
   .freezer-item-actions{justify-content:space-between}
 }
 @media(max-width:560px){
-  dialog{top:auto;bottom:var(--sheet-keyboard-inset,0px);margin:0;width:100%;max-width:100%;padding-bottom:0}
+  dialog{position:fixed;left:0;right:0;top:auto;bottom:var(--sheet-keyboard-inset,0px);margin:0;width:100%;max-width:100%;padding-bottom:0}
   .dialog-form{padding-bottom:calc(24px + var(--safe-bottom))}
 }
 
