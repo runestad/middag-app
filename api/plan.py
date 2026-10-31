@@ -11,6 +11,32 @@ class PlanChangedError(RuntimeError):
     pass
 
 
+def _revision_etag(row):
+    """Use the database trigger's revision, including edits from other clients."""
+    revision = (row or {}).get("updated_at")
+    if not revision:
+        return None
+    token = json.dumps([APP_ID, revision], ensure_ascii=False).encode("utf-8")
+    return 'W/"plan-v2-' + hashlib.sha256(token).hexdigest() + '"'
+
+
+def _etag_matches(header, etag):
+    # GET validators use weak comparison. Vercel may weaken a strong ETag when
+    # compressing the response, so comparing the raw header strings is unsafe.
+    def opaque(value):
+        value = value.strip()
+        return value[2:] if value.startswith("W/") else value
+    return any(value.strip() == "*" or opaque(value) == opaque(etag)
+               for value in (header or "").split(","))
+
+
+def _send_not_modified(handler, etag):
+    handler.send_response(304)
+    handler.send_header("ETag", etag)
+    handler.send_header("Cache-Control", "private, no-cache")
+    handler.end_headers()
+
+
 def _merge_shopping_items(stored_items, incoming_items):
     """Item-level last-write-wins; missing items never mean deletion."""
     merged = {}
@@ -52,7 +78,9 @@ def _persist_plan_with_retry(key, incoming_data, attempts=5, expected_revision=N
 
         if rows:
             stored_revision = stored_data.get("updatedAt")
-            filters = {"key": f"eq.{key}"}
+            # Only the key is needed to distinguish CAS success from a conflict.
+            # Returning the full JSON document duplicates a large transfer.
+            filters = {"key": f"eq.{key}", "select": "key"}
             filters["data->>updatedAt"] = f"eq.{stored_revision}" if stored_revision else "is.null"
             updated = supabase_request(
                 "PATCH", "app_state", payload=row,
@@ -63,7 +91,8 @@ def _persist_plan_with_retry(key, incoming_data, attempts=5, expected_revision=N
             continue
 
         try:
-            created = supabase_request("POST", "app_state", payload=row, prefer="return=representation") or []
+            created = supabase_request("POST", "app_state", payload=row,
+                                       query="select=key", prefer="return=representation") or []
             if created:
                 return merged_data
         except RuntimeError as exc:
@@ -78,21 +107,33 @@ def _persist_plan_with_retry(key, incoming_data, attempts=5, expected_revision=N
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         try:
-            q = urllib.parse.urlencode({"key": f"eq.plan:{APP_ID}", "select": "*"})
+            key = f"eq.plan:{APP_ID}"
+            validator = self.headers.get("If-None-Match", "")
+            if validator:
+                # Check a tiny revision BEFORE fetching the document. An HTTP
+                # 304 alone only saves Vercel egress if Supabase already sent it.
+                q = urllib.parse.urlencode({"key": key, "select": "updated_at", "limit": "1"})
+                revisions = supabase_request("GET", "app_state", query=q) or []
+                etag = _revision_etag(revisions[0]) if revisions else None
+                if etag and _etag_matches(validator, etag):
+                    return _send_not_modified(self, etag)
+
+            q = urllib.parse.urlencode({"key": key, "select": "data,updated_at", "limit": "1"})
             rows = supabase_request("GET", "app_state", query=q) or []
             data = rows[0].get("data") if rows else {}
             body = json.dumps({"ok": True, "plan": data or {}, "storage": "supabase"}, ensure_ascii=False, sort_keys=True).encode("utf-8")
-            etag = '"' + hashlib.sha256(body).hexdigest() + '"'
-            unchanged = self.headers.get("If-None-Match") == etag
-            self.send_response(304 if unchanged else 200)
+            # Bind the validator to the same snapshot as the returned body,
+            # rather than the earlier probe (a save may happen between reads).
+            etag = (_revision_etag(rows[0]) if rows else None) or ('W/"' + hashlib.sha256(body).hexdigest() + '"')
+            if _etag_matches(validator, etag):
+                return _send_not_modified(self, etag)
+            self.send_response(200)
             self.send_header("ETag", etag)
             self.send_header("Cache-Control", "private, no-cache")
-            if not unchanged:
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Content-Length", str(len(body)))
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
             self.end_headers()
-            if not unchanged:
-                self.wfile.write(body)
+            self.wfile.write(body)
         except Exception as exc:
             send_json(self, {"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
 
@@ -124,3 +165,4 @@ class handler(BaseHTTPRequestHandler):
             send_json(self, {"ok": False, "error": str(exc)}, 409)
         except Exception as exc:
             send_json(self, {"ok": False, "error": f"{type(exc).__name__}: {exc}"}, 500)
+
