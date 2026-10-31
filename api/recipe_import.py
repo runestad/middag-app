@@ -188,4 +188,9 @@ def merge_reviewed_recipe(existing, patch, explicit_name_edit=False):
             merged.pop("structuredInstructions", None)
     if "servings" in patch and "baseServings" not in patch:
         merged.pop("baseServings", None)
+    # A failed recalculation must not restore the previous recipe's numbers.
+    # This flag is sent only by the explicit editor save, never by recovery.
+    if patch.get("nutritionPending") is True:
+        for key in ("nutrition", "nutritionEstimate", "nutritionEstimated"):
+            merged.pop(key, None)
     return merged

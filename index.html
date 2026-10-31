@@ -283,7 +283,7 @@
         <label id="importNameField">Navn<input id="importName" autocomplete="off" /><span id="nameWarning" class="field-warning" hidden></span></label>
         <div class="import-metadata-grid">
           <label id="importCategoryField">Kategori<select id="importCategory"><option>Vegetar</option><option>Salat</option><option>Pasta</option><option>Kjøtt</option><option>Kylling</option><option>Fisk</option><option>Airfryer</option><option>Snacks</option><option>Dessert</option><option>Babymat</option><option>Frokost</option><option>Bakst</option><option>Suppe</option><option>Tilbehør</option><option>Annet</option></select><span id="categoryWarning" class="field-warning" hidden></span></label>
-          <label id="importServingsField">Antall porsjoner<input id="importServings" type="text" inputmode="decimal" placeholder="For eksempel 4" /><span id="servingsWarning" class="field-warning" hidden></span></label>
+          <label id="importServingsField">Antall porsjoner<input id="importServings" type="text" inputmode="decimal" placeholder="For eksempel 4" /><span class="hint">Kan fylles inn senere. Trengs for næring per porsjon og skalering.</span><span id="servingsWarning" class="field-warning" hidden></span></label>
         </div>
         <section class="recipe-image-editor" aria-labelledby="recipeImageEditorTitle">
           <h3 id="recipeImageEditorTitle">Bilde</h3>
@@ -299,7 +299,7 @@
           <p id="mediaImportStatus" role="status"></p>
         </section>
         <section class="ingredient-preview-section">
-          <div class="section-title"><div><h3>Ingredienser og kategorier</h3><p class="hint">Juster mengde, enhet, ingrediens og handlelistekategori.</p></div></div>
+          <div class="section-title"><div><h3>Ingredienser og kategorier</h3><p class="hint">Juster mengde, enhet, ingrediens og handlelistekategori. Gule felt er merknader og hindrer ikke lagring. Trykk «Stemmer» når opplysningene er riktige.</p></div></div>
           <div id="structuredIngredientPreview" class="structured-ingredient-preview"></div>
           <button id="addIngredientBtn" type="button" class="ghost">+ Ingrediens</button>
           <details class="import-source-details"><summary>Rediger ingredienser som tekst</summary><label id="ingredientsPreviewField">Én ingrediens per linje<textarea id="parsedIngredients" rows="8"></textarea><span id="ingredientsWarning" class="field-warning" hidden></span></label></details>
@@ -317,7 +317,7 @@
           <div class="dialog-actions"><button type="button" id="aiParseCaptionBtn" class="primary">Analyser teksten</button><button type="button" id="parseCaptionBtn">Bruk teksten uten AI</button></div>
         </details>
       </fieldset>
-      <div class="import-save-bar"><p class="hint">Lagres først når du trykker «Lagre».</p><button type="button" id="saveParsedBtn" class="primary">Lagre</button></div>
+      <div class="import-save-bar"><p id="importSaveStatus" class="hint" role="status" aria-live="polite">Lagres først når du trykker «Lagre».</p><button type="button" id="saveParsedBtn" class="primary">Lagre</button></div>
     </form>
   </dialog>
 
@@ -520,7 +520,8 @@
   <dialog id="remaCardDialog" class="small-dialog" aria-labelledby="remaCardTitle"><div class="dialog-form"><div class="section-title"><h2 id="remaCardTitle">REMA 1000</h2><button type="button" class="ghost" onclick="this.closest('dialog').close()">Lukk</button></div><div id="remaBarcodeLarge" class="loyalty-barcode"></div><p class="hint">Øk lysstyrken på skjermen ved behov.</p></div></dialog>
   <script src="shopping-order.js?v=1"></script>
   <script src="loyalty-card.js?v=1"></script>
-  <script src="app.js?v=56"></script>
+  <script src="recipe-image.js?v=1"></script>
+  <script src="app.js?v=57"></script>
   <script src="media-import.js?v=1"></script>
   <script src="mobile-ui.js?v=2"></script>
   <script src="recipe-video.js?v=1"></script>
