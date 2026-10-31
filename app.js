@@ -2836,7 +2836,7 @@ renderPickerResults=()=>renderRecipeResultsV28("picker");
 
 function nutritionHtmlV28(recipe) {
   const n=recipeNutritionV28(recipe);
-  if(!Object.values(n).some(value=>value!==null)) return `<section class="nutrition-panel"><h3>Næring per porsjon</h3><p class="hint">Næringsestimat mangler. Åpne Rediger og lagre for å beregne.</p></section>`;
+  if(!(n.calories>0)) return `<section class="nutrition-panel"><h3>Næring per porsjon</h3><p class="hint">Næringsestimat mangler. Åpne Rediger og lagre for å beregne.</p></section>`;
   return `<section class="nutrition-panel"><h3>Omtrentlig næring per porsjon</h3><div class="nutrition-grid">
     ${[["Protein",n.protein,"g"],["Kalorier",n.calories,"kcal"],["Fett",n.fat,"g"],["Karbohydrater",n.carbohydrates,"g"],["Fiber",n.fiber,"g"]].map(([label,value,unit])=>`<div><strong>${value??"–"} ${unit}</strong><span>${label}</span></div>`).join("")}
   </div><p class="hint">AI-estimat basert på ingrediensene.</p></section>`;
