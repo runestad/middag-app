@@ -1835,7 +1835,9 @@ showView = function(view){
   localStorage.setItem("middag_active_view", view);
   if (view === "viewShopping") {
     renderShoppingList(shoppingItems);
-    setTimeout(() => $("shoppingQuickInput")?.focus({preventScroll: true}), 50);
+    // Touch devices should open the list without summoning the keyboard.
+    if (window.matchMedia("(hover: hover) and (pointer: fine)").matches)
+      setTimeout(() => $("shoppingQuickInput")?.focus({preventScroll: true}), 50);
   }
   window.scrollTo({top: 0, behavior: "smooth"});
 };
