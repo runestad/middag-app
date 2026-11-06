@@ -6,6 +6,7 @@ from api import plan
 class TransferTests(unittest.TestCase):
     def request(self, tag=None, data=None):
         h = object.__new__(plan.handler)
+        h.path = '/api/plan'
         h.headers = {'If-None-Match': tag} if tag else {}
         h.wfile = io.BytesIO()
         h.response_headers = {}

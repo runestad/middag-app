@@ -1020,7 +1020,7 @@ function ensureShoppingIds(){
 function saveShoppingSoon(){
   lastShoppingEditAt=Date.now();
   ensureShoppingIds();
-  savePlan();
+  savePlan({shoppingOnly: true});
 }
 
 function getShoppingItem(id){
@@ -1333,12 +1333,21 @@ generateShoppingList = function(){
 const SHOPPING_EPOCH = "2000-01-01T00:00:00.000Z";
 let saveRevisionV25 = 0;
 let savedRevisionV25 = 0;
+let fullSaveRevisionV61 = 0;
+let localStateSavedV61 = true;
+let lastMutationTimeV61 = 0;
 let saveWorkerV25 = null;
 let saveRetryV25 = null;
 let shoppingRenderTimerV25 = null;
 const collapsedShoppingCategoriesV25 = new Set();
 
-function nowIsoV25(){ return new Date().toISOString(); }
+function nowIsoV25(){
+  // A new edit must be newer than every revision this device has observed,
+  // even when two edits share a millisecond or device clocks differ.
+  lastMutationTimeV61 = (shoppingItems || []).reduce((latest, item) =>
+    Math.max(latest, shoppingItemTimeV25(item) + 1), Math.max(Date.now(), lastMutationTimeV61 + 1));
+  return new Date(lastMutationTimeV61).toISOString();
+}
 categorize = function(line){
   const value = normalize(line);
   const has = words => words.some(word => value.includes(normalize(word)));
@@ -1392,9 +1401,14 @@ function statePayloadV25(){
 }
 function persistLocalStateV25(){
   try {
-    localStorage.setItem("middag_state_v25", JSON.stringify(statePayloadV25()));
+    localStorage.setItem("middag_state_v25", JSON.stringify({...statePayloadV25(),
+      _pendingSave: saveRevisionV25 > savedRevisionV25,
+      _pendingFullSave: fullSaveRevisionV61 > savedRevisionV25
+    }));
     localStorage.setItem("middag_plan", JSON.stringify(plan || {}));
+    localStateSavedV61 = true;
   } catch (error) {
+    localStateSavedV61 = false;
     console.warn("Kunne ikke lagre lokalt", error);
   }
 }
@@ -1404,6 +1418,7 @@ async function runSaveWorkerV25(){
     while (savedRevisionV25 < saveRevisionV25) {
       const revision = saveRevisionV25;
       const payload = statePayloadV25();
+      const shoppingOnly = fullSaveRevisionV61 <= savedRevisionV25;
       isSavingPlan = true;
       setLiveStatus("Lagrer", "syncing");
       setShoppingStatusV25("Lagrer endringer …", "pending");
@@ -1411,22 +1426,30 @@ async function runSaveWorkerV25(){
         const response = await fetch("/api/plan", {
           method: "POST",
           headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({plan: payload})
+          body: JSON.stringify({shoppingOnly, plan: shoppingOnly
+            ? {shoppingItems: payload.shoppingItems, updatedAt: payload.updatedAt}
+            : payload}),
+          signal: AbortSignal.timeout(20000)
         });
         const data = await response.json().catch(() => ({}));
-        if (!response.ok || data.ok === false) throw new Error(data.error || "Lagringen feilet");
-        if (Array.isArray(data.plan?.shoppingItems)) {
-          shoppingItems = mergeShoppingStatesV25(shoppingItems, data.plan.shoppingItems);
-          persistLocalStateV25();
-        }
+        if (!response.ok || data.ok !== true || !Array.isArray(data.plan?.shoppingItems))
+          throw new Error(data.error || "Lagringen ble ikke bekreftet");
+        shoppingItems = mergeShoppingStatesV25(shoppingItems, data.plan.shoppingItems);
         savedRevisionV25 = revision;
-        lastRemoteUpdatedAt = payload.updatedAt;
-        setLiveStatus("Live");
-        setShoppingStatusV25("Alle endringer er lagret");
+        persistLocalStateV25();
+        syncEtagV55 = ""; // Read the merged snapshot, including other devices' plan changes.
+        renderShoppingList(shoppingItems);
+        clearTimeout(saveRetryV25);
+        if (savedRevisionV25 === saveRevisionV25) {
+          setLiveStatus("Live");
+          setShoppingStatusV25("Alle endringer er lagret");
+        }
       } catch (error) {
         console.warn("Lagring feilet", error);
         setLiveStatus("Ikke synkronisert", "error");
-        setShoppingStatusV25("Kunne ikke lagre. Prøver igjen …", "error");
+        setShoppingStatusV25(localStateSavedV61
+          ? "Lagret på denne enheten. Prøver å synkronisere igjen …"
+          : "Ikke lagret ennå. Hold appen åpen – prøver igjen …", "error");
         clearTimeout(saveRetryV25);
         saveRetryV25 = setTimeout(runSaveWorkerV25, 3500);
         break;
@@ -1438,10 +1461,11 @@ async function runSaveWorkerV25(){
   return saveWorkerV25;
 }
 
-savePlan = function(){
+savePlan = function(options = {}){
   appMeta.updatedAt = nowIsoV25();
   lastLocalSaveAt = Date.now();
   saveRevisionV25 += 1;
+  if (!options.shoppingOnly) fullSaveRevisionV61 = saveRevisionV25;
   persistLocalStateV25();
   void runSaveWorkerV25();
 };
@@ -1455,7 +1479,7 @@ function shoppingCategoryOptionsV25(){
 }
 function findDuplicateShoppingItemV25(text, category){
   const needle = normalize(normalizeIngredientName(text));
-  return visibleShoppingItemsV25().find(item =>
+  return shoppingItems.find(item => !item.deleted &&
     normalize(normalizeIngredientName(item.text)) === needle &&
     (item.category || categorize(item.text)) === category
   );
@@ -1481,6 +1505,102 @@ function renderShoppingWithoutViewportJumpV31(){
     if(restoreFocus&&document.activeElement!==input)input?.focus({preventScroll:true});
   });
 }
+
+// Drafts are separate from the shared list: typing is local until submitted.
+let shoppingDraftsV61 = {categories: {}, edits: {}, quick: {text: "", category: ""}};
+try {
+  const stored = JSON.parse(localStorage.getItem("middag_shopping_drafts_v61") || "null");
+  if (stored && typeof stored === "object") shoppingDraftsV61 = {
+    categories: stored.categories || {}, edits: stored.edits || {},
+    quick: stored.quick || {text: "", category: ""}
+  };
+} catch (error) { console.warn("Kunne ikke lese utkast", error); }
+function persistShoppingDraftsV61(){
+  try { localStorage.setItem("middag_shopping_drafts_v61", JSON.stringify(shoppingDraftsV61)); }
+  catch (error) { setShoppingStatusV25("Utkastet kan ikke lagres på enheten. Hold appen åpen.", "error"); }
+}
+function rememberQuickDraftV61(){
+  shoppingDraftsV61.quick = {text: $("shoppingQuickInput")?.value || "", category: $("shoppingQuickCategory")?.value || ""};
+  persistShoppingDraftsV61();
+}
+function restoreShoppingDraftsV61(){
+  for (const category of Object.keys(shoppingDraftsV61.categories)) {
+    if (CATEGORIES.includes(category)) openCategoryAddV40(category, false);
+  }
+  for (const id of Object.keys(shoppingDraftsV61.edits)) editShoppingItemV25(id, false);
+}
+
+function renderShoppingMarkupV61(box, markup){
+  if (!box.querySelector(".shopping-category")) { box.innerHTML = markup; return; }
+  const template = document.createElement("template");
+  template.innerHTML = markup;
+  const next = template.content;
+  const replace = selector => {
+    const old = box.querySelector(selector), fresh = next.querySelector(selector);
+    if (old && fresh) { if (old.outerHTML !== fresh.outerHTML) old.replaceWith(fresh); }
+    else if (old) old.remove();
+    else if (fresh) box.append(fresh);
+  };
+  replace(".shopping-summary");
+  replace(".shopping-merge-button");
+  const mergeButton = box.querySelector(".shopping-merge-button");
+  if (mergeButton) box.querySelector(".shopping-summary")?.after(mergeButton);
+  // Keep category sections and their composer nodes mounted. Recreating a
+  // focused input loses the selection, keyboard and unfinished text on phones.
+  for (const fresh of next.querySelectorAll(".shopping-category")) {
+    const section = box.querySelector(`[data-shopping-category="${CSS.escape(fresh.dataset.shoppingCategory)}"]`);
+    if (!section) { box.append(fresh); continue; }
+    section.querySelector(".category-count").textContent = fresh.querySelector(".category-count").textContent;
+    const items = section.querySelector(".category-items");
+    // An open editor keeps its row until commit/cancel; the backing model still
+    // receives remote changes. Committing re-reads that model by item ID.
+    if (items.querySelector(".shopping-edit-input")) continue;
+    const host = items.querySelector(".category-inline-add");
+    const oldShelves = [...items.querySelectorAll(":scope > .shopping-shelf")];
+    const newShelves = [...fresh.querySelectorAll(".category-items > .shopping-shelf")];
+    let shelfCursor = items.firstElementChild;
+    const retained = new Set();
+    for (const freshShelf of newShelves) {
+      const title = freshShelf.querySelector(".shopping-shelf-title").textContent;
+      let shelf = oldShelves.find(el => el.querySelector(".shopping-shelf-title").textContent === title);
+      if (!shelf) shelf = freshShelf;
+      else {
+        const desiredRows = [...freshShelf.querySelectorAll(".shopping-row")];
+        const ids = new Set(desiredRows.map(el => el.dataset.shoppingId));
+        shelf.querySelectorAll(".shopping-row").forEach(el => { if (!ids.has(el.dataset.shoppingId)) el.remove(); });
+        let cursor = shelf.querySelector(".shopping-shelf-title").nextElementSibling;
+        for (const freshRow of desiredRows) {
+          let current = shelf.querySelector(`[data-shopping-id="${CSS.escape(freshRow.dataset.shoppingId)}"]`);
+          if (current?.classList.contains("actions-open")) freshRow.classList.add("actions-open");
+          if (!current) current = freshRow;
+          else if (current.outerHTML !== freshRow.outerHTML) {
+            if (cursor === current) cursor = freshRow;
+            current.replaceWith(freshRow); current = freshRow;
+          }
+          if (current !== cursor) shelf.insertBefore(current, cursor);
+          cursor = current.nextElementSibling;
+        }
+      }
+      if (shelf !== shelfCursor) items.insertBefore(shelf, shelfCursor || host);
+      shelfCursor = shelf.nextElementSibling;
+      retained.add(shelf);
+    }
+    oldShelves.forEach(el => { if (!retained.has(el)) el.remove(); });
+  }
+  const completed = box.querySelector(".completed-section");
+  if (!completed?.querySelector(".shopping-edit-input")) {
+    const wasOpen = completed && !completed.querySelector(".completed-items").hidden;
+    replace(".completed-section");
+    if (wasOpen) {
+      const current = box.querySelector(".completed-section");
+      if (current) {
+        current.querySelector(".completed-items").hidden = false;
+        current.querySelector(".completed-toggle").setAttribute("aria-expanded", "true");
+      }
+    }
+  }
+}
+
 function addShoppingItemV25(text, preferredCategory = ""){
   let cleaned = normalizeIngredientLineForDisplay(String(text || "").trim());
   if (/^[a-zæøå]/i.test(cleaned)) cleaned = capitalize(cleaned);
@@ -1491,7 +1611,7 @@ function addShoppingItemV25(text, preferredCategory = ""){
     if (duplicate.done) {
       duplicate.done = false;
       duplicate.updatedAt = nowIsoV25();
-      savePlan();
+      savePlan({shoppingOnly: true});
       renderShoppingWithoutViewportJumpV31();
     }
     flashShoppingItemV25(duplicate.id);
@@ -1510,7 +1630,7 @@ function addShoppingItemV25(text, preferredCategory = ""){
   };
   shoppingItems = [...ensureShoppingMetadataV25(shoppingItems), item];
   renderShoppingWithoutViewportJumpV31();
-  savePlan();
+  savePlan({shoppingOnly: true});
   requestAnimationFrame(() => flashShoppingItemV25(item.id));
   return true;
 }
@@ -1519,11 +1639,16 @@ function bindShoppingComposerV25(){
   const form = $("shoppingQuickAdd");
   if (!form || form.dataset.bound === "true") return;
   form.dataset.bound = "true";
+  $("shoppingQuickInput").value = shoppingDraftsV61.quick.text || "";
+  $("shoppingQuickCategory").value = shoppingDraftsV61.quick.category || "";
+  $("shoppingQuickInput").addEventListener("input", rememberQuickDraftV61);
+  $("shoppingQuickCategory").addEventListener("change", rememberQuickDraftV61);
   form.addEventListener("submit", event => {
     event.preventDefault();
     const input = $("shoppingQuickInput");
     if (!input) return;
     if (addShoppingItemV25(input.value, $("shoppingQuickCategory")?.value || "")) input.value = "";
+    rememberQuickDraftV61();
     input.focus({preventScroll: true});
   });
   $("shoppingQuickInput")?.addEventListener("keydown", event => {
@@ -1531,6 +1656,7 @@ function bindShoppingComposerV25(){
     event.preventDefault();
     const input = event.currentTarget;
     if (addShoppingItemV25(input.value, $("shoppingQuickCategory")?.value || "")) input.value = "";
+    rememberQuickDraftV61();
     input.focus({preventScroll: true});
   });
 }
@@ -1620,7 +1746,7 @@ window.clearCompletedShoppingV25 = function(){
     completedIds.has(item.id) ? {...item, deleted: true, updatedAt: timestamp} : item
   );
   renderShoppingWithoutViewportJumpV31();
-  savePlan();
+  savePlan({shoppingOnly: true});
 };
 const pendingShoppingCompletionV49=new Map();
 function shoppingCompletionPendingV49(item){return item.done&&pendingShoppingCompletionV49.has(String(item.id))}
@@ -1637,7 +1763,7 @@ window.toggleShoppingDoneV25 = function(id, checked){
     renderShoppingWithoutViewportJumpV31();
   },1800));
   updateShoppingRemainingV25();
-  savePlan();
+  savePlan({shoppingOnly: true});
   renderShoppingWithoutViewportJumpV31();
 };
 window.toggleShoppingActionsV25 = function(id, button){
@@ -1649,34 +1775,53 @@ window.toggleShoppingActionsV25 = function(id, button){
   row.classList.toggle("actions-open");
   button.setAttribute("aria-expanded", String(row.classList.contains("actions-open")));
 };
-window.editShoppingItemV25 = function(id){
-  const item = getShoppingItem(id);
+window.editShoppingItemV25 = function(id, focus = true){
+  const draft = shoppingDraftsV61.edits[id];
+  const storedItem = getShoppingItem(id);
+  const item = storedItem && !storedItem.deleted ? storedItem : (draft?.item || storedItem);
   const row = document.querySelector(`[data-shopping-id="${CSS.escape(String(id))}"]`);
   const container = row?.querySelector(".shopping-item-main");
   if (!item || !container || container.querySelector("input")) return;
   const input = document.createElement("input");
   input.className = "shopping-edit-input";
-  input.value = item.text;
+  input.value = draft ? draft.value : item.text;
   input.setAttribute("aria-label", "Rediger vare");
+  const originalText = draft ? draft.originalText : item.text;
+  let finished = false;
+  input.addEventListener("input", () => {
+    shoppingDraftsV61.edits[id] = {item: {...item}, value: input.value, originalText};
+    persistShoppingDraftsV61();
+  });
   const finish = commit => {
-    if (!input.isConnected) return;
+    if (finished || !input.isConnected) return;
+    finished = true;
     const value = input.value.trim();
-    if (commit && value) {
-      item.text = normalizeIngredientLineForDisplay(value);
-      if (!item.manualCategory) item.category = categorize(item.text);
-      item.updatedAt = nowIsoV25();
-      savePlan();
+    delete shoppingDraftsV61.edits[id];
+    persistShoppingDraftsV61();
+    // Rendering/merging makes new item objects, so never save through the stale
+    // reference captured when the user first opened this editor.
+    if (commit && value && value !== originalText) {
+      let current = getShoppingItem(id);
+      if (!current || current.deleted) {
+        current = {...item, id: shoppingIdV25(), done: false, deleted: false};
+        shoppingItems.push(current);
+      }
+      current.text = normalizeIngredientLineForDisplay(value);
+      if (!current.manualCategory) current.category = categorize(current.text);
+      current.updatedAt = nowIsoV25();
+      savePlan({shoppingOnly: true});
     }
+    input.remove();
     renderShoppingList(shoppingItems);
   };
   input.addEventListener("keydown", event => {
+    if (event.isComposing) return;
     if (event.key === "Enter") { event.preventDefault(); finish(true); }
-    if (event.key === "Escape") finish(false);
+    if (event.key === "Escape") { event.preventDefault(); finish(false); }
   });
   input.addEventListener("blur", () => finish(true), {once: true});
   container.replaceChildren(input);
-  input.focus();
-  input.select();
+  if (focus) { input.focus({preventScroll: true}); input.select(); }
 };
 window.removeShoppingItemV25 = function(id){
   const item = getShoppingItem(id);
@@ -1684,11 +1829,11 @@ window.removeShoppingItemV25 = function(id){
   item.deleted = true;
   item.updatedAt = nowIsoV25();
   renderShoppingWithoutViewportJumpV31();
-  savePlan();
+  savePlan({shoppingOnly: true});
 };
 window.retryShoppingSaveV25 = function(){ void runSaveWorkerV25(); };
 
-window.openCategoryAddV40 = function(category){
+window.openCategoryAddV40 = function(category, focus = true){
   const host = document.querySelector(`[data-inline-category="${CSS.escape(category)}"]`);
   if (!host || host.querySelector("input")) return;
   host.innerHTML = `<form class="category-add-form" onsubmit="submitCategoryAddV40(event,'${escapeAttr(category)}')">
@@ -1697,6 +1842,11 @@ window.openCategoryAddV40 = function(category){
     <button type="button" class="text-button category-add-cancel" onclick="cancelCategoryAddV40('${escapeAttr(category)}')" aria-label="Avbryt">Avbryt</button>
   </form>`;
   const input = host.querySelector("input");
+  input.value = shoppingDraftsV61.categories[category] || "";
+  input.addEventListener("input", () => {
+    shoppingDraftsV61.categories[category] = input.value;
+    persistShoppingDraftsV61();
+  });
   input?.addEventListener("keydown", event => {
     if (event.key === "Escape") { event.preventDefault(); cancelCategoryAddV40(category); }
     if (event.key === "Enter" && !event.isComposing) {
@@ -1704,9 +1854,11 @@ window.openCategoryAddV40 = function(category){
       event.currentTarget.form?.requestSubmit();
     }
   });
-  input?.focus({preventScroll:true});
+  if (focus) input?.focus({preventScroll:true});
 };
 window.cancelCategoryAddV40 = function(category){
+  delete shoppingDraftsV61.categories[category];
+  persistShoppingDraftsV61();
   const host = document.querySelector(`[data-inline-category="${CSS.escape(category)}"]`);
   if (host) host.innerHTML = `<button type="button" class="category-add-trigger" onclick="openCategoryAddV40('${escapeAttr(category)}')">+ Legg til vare</button>`;
 };
@@ -1715,7 +1867,10 @@ window.submitCategoryAddV40 = function(event, category){
   const input = event.currentTarget.querySelector("input");
   if (!input?.value.trim()) return;
   if (addShoppingItemV25(input.value, category)) {
-    requestAnimationFrame(() => openCategoryAddV40(category));
+    input.value = "";
+    delete shoppingDraftsV61.categories[category];
+    persistShoppingDraftsV61();
+    input.focus({preventScroll:true});
   }
 };
 
@@ -1727,7 +1882,7 @@ resetShoppingList = function(){
     isVisibleShoppingItemV25(item) ? {...item, deleted: true, updatedAt: timestamp} : item
   );
   renderShoppingList(shoppingItems);
-  savePlan();
+  savePlan({shoppingOnly: true});
 };
 generateShoppingList = function(){
   const raw = [];
@@ -1758,7 +1913,7 @@ generateShoppingList = function(){
     .map(item => ({...item, id: item.id || shoppingIdV25(), deleted: false, updatedAt: timestamp}));
   shoppingItems = ShoppingListModel.mergeWeekMenuItems(shoppingItems, generated, {categorize});
   renderShoppingWithoutViewportJumpV31();
-  savePlan();
+  savePlan({shoppingOnly: true});
   showView("viewShopping");
   if (missing.length) {
     setShoppingStatusV25(`${[...new Set(missing)].length} oppskrift mangler ingredienser`, "error");
@@ -1783,16 +1938,21 @@ syncFromServer = async function(){
       cache: "no-store", headers: syncEtagV55 ? {"If-None-Match": syncEtagV55} : {},
       signal: AbortSignal.timeout(20000)
     });
-    if (response.status === 304) { setLiveStatus("Live"); return; }
+    if (localRevision !== saveRevisionV25 || isSavingPlan || saveRevisionV25 > savedRevisionV25) return;
+    if (response.status === 304) { setLiveStatus("Live"); setShoppingStatusV25("Alle endringer er lagret"); return; }
     if (!response.ok) throw new Error("Kunne ikke hente fellesdata");
     const result = await response.json();
-    if (result.unchanged === true) { setLiveStatus("Live"); return; }
     // Do not apply a response that raced with a local edit or save.
     if (localRevision !== saveRevisionV25 || isSavingPlan || saveRevisionV25 > savedRevisionV25) return;
-    syncEtagV55 = result.revision || response.headers.get("ETag") || "";
+    if (result.ok !== true) throw new Error("Ugyldig svar ved synkronisering");
+    if (result.unchanged === true) { setLiveStatus("Live"); setShoppingStatusV25("Alle endringer er lagret"); return; }
+    if (!result.plan || typeof result.plan !== "object") throw new Error("Mangler fellesdata i svaret");
+    const remoteRevision = result.revision || response.headers.get("ETag") || "";
+    const revisionChanged = !syncEtagV55 || remoteRevision !== syncEtagV55;
+    syncEtagV55 = remoteRevision;
     const remoteState = result.plan || {};
     const remoteUpdatedAt = remoteState.updatedAt || "";
-    if (remoteUpdatedAt && remoteUpdatedAt !== lastRemoteUpdatedAt && remoteUpdatedAt !== appMeta.updatedAt) {
+    if (revisionChanged || (remoteUpdatedAt && remoteUpdatedAt !== lastRemoteUpdatedAt)) {
       const migrated = migratePlan(remoteState.items || {});
       const visibleKeys = selectedDays().map(day => day.key);
       const currentCount = visibleKeys.reduce((sum, key) => sum + ((plan[key] || []).length), 0);
@@ -1808,22 +1968,29 @@ syncFromServer = async function(){
       renderFreezer();
     }
     setLiveStatus("Live");
+    setShoppingStatusV25("Alle endringer er lagret");
   } catch (error) {
+    if (localRevision !== saveRevisionV25 || isSavingPlan || saveRevisionV25 > savedRevisionV25) return;
     console.warn("Synkronisering feilet", error);
     setLiveStatus("Frakoblet", "error");
-    setShoppingStatusV25("Frakoblet – endringer lagres lokalt", "error");
+    setShoppingStatusV25("Kunne ikke hente oppdateringer. Prøver igjen …", "error");
   } finally { syncInFlightV55 = false; }
 };
+function resumePlanSyncV61(){
+  if (document.hidden || navigator.onLine === false) return;
+  if (saveRevisionV25 > savedRevisionV25) void runSaveWorkerV25();
+  else void syncFromServer();
+}
 startRealtimeSync = function(){
   if (syncTimer) clearInterval(syncTimer);
   syncTimer = setInterval(syncFromServer, 30000);
   if (!syncEventsBoundV55) {
     syncEventsBoundV55 = true;
-    document.addEventListener("visibilitychange", () => { if (!document.hidden) syncFromServer(); });
-    window.addEventListener("online", syncFromServer);
-    window.addEventListener("focus", syncFromServer);
+    document.addEventListener("visibilitychange", resumePlanSyncV61);
+    window.addEventListener("online", resumePlanSyncV61);
+    window.addEventListener("focus", resumePlanSyncV61);
   }
-  setLiveStatus("Live");
+  if (saveRevisionV25 > savedRevisionV25) void runSaveWorkerV25();
 };
 
 const oldShowViewV25 = showView;
@@ -1853,6 +2020,7 @@ init = async function(){
   setLiveStatus("Henter", "syncing");
   let localState = {};
   try { localState = JSON.parse(localStorage.getItem("middag_state_v25") || "{}"); } catch (error) {}
+  let pendingSave = Boolean(localState._pendingSave);
   try {
     const [recipeResponse, planResponse] = await Promise.all([
       fetch("/api/recipes", {cache: "no-store"}),
@@ -1861,22 +2029,31 @@ init = async function(){
     if (!recipeResponse.ok || !planResponse.ok) throw new Error("Tjenesten svarte ikke");
     const recipeResult = await recipeResponse.json();
     const planResult = await planResponse.json();
+    if (planResult.ok !== true || !planResult.plan || typeof planResult.plan !== "object")
+      throw new Error("Mangler fellesdata i svaret");
     syncEtagV55 = planResult.revision || planResponse.headers.get("ETag") || "";
     recipes = recipeResult.recipes || [];
     mergeCustomData();
     const remoteState = planResult.plan || {};
-    plan = migratePlan(remoteState.items || localState.items || {});
+    // Recover edits saved by older app versions before durable queue markers
+    // existed. Only newer/missing local item revisions need replaying.
+    const remoteItems = new Map(ensureShoppingMetadataV25(remoteState.shoppingItems).map(item => [item.id, item]));
+    pendingSave ||= ensureShoppingMetadataV25(localState.shoppingItems).some(item =>
+      !remoteItems.has(item.id) || shoppingItemTimeV25(item) > shoppingItemTimeV25(remoteItems.get(item.id)));
+    const pendingFull = pendingSave && localState._pendingFullSave;
+    plan = migratePlan((pendingFull ? localState.items : remoteState.items) || localState.items || {});
     shoppingItems = mergeShoppingStatesV25(localState.shoppingItems || [], remoteState.shoppingItems || []);
-    freezerItems = remoteState.freezerItems || localState.freezerItems || defaultFreezerItems();
-    appMeta = remoteState.meta || localState.meta || appMeta;
+    freezerItems = (pendingFull ? localState.freezerItems : remoteState.freezerItems) || localState.freezerItems || defaultFreezerItems();
+    appMeta = (pendingFull ? localState.meta : remoteState.meta) || localState.meta || appMeta;
     lastRemoteUpdatedAt = remoteState.updatedAt || "";
-    savedRevisionV25 = saveRevisionV25;
+    setLiveStatus("Live");
   } catch (error) {
     console.warn("Starter med lokale data", error);
     plan = migratePlan(localState.items || JSON.parse(localStorage.getItem("middag_plan") || "{}"));
     shoppingItems = ensureShoppingMetadataV25(localState.shoppingItems || []);
     freezerItems = localState.freezerItems || defaultFreezerItems();
     appMeta = localState.meta || appMeta;
+    if (localState._pendingSave === undefined && shoppingItems.length) pendingSave = true;
     try {
       const fallback = await fetch("recipes.json").then(response => response.json());
       recipes = Array.isArray(fallback) ? fallback : (fallback.recipes || []);
@@ -1885,7 +2062,15 @@ init = async function(){
       recipes = [];
     }
     setLiveStatus("Frakoblet", "error");
+    setShoppingStatusV25("Kunne ikke hente oppdateringer. Prøver igjen …", "error");
   }
+  if (pendingSave) {
+    saveRevisionV25 = 1;
+    savedRevisionV25 = 0;
+    fullSaveRevisionV61 = localState._pendingFullSave ? 1 : 0;
+    appMeta.updatedAt = nowIsoV25();
+  }
+  persistLocalStateV25();
   fillDaySelectorsV20();
   fillAddToDaySelect();
   if ($("recipeCount")) $("recipeCount").textContent = `${recipes.length} oppskrifter`;
@@ -2940,7 +3125,7 @@ function repairLegacyShoppingItemV46(id){
   const timestamp=nowIsoV25();
   shoppingItems=shoppingItems.map(item=>item.id===id?{...item,deleted:true,updatedAt:timestamp}:item);
   for(const text of lines)shoppingItems.push({...original,id:shoppingIdV25(),text,category:original.manualCategory?original.category:categorize(text),deleted:false,updatedAt:timestamp});
-  renderShoppingList(shoppingItems);savePlan();
+  renderShoppingList(shoppingItems);savePlan({shoppingOnly: true});
 }
 
 function shoppingMergeProposalV47(){
@@ -2963,7 +3148,7 @@ function mergeExistingShoppingV47(){
   const ids=new Set(proposal.flatMap(group=>group.items.map(item=>item.id))),timestamp=nowIsoV25();
   shoppingItems=shoppingItems.map(item=>ids.has(item.id)?{...item,deleted:true,updatedAt:timestamp}:item);
   for(const group of proposal)shoppingItems.push({...group.merged,id:shoppingIdV25(),deleted:false,updatedAt:timestamp});
-  renderShoppingList(shoppingItems);savePlan();
+  renderShoppingList(shoppingItems);savePlan({shoppingOnly: true});
 }
 
 const categorizeBeforeV28=categorize;
@@ -3133,7 +3318,7 @@ bindAll=function(){
   $("structuredIngredientPreview")?.addEventListener("input",syncStructuredPreviewV28);
   $("parsedIngredients")?.addEventListener("input",structuredPreviewV28);
   $("structuredIngredientPreview")?.addEventListener("change",syncStructuredPreviewV28);
-  $("confirmShoppingCategoryBtn")?.addEventListener("click",()=>{const item=shoppingItems.find(entry=>entry.id===shoppingCategoryTargetV28);if(!item)return;const category=$("shoppingCategorySelect").value;item.category=category;item.manualCategory=true;item.updatedAt=nowIsoV25();const scope=document.querySelector('input[name="registryScope"]:checked')?.value;if(scope==="registry"){if(!confirm(`Oppdater Ingredient Registry slik at «${item.text}» alltid får kategorien ${category}?`))return;appMeta.ingredientRegistryOverrides[ShoppingIngredients.registryKey(normalizeIngredientLineForDisplay(item.text))]=category}savePlan();renderShoppingList(shoppingItems);$("shoppingCategoryDialog").close()});
+  $("confirmShoppingCategoryBtn")?.addEventListener("click",()=>{const item=shoppingItems.find(entry=>entry.id===shoppingCategoryTargetV28);if(!item)return;const category=$("shoppingCategorySelect").value;item.category=category;item.manualCategory=true;item.updatedAt=nowIsoV25();const scope=document.querySelector('input[name="registryScope"]:checked')?.value;if(scope==="registry"){if(!confirm(`Oppdater Ingredient Registry slik at «${item.text}» alltid får kategorien ${category}?`))return;appMeta.ingredientRegistryOverrides[ShoppingIngredients.registryKey(normalizeIngredientLineForDisplay(item.text))]=category}savePlan({shoppingOnly:scope!=="registry"});renderShoppingList(shoppingItems);$("shoppingCategoryDialog").close()});
 };
 const initBeforeV28=init;
 init=async function(){await initBeforeV28();ensureMetaV28();randomOrderV28=new Map(recipes.map(recipe=>[String(recipe.id),Math.random()]));renderRecipeResults();renderPantryV28()};
@@ -3343,7 +3528,7 @@ generateShoppingList=function(){
   }
   const timestamp=nowIsoV25();
   const generated=mergeShoppingItems(raw).map(item=>({...item,id:item.id||shoppingIdV25(),deleted:false,updatedAt:timestamp}));
-  shoppingItems=ShoppingListModel.mergeWeekMenuItems(shoppingItems,generated,{categorize});renderShoppingWithoutViewportJumpV31();savePlan();showView("viewShopping");
+  shoppingItems=ShoppingListModel.mergeWeekMenuItems(shoppingItems,generated,{categorize});renderShoppingWithoutViewportJumpV31();savePlan({shoppingOnly: true});showView("viewShopping");
   if(missing.length)alert(`${missing.length} oppskrift(er) mangler data og ble ikke lagt til i handlelisten.`);
 };
 
@@ -3352,7 +3537,7 @@ window.addManualDishToShopping=function(dish){
   if(!text||!text.trim())return;
   if(addShoppingItemV25(text,"")){
     const item=shoppingItems[shoppingItems.length-1];
-    if(item){item.recipe=dish;item.updatedAt=nowIsoV25();savePlan()}
+    if(item){item.recipe=dish;item.updatedAt=nowIsoV25();savePlan({shoppingOnly: true})}
     showView("viewShopping");
   }
 };
@@ -3610,10 +3795,15 @@ $("openRecipeHelpBtn")?.addEventListener("click",openRecipeHelpV42);
 
 renderShoppingList=function(items){
   shoppingItems=ensureShoppingMetadataV25(items||[]);const box=$("shoppingList");if(!box)return;
-  const visible=visibleShoppingItemsV25(),active=visible.filter(item=>!item.done||shoppingCompletionPendingV49(item)),done=visible.filter(item=>item.done&&!shoppingCompletionPendingV49(item)),grouped=new Map(CATEGORIES.map(category=>[category,[]]));
+  const visible=visibleShoppingItemsV25();
+  for (const [id, draft] of Object.entries(shoppingDraftsV61.edits)) {
+    if (!visible.some(item => item.id === id)) visible.push({...draft.item, id, text: draft.value, deleted: false});
+  }
+  const active=visible.filter(item=>!item.done||shoppingCompletionPendingV49(item)),done=visible.filter(item=>item.done&&!shoppingCompletionPendingV49(item)),grouped=new Map(CATEGORIES.map(category=>[category,[]]));
   for(const item of active){const category=shoppingCategoryV49(item);grouped.get(category).push({...item,category})}
   const categories=CATEGORIES.map(category=>renderShoppingCategoryV25(category,grouped.get(category))).join("");
-  box.innerHTML=`<p class="shopping-summary"><strong>${active.length}</strong> igjen · ${done.length} fullført</p>${shoppingMergeProposalV47().length?'<button type="button" class="text-button" onclick="mergeExistingShoppingV47()">Slå sammen like varer</button>':""}${categories}${done.length?`<section class="completed-section"><div class="completed-head"><button type="button" class="completed-toggle" aria-expanded="false" onclick="toggleCompletedShoppingV25(this)">Fullført (${done.length})</button><button type="button" class="text-button danger-subtle clear-completed" onclick="clearCompletedShoppingV25()">Fjern fullførte</button></div><div class="completed-items" hidden>${done.map(shoppingRowHtmlV25).join("")}</div></section>`:""}`;
+  renderShoppingMarkupV61(box, `<p class="shopping-summary"><strong>${active.length}</strong> igjen · ${done.length} fullført</p>${shoppingMergeProposalV47().length?'<button type="button" class="text-button shopping-merge-button" onclick="mergeExistingShoppingV47()">Slå sammen like varer</button>':""}${categories}${done.length?`<section class="completed-section"><div class="completed-head"><button type="button" class="completed-toggle" aria-expanded="false" onclick="toggleCompletedShoppingV25(this)">Fullført (${done.length})</button><button type="button" class="text-button danger-subtle clear-completed" onclick="clearCompletedShoppingV25()">Fjern fullførte</button></div><div class="completed-items" hidden>${done.map(shoppingRowHtmlV25).join("")}</div></section>`:""}`);
+  restoreShoppingDraftsV61();
   updateShoppingRemainingV25();
   window.renderLoyaltyCard?.(appMeta.remaCustomerCode);
 };

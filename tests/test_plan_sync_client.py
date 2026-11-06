@@ -15,7 +15,11 @@ class PlanSyncClientTests(unittest.TestCase):
           const assert = require('node:assert/strict');
           let syncFromServer, isSavingPlan=false, saveRevisionV25=0, savedRevisionV25=0, lastLocalSaveAt=0;
           const document={hidden:false}, navigator={onLine:true};
-          const appMeta={updatedAt:'same'};
+          let appMeta={updatedAt:'same'}, plan={}, shoppingItems=[], freezerItems=[];
+          const migratePlan=x=>x, selectedDays=()=>[], mergeShoppingStatesV25=(a,b)=>b;
+          const persistLocalStateV25=()=>{}, createDayRows=()=>{}, renderFreezer=()=>{};
+          let rendered=0;
+          const renderShoppingList=()=>{rendered++};
           let lastRemoteUpdatedAt='same';
           const setLiveStatus=()=>{}, setShoppingStatusV25=()=>{};
           const calls=[];
@@ -30,10 +34,12 @@ class PlanSyncClientTests(unittest.TestCase):
           (async()=>{
             await syncFromServer();
             assert.equal(syncEtagV55, revision);
+            assert.equal(rendered, 1, 'database revision applies even when client timestamp matches');
             syncLastAttemptV55=0;
             await syncFromServer();
             assert.equal(new URL(calls[1].url, 'https://example.com').searchParams.get('since'), revision);
             assert.equal(syncInFlightV55, false);
+            assert.equal(rendered, 1, 'unchanged polls leave the DOM alone');
             document.hidden=true;
             syncLastAttemptV55=0;
             await syncFromServer();

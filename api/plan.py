@@ -58,7 +58,7 @@ def _merge_shopping_items(stored_items, incoming_items):
     return list(merged.values())
 
 
-def _persist_plan_with_retry(key, incoming_data, attempts=5, expected_revision=None):
+def _persist_plan_with_retry(key, incoming_data, attempts=5, expected_revision=None, shopping_only=False):
     """CAS retry prevents concurrent full-document requests from losing items."""
     last_error = None
     candidate_data = dict(incoming_data)
@@ -68,7 +68,10 @@ def _persist_plan_with_retry(key, incoming_data, attempts=5, expected_revision=N
         stored_data = rows[0].get("data") if rows and isinstance(rows[0].get("data"), dict) else {}
         if expected_revision is not None and stored_data.get("updatedAt") != expected_revision:
             raise PlanChangedError("Handlelisten er endret siden gjennomgangen. Hent en ny forhåndsvisning.")
-        merged_data = dict(candidate_data)
+        # Shopping edits must not replace another device's meal plan, pantry,
+        # or settings. Rebase on the latest document after every CAS conflict.
+        merged_data = ({**stored_data, "updatedAt": candidate_data.get("updatedAt")}
+                       if shopping_only else dict(candidate_data))
         # Older clients do not know about the card; their routine saves must
         # not erase it. An explicit card update can still replace the value.
         stored_code = (stored_data.get("meta") or {}).get("remaCustomerCode")
@@ -167,7 +170,8 @@ class handler(BaseHTTPRequestHandler):
             data = payload.get("plan") if isinstance(payload.get("plan"), dict) else payload
             key = f"plan:{APP_ID}"
 
-            merged_data = _persist_plan_with_retry(key, data, expected_revision=payload.get("expectedUpdatedAt"))
+            merged_data = _persist_plan_with_retry(key, data, expected_revision=payload.get("expectedUpdatedAt"),
+                                                  shopping_only=payload.get("shoppingOnly") is True)
             send_json(self, {"ok": True, "storage": "supabase", "plan": merged_data})
         except PlanChangedError as exc:
             send_json(self, {"ok": False, "error": str(exc)}, 409)
