@@ -3653,7 +3653,19 @@ async function ensureOriginalRecipesV38(){
 }
 const initBeforeV38=init;init=async function(){await initBeforeV38();await ensureOriginalRecipesV38()};
 
-init();
+async function openHouseholdApp() {
+  try {
+    const response = await fetch("/api/health", {cache: "no-store"});
+    if (response.status === 401 || response.status === 403) {
+      location.replace("/eier.html");
+      return;
+    }
+  } catch {
+    // Keep the existing offline startup available on previously used devices.
+  }
+  await init();
+}
+openHouseholdApp();
 
 /* ===== v41: verified media fallback and permanent recipe deletion ===== */
 const showViewBeforeV41=showView;

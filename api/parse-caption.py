@@ -2,7 +2,7 @@ import json
 import os
 import urllib.error
 import urllib.request
-from http.server import BaseHTTPRequestHandler
+from ._access import OwnerRequestHandler
 
 from ._common import get_ssl_context, read_body, send_json
 from .ingredient_normalization import CATALOG, normalize_structured_ingredients
@@ -52,7 +52,7 @@ def finalize_parsed_recipe(parsed, caption=None):
     return parsed
 
 
-class handler(BaseHTTPRequestHandler):
+class handler(OwnerRequestHandler):
     def do_POST(self):
         if self.path.split("?", 1)[-1] == "media=1":
             from .media_analysis import analyze_media_request

@@ -14,6 +14,7 @@ function recipeVideoEmbed(value) {
 }
 (() => {
   const previous=window.openRecipeDetails,cache=new Map();
+  if (typeof previous !== "function") return;
   window.openRecipeDetails=function(id){
     previous(id);
     const recipe=recipeById(id),body=document.getElementById('recipeDialogBody');

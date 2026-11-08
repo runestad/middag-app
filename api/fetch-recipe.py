@@ -7,7 +7,7 @@ import urllib.request
 import traceback
 from html import unescape
 from html.parser import HTMLParser
-from http.server import BaseHTTPRequestHandler
+from ._access import OwnerRequestHandler
 
 from ._common import get_ssl_context, read_body, send_json
 from .recipe_import import assess_import_quality, choose_resolved_url, structured_recipe, instruction_lines
@@ -295,7 +295,7 @@ def extract(url):
     return result
 
 
-class handler(BaseHTTPRequestHandler):
+class handler(OwnerRequestHandler):
     def do_POST(self):
         try:
             payload = read_body(self)

@@ -2,7 +2,8 @@ import json
 import pathlib
 import re
 import uuid
-from http.server import BaseHTTPRequestHandler
+from ._access import OwnerRequestHandler, valid_signature
+from ._shared_recipes import allowed_share, library_rows, public_recipe, recipe_row, share_proof
 from ._common import *
 from .nutrition_estimates import with_nutrition_estimate
 
@@ -64,20 +65,74 @@ def add_verified_media(recipe, manifest):
     # source-aware asset so the renderer can recover from a failed remote URL.
     return {**recipe, "verifiedFallbackImage": verified}
 
-class handler(BaseHTTPRequestHandler):
+class handler(OwnerRequestHandler):
+    def send_image(self, path):
+        body, content_type = supabase_storage_request("GET", f"object/{IMAGE_BUCKET}/{urllib.parse.quote(path, safe='/')}")
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Cache-Control", "private, max-age=3600")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def handle_public_request(self):
+        params = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query, keep_blank_values=True)
+        if self.command != "GET" or not ("shared" in params or "sharedPhoto" in params):
+            return False
+        try:
+            if "sharedPhoto" in params:
+                rid = params["sharedPhoto"][0]
+                if not valid_signature("recipe-photo", rid, params.get("proof", [""])[0]):
+                    send_json(self, {"ok": False}, 403)
+                else:
+                    path = (recipe_row(rid) or {}).get("userImagePath")
+                    if rid and valid_owned_image_path(path, rid):
+                        self.send_image(path)
+                    else:
+                        send_json(self, {"ok": False}, 404)
+            else:
+                self.send_shared_recipes(params)
+        except Exception:
+            send_json(self, {"ok": False, "error": "Kunne ikke hente delt oppskrift."}, 502)
+        return True
+
+    def send_shared_recipes(self, params):
+        scope = params["shared"][0]
+        rid = params.get("id", [""])[0]
+        if not allowed_share(scope, rid, self.headers.get("X-Sult-Share")):
+            return send_json(self, {"ok": False, "error": "Ugyldig delingslenke."}, 403)
+        manifest = load_media_manifest()
+        if rid:
+            recipe = recipe_row(rid)
+            if not recipe:
+                return send_json(self, {"ok": False, "error": "Oppskriften finnes ikke lenger."}, 404)
+            return send_json(self, {"ok": True, "recipe": public_recipe(add_verified_media(recipe, manifest), True)})
+        recipes = [public_recipe(add_verified_media(r, manifest), False) for r in library_rows()]
+        return send_json(self, {"ok": True, "recipes": recipes})
+
     def do_GET(self):
         try:
-            image_path = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("imagePath", [""])[0]
+            params = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query, keep_blank_values=True)
+            if "backup" in params:
+                with MEDIA_MANIFEST_PATH.with_name("recipes.json").open(encoding="utf-8") as backup:
+                    return send_json(self, json.load(backup))
+            if "shareLink" in params:
+                scope = params["shareLink"][0]
+                rid = params.get("id", [""])[0]
+                if scope not in ("book", "recipe") or (scope == "recipe") != bool(rid):
+                    return send_json(self, {"ok": False}, 400)
+                if rid and not recipe_exists(rid):
+                    return send_json(self, {"ok": False, "error": "Oppskriften må være lagret før den kan deles."}, 404)
+                fragment = {"scope": scope, "key": share_proof(scope, rid)}
+                if rid:
+                    fragment["id"] = rid
+                return send_json(self, {"ok": True, "path": "/delt.html#" + urllib.parse.urlencode(fragment)})
+            image_path = params.get("imagePath", [""])[0]
             if image_path:
                 if not valid_owned_image_path(image_path):
                     return send_json(self, {"ok": False, "error": "Ugyldig bildesti."}, 400)
-                body, content_type = supabase_storage_request("GET", f"object/{IMAGE_BUCKET}/{urllib.parse.quote(image_path, safe='/')}")
-                self.send_response(200)
-                self.send_header("Content-Type", content_type)
-                self.send_header("Cache-Control", "private, max-age=3600")
-                self.send_header("Content-Length", str(len(body)))
-                self.end_headers()
-                return self.wfile.write(body)
+                return self.send_image(image_path)
             query = urllib.parse.urlencode({
                 "app_id": f"eq.{APP_ID}",
                 "select": "*",

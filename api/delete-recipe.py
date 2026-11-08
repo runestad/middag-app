@@ -1,11 +1,11 @@
 import re
 import urllib.parse
-from http.server import BaseHTTPRequestHandler
+from ._access import OwnerRequestHandler
 
 from ._common import APP_ID, read_body, row_to_recipe, send_json, supabase_request, supabase_storage_request
 
 
-class handler(BaseHTTPRequestHandler):
+class handler(OwnerRequestHandler):
     def do_POST(self):
         try:
             recipe_id = read_body(self).get("id")

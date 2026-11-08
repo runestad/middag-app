@@ -10,3 +10,4 @@ __pycache__/
 *.bak
 supabase_recipes_*_BACKUP_*.json
 .data-migrations/
+dist/

@@ -1,7 +1,7 @@
 """Idempotently restore the two recipes absent from the original import."""
 
 import urllib.parse
-from http.server import BaseHTTPRequestHandler
+from ._access import OwnerRequestHandler
 
 from ._common import APP_ID, recipe_to_row, send_json, supabase_request
 
@@ -51,7 +51,7 @@ def ensure_missing_original_recipes():
     return {"created": created, "existing": existing}
 
 
-class handler(BaseHTTPRequestHandler):
+class handler(OwnerRequestHandler):
     def do_POST(self):
         try:
             result = ensure_missing_original_recipes()

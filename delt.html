@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="no"><head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+  <title>Delte oppskrifter · SULT</title>
+  <link rel="icon" href="/assets/sult-symbol-sage.svg"><link rel="stylesheet" href="/styles.css?v=58">
+  <link rel="stylesheet" href="/delt.css?v=1"><script defer src="/recipe-video.js?v=2"></script><script defer src="/delt.js?v=1"></script>
+</head><body class="shared-page">
+  <header class="shared-header"><div><img src="/assets/sult-symbol-sage.svg" width="34" height="34" alt="">SULT</div><span>Lesetilgang</span></header>
+  <main class="shared-main">
+    <button id="back" class="ghost" type="button" hidden>← Oppskriftslisten</button>
+    <h1 id="title" tabindex="-1">Delte oppskrifter</h1>
+    <div id="browse" hidden>
+      <div class="shared-filters">
+        <label>Søk<input id="search" type="search" placeholder="Navn, kategori eller tag"></label>
+        <label>Kategori<select id="category"><option value="">Alle kategorier</option></select></label>
+        <label>Sorter etter<select id="sort"><option value="name">Navn A–Å</option><option value="category">Kategori</option></select></label>
+      </div>
+      <p id="count" class="hint" role="status"></p><div id="results"></div>
+    </div>
+    <p id="status" role="status">Henter oppskrifter …</p>
+    <article id="detail" hidden></article>
+  </main>
+</body></html>

@@ -1,0 +1,30 @@
+.shared-page {margin:0; padding:0; background:#fafaf7; color:#17231e}
+.shared-page [hidden] {display:none!important}
+.shared-header {border-bottom:1px solid #d9dccf; display:flex; align-items:center; justify-content:space-between; padding:14px max(20px,calc((100% - 900px)/2)); background:white}
+.shared-header div {display:flex; align-items:center; gap:10px; font-weight:800; font-size:21px; letter-spacing:.06em}
+.shared-header span {font-size:14px; color:#4b6153}
+.shared-main,.owner-entry {width:min(100% - 36px,900px); margin:36px auto 70px; overflow-wrap:anywhere}
+.shared-main h1,.owner-entry h1 {font-size:clamp(1.8rem,4vw,2.8rem); line-height:1.15; letter-spacing:-.025em; margin:18px 0 24px}
+.shared-filters {display:grid; grid-template-columns:2fr 1fr 1fr; gap:12px}
+.shared-filters label,.owner-entry label {display:grid; gap:6px; font-size:14px; font-weight:600; min-width:0}
+.shared-filters input,.shared-filters select,.owner-entry input {width:100%; min-width:0; font-size:16px}
+#count {margin:16px 0 8px}
+#results {display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px}
+.shared-item {display:flex; align-items:center; gap:14px; text-align:left; padding:10px; min-width:0; color:inherit; background:white; border:1px solid #d9dccf; border-radius:14px; height:auto}
+.shared-item img {width:66px; height:66px; border-radius:8px; object-fit:cover; background:#f1f2ea; flex:none}
+.shared-item span {display:grid; gap:3px; overflow-wrap:anywhere; min-width:0}
+.shared-item small {color:#5f685e; font-weight:400}
+#detail {max-width:700px; line-height:1.6}
+#detail .shared-hero {width:100%; max-height:390px; object-fit:cover; border-radius:14px}
+#detail section {margin:24px 0}
+#detail li {margin:8px 0}
+#detail iframe,#detail video {display:block; border:none; width:min(100%,620px); aspect-ratio:16/9; margin:12px 0; border-radius:10px}
+#detail iframe.portrait {width:min(100%,340px); aspect-ratio:9/16}
+.owner-entry {max-width:430px; margin-top:10vh}
+.owner-entry form {display:grid; gap:10px; margin-top:24px}
+@media (max-width:640px) {
+  .shared-filters {grid-template-columns:repeat(2,minmax(0,1fr))}
+  .shared-filters label:first-child {grid-column:1/-1}
+  #results {grid-template-columns:1fr}
+  .shared-main {margin-top:20px}
+}

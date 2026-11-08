@@ -2,13 +2,26 @@
   "version": 2,
   "functions": {
     "api/recipes.py": {
-      "includeFiles": "recipe-media-manifest.json"
+      "includeFiles": "{recipes,recipe-media-manifest}.json"
     },
     "api/recovery.py": {
       "includeFiles": "recovery-manifest.json"
     }
   },
   "rewrites": [
-    {"source": "/recovery", "destination": "/index.html"}
-  ]
+    {
+      "source": "/recovery",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/recipes.json",
+      "destination": "/api/recipes?backup=1"
+    },
+    {
+      "source": "/recovery-manifest.json",
+      "destination": "/api/recovery?action=manifest"
+    }
+  ],
+  "buildCommand": "sh scripts/build-static.sh",
+  "outputDirectory": "dist"
 }

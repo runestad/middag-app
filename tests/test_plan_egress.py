@@ -1,6 +1,7 @@
 """Exercise real HTTP requests with a measured, in-memory Supabase transport."""
 import copy
 import http.client
+import os
 import json
 import threading
 import unittest
@@ -9,6 +10,7 @@ from http.server import ThreadingHTTPServer
 from unittest.mock import patch
 
 from api import plan
+from api._access import owner_cookie
 
 
 class QuietHandler(plan.handler):
@@ -30,6 +32,9 @@ class PlanEgressTests(unittest.TestCase):
         cls.thread.join()
 
     def setUp(self):
+        access = patch.dict(os.environ, {"SULT_OWNER_LINK_SHA256": "test-verifier", "SUPABASE_SERVICE_ROLE_KEY": "test-secret"})
+        access.start()
+        self.addCleanup(access.stop)
         self.row = {
             "updated_at": "2026-10-31T21:00:00.000001+00:00",
             "data": {"updatedAt": "client-version", "shoppingItems": [],
@@ -59,6 +64,7 @@ class PlanEgressTests(unittest.TestCase):
     def get(self, etag=None, since=None):
         connection = http.client.HTTPConnection(*self.server.server_address, timeout=5)
         headers = {"If-None-Match": etag} if etag else {}
+        headers["Cookie"] = owner_cookie().split(";", 1)[0]
         try:
             path = "/api/plan" + ("?" + urllib.parse.urlencode({"since": since}) if since else "")
             connection.request("GET", path, headers=headers)

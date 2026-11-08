@@ -112,11 +112,13 @@ def read_body(handler):
     return json.loads(raw.decode("utf-8"))
 
 
-def send_json(handler, payload, status=200):
+def send_json(handler, payload, status=200, *, headers=None):
     data = json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
     handler.send_response(status)
     handler.send_header("Content-Type", "application/json; charset=utf-8")
     handler.send_header("Cache-Control", "no-store")
+    for name, value in (headers or {}).items():
+        handler.send_header(name, value)
     handler.send_header("Content-Length", str(len(data)))
     handler.end_headers()
     handler.wfile.write(data)

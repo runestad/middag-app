@@ -4,7 +4,7 @@ import os
 import urllib.parse
 import uuid
 from datetime import datetime, timezone
-from http.server import BaseHTTPRequestHandler
+from ._access import OwnerRequestHandler
 from pathlib import Path
 
 from ._common import (
@@ -284,12 +284,14 @@ def apply_rollback(preview):
     return entry
 
 
-class handler(BaseHTTPRequestHandler):
+class handler(OwnerRequestHandler):
     def do_GET(self):
         try:
             params = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
             action = (params.get("action") or ["dashboard"])[0]
             manifest = load_manifest()
+            if action == "manifest":
+                return send_json(self, manifest)
             if action == "history":
                 return send_json(self, {"ok": True, **get_state(HISTORY_KEY, {"entries": []})})
             if action == "item":

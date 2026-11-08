@@ -136,7 +136,10 @@
       <section class="card">
         <div class="section-title">
           <h2>Oppskrifter</h2>
-          <button id="addRecipeBtn" class="primary">Legg til oppskrift</button>
+          <div class="inline-actions">
+            <button id="shareBook" type="button" class="ghost">Del oppskriftslisten</button>
+            <button id="addRecipeBtn" class="primary">Legg til oppskrift</button>
+          </div>
         </div>
         <div class="recipe-toolbar">
           <input id="recipeSearch" placeholder="Søk etter rett, kategori, tag eller kilde …" />
@@ -375,8 +378,23 @@
         <h2 id="recipeDialogTitle">Oppskrift</h2>
         <button type="button" class="ghost" data-dialog-close>Lukk</button>
       </div>
+      <button type="button" id="shareRecipe" class="ghost">Del oppskrift</button>
       <div id="recipeDialogBody"></div>
     </form>
+  </dialog>
+
+  <dialog id="shareDialog" class="small-dialog" aria-labelledby="shareTitle">
+    <div class="dialog-form">
+      <div class="section-title"><h2 id="shareTitle">Del oppskrift</h2><button type="button" class="ghost" id="shareClose">Lukk</button></div>
+      <p id="shareScope"></p>
+      <label for="shareUrl">Delingslenke</label>
+      <input id="shareUrl" type="url" readonly>
+      <div class="inline-actions">
+        <button type="button" class="primary" id="shareCopy">Kopier lenke</button>
+        <button type="button" class="ghost" id="shareNative" hidden>Del videre …</button>
+      </div>
+      <p class="hint" role="status" id="shareStatus"></p>
+    </div>
   </dialog>
 
   <dialog id="recipeHelpDialog" class="triage-dialog" aria-labelledby="recipeHelpDialogTitle">
@@ -520,10 +538,11 @@
   <script src="shopping-order.js?v=1"></script>
   <script src="loyalty-card.js?v=1"></script>
   <script src="recipe-image.js?v=1"></script>
-  <script src="app.js?v=61"></script>
+  <script src="app.js?v=62"></script>
   <script src="media-import.js?v=1"></script>
   <script src="mobile-ui.js?v=2"></script>
-  <script src="recipe-video.js?v=1"></script>
+  <script src="recipe-video.js?v=2"></script>
+  <script src="recipe-sharing.js?v=1"></script>
 </body>
 </html>
 

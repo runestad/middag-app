@@ -1,8 +1,8 @@
-from http.server import BaseHTTPRequestHandler
+from ._access import OwnerRequestHandler
 from ._common import *
 import os, json, urllib.request, urllib.error
 
-class handler(BaseHTTPRequestHandler):
+class handler(OwnerRequestHandler):
     def do_POST(self):
         try:
             api_key = os.environ.get("OPENAI_API_KEY", "").strip()

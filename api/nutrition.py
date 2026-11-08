@@ -2,13 +2,13 @@ import json
 import os
 import urllib.error
 import urllib.request
-from http.server import BaseHTTPRequestHandler
+from ._access import OwnerRequestHandler
 
 from ._common import get_ssl_context, read_body, send_json
 from .nutrition_calculation import calculate_nutrition, serving_count
 
 
-class handler(BaseHTTPRequestHandler):
+class handler(OwnerRequestHandler):
     def do_POST(self):
         try:
             api_key = os.environ.get("OPENAI_API_KEY", "").strip()

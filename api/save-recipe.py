@@ -1,13 +1,13 @@
 import re
 import urllib.parse
-from http.server import BaseHTTPRequestHandler
+from ._access import OwnerRequestHandler
 
 from ._common import APP_ID, read_body, recipe_to_row, row_to_recipe, send_json, supabase_request
 from .ingredient_normalization import CATALOG, normalize_structured_ingredients
 from .recipe_import import safe_recipe_merge, merge_reviewed_recipe
 
 
-class handler(BaseHTTPRequestHandler):
+class handler(OwnerRequestHandler):
     def do_POST(self):
         try:
             payload = read_body(self)

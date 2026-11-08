@@ -1,7 +1,7 @@
 import hashlib
 import re
 from datetime import datetime, timezone
-from http.server import BaseHTTPRequestHandler
+from ._access import OwnerRequestHandler
 from ._common import *
 
 SHOPPING_EPOCH = "2000-01-01T00:00:00.000Z"
@@ -111,7 +111,7 @@ def _persist_plan_with_retry(key, incoming_data, attempts=5, expected_revision=N
         raise last_error
     raise RuntimeError("Kunne ikke lagre etter samtidige oppdateringer")
 
-class handler(BaseHTTPRequestHandler):
+class handler(OwnerRequestHandler):
     def do_GET(self):
         try:
             key = f"eq.plan:{APP_ID}"

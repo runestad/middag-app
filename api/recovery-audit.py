@@ -1,15 +1,11 @@
-"""Authenticated-deployment recovery audit surface.
-
-The endpoint deliberately performs no writes. Vercel Deployment Protection is
-the access boundary used by the existing application, just like /api/recipes.
-"""
+"""Owner-only, read-only recovery audit."""
 
 import collections
 import hashlib
 import html
 import json
 import urllib.parse
-from http.server import BaseHTTPRequestHandler
+from ._access import OwnerRequestHandler
 
 from ._common import APP_ID, row_to_recipe, send_json, supabase_request
 from .recipe_health import classify_source, stored_completeness
@@ -162,7 +158,7 @@ document.querySelector('#start').onclick=async()=>{document.querySelector('#star
     return template.replace("__PAYLOAD__", payload)
 
 
-class handler(BaseHTTPRequestHandler):
+class handler(OwnerRequestHandler):
     def do_POST(self):
         # The one-time, explicitly approved production recovery has completed.
         # Keep the audit/workbench available, but leave no reusable write path.
