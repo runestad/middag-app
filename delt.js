@@ -20,7 +20,7 @@
     const query = new URLSearchParams({shared: scope});
     if (id) query.set("id", id);
     const response = await fetch("/api/recipes?" + query, {
-      headers: {"X-Sult-Share": proof}, credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer"
+      headers: {"X-Sult-Share": proof}, credentials: "same-origin", cache: "no-store", referrerPolicy: "no-referrer"
     });
     if (!response.ok) {
       if (response.status === 403) throw new Error("Delingslenken er ugyldig. Be om en ny lenke.");

@@ -83,6 +83,7 @@ class SharingTests(unittest.TestCase):
             for method, path in [("GET", "?shareLink=book"), ("GET","?backup=1"), ("GET","?imagePath=1"),
                                  ("POST","?shared=book"), ("DELETE","?shared=recipe&id=1")]:
                 self.assertEqual(call(addr, method, "/api/recipes" + path, one)[0], 401)
+            self.assertEqual(call(addr, "GET", "/api/recipes?shared=book", self.owner)[0], 403)
             lookup.assert_not_called()
             library.assert_not_called()
             for mode, headers in [("recipe", one), ("book", book)]:
