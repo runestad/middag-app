@@ -3196,12 +3196,12 @@ function structuredPreviewV28(){
   const box=$("structuredIngredientPreview"),ingredients=previewIngredientsV26();
   const uncertainties=window.lastAiParsedRecipe?.uncertainties||[];
   if(!box)return;box.dataset.sourceText=$("parsedIngredients").value.trim();box.innerHTML=ingredients.map((ingredient,index)=>{const warning=uncertainties.find(item=>item.field===`ingredients.${index}`);
-    return `<div class="structured-ingredient-row${warning?" uncertain":""}" data-index="${index}">
-    <input data-field="amount" value="${escapeAttr(ingredient.amount||"")}" aria-label="Mengde">
-    <input data-field="unit" value="${escapeAttr(ingredient.unit||"")}" aria-label="Enhet">
-    <input data-field="item" value="${escapeAttr(ingredient.item||"")}" aria-label="Ingrediens">
-    <select data-field="shoppingCategory" aria-label="Handlelistekategori">${CATEGORIES.map(category=>`<option${category===ShoppingIngredients.categoryName(ingredient.shoppingCategory||categorize(ingredient.item))?" selected":""}>${category}</option>`).join("")}</select>
-    <input class="ingredient-note" data-field="note" value="${escapeAttr(ingredient.note||"")}" aria-label="Tilberedning eller merknad" placeholder="Merknad, for eksempel finhakket">
+    return `<div class="structured-ingredient-row${warning?" uncertain":""}" data-index="${index}" role="group" aria-label="Ingrediens ${index+1}">
+    <label class="ingredient-name">Ingrediens<input data-field="item" value="${escapeAttr(ingredient.item||"")}" placeholder="Gulrot"></label>
+    <label>Mengde<input data-field="amount" value="${escapeAttr(ingredient.amount??"")}" placeholder="2"></label>
+    <label>Enhet<input data-field="unit" value="${escapeAttr(ingredient.unit||"")}" placeholder="stk"></label>
+    <label class="ingredient-category">Kategori i handlelisten<select data-field="shoppingCategory">${CATEGORIES.map(category=>`<option${category===ShoppingIngredients.categoryName(ingredient.shoppingCategory||categorize(ingredient.item))?" selected":""}>${category}</option>`).join("")}</select></label>
+    <label class="ingredient-note">Merknad (valgfritt)<input data-field="note" value="${escapeAttr(ingredient.note||"")}" placeholder="F.eks. finhakket"></label>
     <button type="button" class="text-button" data-remove-ingredient="${index}" aria-label="Fjern ingrediens ${index+1}">Fjern</button>
     ${warning?`<p class="ingredient-warning">Kontroller: ${escapeHtml(warning.reason)} <button type="button" class="text-button" data-confirm-ingredient="${index}">Stemmer</button></p>`:""}</div>`}).join("")||`<p class="hint">Ingrediensene vises her etter analyse.</p>`;
 }
@@ -3306,7 +3306,15 @@ bindAll=function(){
   $("retryUrlImportBtn")?.addEventListener("click",()=>{if(!importBusyV50 && confirm("Importer på nytt og erstatt innholdet i utkastet?"))autoFetchRecipeUrlV27($("importLink").value,true)});
   $("addRecipeDialog")?.querySelector("form")?.addEventListener("submit",event=>{event.preventDefault();startFocusedImportV34()});
   $("importDialog")?.querySelector("form")?.addEventListener("submit",event=>event.preventDefault());
-  $("addIngredientBtn")?.addEventListener("click",()=>{const ingredients=previewIngredientsV26();ingredients.push({amount:"",unit:"",item:"Ny ingrediens",note:"",shoppingCategory:"Annet"});setPreviewIngredientsV50(ingredients);structuredPreviewV28();});
+  $("addIngredientBtn")?.addEventListener("click",()=>{
+    const ingredients=previewIngredientsV26();
+    ingredients.push({amount:"",unit:"",item:"Ny ingrediens",note:"",shoppingCategory:"Annet"});
+    setPreviewIngredientsV50(ingredients);
+    structuredPreviewV28();
+    const name=$("structuredIngredientPreview").querySelector('.structured-ingredient-row:last-child [data-field="item"]');
+    name.focus();
+    name.select();
+  });
   $("structuredIngredientPreview")?.addEventListener("click",event=>{
     const confirmButton=event.target.closest("[data-confirm-ingredient]");
     if(confirmButton){confirmIngredientV57(Number(confirmButton.dataset.confirmIngredient));return}
